@@ -97,6 +97,7 @@ class GVGraph(GenericASTTraversal):
         GenericASTTraversal.__init__(self, None)
         self.gv = __import__('gv')
         self.g = None
+        self.vertical = False
 
     def create(self, ast):
         self.preorder(ast)
@@ -119,9 +120,11 @@ class GVGraph(GenericASTTraversal):
         self.g = g = self.gv.digraph('G')
         self.gv.setv(g, 'compound', 'true')
         self.gv.setv(g, 'clusterrank', 'local')
-        #self.gv.setv(g, 'rankdir', 'LR')
-        #self.gv.setv(g, 'mindist', '1000')
         self.gv.setv(g, 'nodesep', str(50 / 72.0))
+        if self.vertical:
+            self.gv.setv(g, 'rankdir', 'BT')
+        else:
+            self.gv.setv(g, 'rankdir', 'RL')
         n.data['gv'] = g
 
 
@@ -146,10 +149,10 @@ class GVGraph(GenericASTTraversal):
         else:
             id = 'cluster_' + n.id
             gn = gv.graph(g, id)
+            if self.vertical:
+                gv.setv(gn, 'labelloc', 'b')
         gv.setv(gn, 'id', id)
         gv.setv(gn, 'shape', 'box')
-#        if n.name:
-#            gv.setv(gn, 'label', n.name)
         n.data['gv'] = gn
 
 
