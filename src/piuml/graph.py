@@ -26,7 +26,7 @@ class ToGVConverter(GenericASTTraversal):
 
     def n_dependency(self, n):
         gn = n.data['gv']
-        self.gv.setv(gn, 'minlen', str(250.0 / 72))
+        self.gv.setv(gn, 'minlen', str(150.0 / 72))
 
     n_generalization = n_association = n_dependency
 
