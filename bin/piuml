@@ -1,0 +1,17 @@
+#!/usr/bin/python
+
+from piuml.parser import load
+from piuml.graph import GVGraph
+from piuml.renderer import CairoRenderer
+
+graph = GVGraph()
+renderer = CairoRenderer()
+
+import sys
+f = open(sys.argv[1])
+
+ast = load(f)
+graph.create(ast)
+renderer.dims(ast)
+graph.layout(ast)
+renderer.render(ast)
