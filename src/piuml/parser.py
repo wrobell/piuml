@@ -129,7 +129,7 @@ TOKENS = {
     'ELEMENT': '(class|node|device|component|artifact)',
     'ID': '[a-z][a-z_0-9]*',
     'ASSOCIATION': '[xO*<]?==[xO*>]?',
-    'DEPENDENCY': '[-][ur]?[-]',
+    'DEPENDENCY': '<[ur]?-|-[ur]?>',
     'GENERALIZATION': '(<=)|(=>)',
     'STEREOTYPE': '<<[a-z]+>>',
     'SPACE': '\s+',
@@ -327,8 +327,9 @@ class piUMLParser(GenericParser):
             stereotypes = []
         if len(args) == 4:
             stereotypes.append(args[3].value)
-
-        return self._line('dependency', args, stereotypes=stereotypes)
+        n = self._line('dependency', args, stereotypes=stereotypes)
+        n.data['supplier'] = n.tail if v[0] == '<' else n.head
+        return n
 
 
     def p_generalization(self, args):

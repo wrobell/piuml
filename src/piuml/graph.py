@@ -82,6 +82,7 @@ class FromGVConverter(GenericASTTraversal):
         dw, dh = self.size
         p = gv.getv(gn, 'pos').split()
         n.style.edges = tuple(Pos(float(t.split(',')[0]), dh - float(t.split(',')[1])) for t in p)
+        n.style.edges = tuple(reversed(n.style.edges))
 
     n_generalization = n_association = n_dependency
 

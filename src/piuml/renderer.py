@@ -126,14 +126,15 @@ def draw_head_none(cr):
     """
     Default head drawer: move cursor to the first handle.
     """
-    cr.move_to(0, 0)
+    cr.line_to(0, 0)
 
 
 def draw_tail_none(cr):
     """
     Default tail drawer: draw line to the last handle.
     """
-    cr.line_to(0, 0)
+    cr.stroke()
+    cr.move_to(0, 0)
 
 
 def draw_head_x(cr):
@@ -141,12 +142,12 @@ def draw_head_x(cr):
     Draw an 'x' on the line end to indicate no navigability at
     association head.
     """
+    cr.line_to(0, 0)
     cr.move_to(6, -4)
     cr.rel_line_to(8, 8)
     cr.rel_move_to(0, -8)
     cr.rel_line_to(-8, 8)
     cr.stroke()
-    cr.move_to(0, 0)
 
 
 def draw_tail_x(cr):
@@ -154,12 +155,12 @@ def draw_tail_x(cr):
     Draw an 'x' on the line end to indicate no navigability at
     association tail.
     """
-    cr.line_to(0, 0)
     cr.move_to(6, -4)
     cr.rel_line_to(8, 8)
     cr.rel_move_to(0, -8)
     cr.rel_line_to(-8, 8)
     cr.stroke()
+    cr.move_to(0, 0)
 
 
 def draw_diamond(cr):
@@ -179,18 +180,6 @@ def draw_head_diamond(cr, filled=False):
     Draw a closed diamond on the line end to indicate composite
     aggregation at association head.
     """
-    draw_diamond(cr)
-    if filled:
-        context.cairo.fill_preserve()
-    cr.stroke()
-    cr.move_to(20, 0)
-
-
-def draw_tail_diamond(cr, filled=False):
-    """
-    Draw a closed diamond on the line end to indicate composite
-    aggregation at association tail.
-    """
     cr.line_to(20, 0)
     cr.stroke()
     draw_diamond(cr)
@@ -199,17 +188,32 @@ def draw_tail_diamond(cr, filled=False):
     cr.stroke()
 
 
+def draw_tail_diamond(cr, filled=False):
+    """
+    Draw a closed diamond on the line end to indicate composite
+    aggregation at association tail.
+    """
+    draw_diamond(cr)
+    if filled:
+        context.cairo.fill_preserve()
+    cr.stroke()
+    cr.move_to(20, 0)
+
+
 def draw_head_arrow(cr):
     """
     Draw a normal arrow to indicate association end navigability at
     association head.
     """
-    cr.set_dash((), 0)
+    dash = cr.get_dash()
+    #cr.set_dash((), 0)
+    cr.line_to(0, 0)
+    cr.stroke()
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
     cr.stroke()
-    cr.move_to(0, 0)
+    #cr.set_dash(*dash)
 
 
 def draw_tail_arrow(cr):
@@ -217,12 +221,14 @@ def draw_tail_arrow(cr):
     Draw a normal arrow to indicate association end navigability at
     association tail.
     """
-    cr.set_dash((), 0)
-    cr.line_to(0, 0)
-    cr.stroke()
+    dash = cr.get_dash()
+    #cr.set_dash((), 0)
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
+    cr.stroke()
+    cr.move_to(0, 0)
+    #cr.set_dash(*dash)
 
 
 def draw_triangle(cr):
@@ -234,17 +240,21 @@ def draw_triangle(cr):
     cr.move_to(15, 0)
 
 
-def draw_line(cr, edges, draw_head=draw_head_none, draw_tail=draw_tail_none):
+def draw_line(cr, edges, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None):
     p0, p1 = edges[:2]
-    h_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
-    p1, p0 = edges[-2:]
     t_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
+    p1, p0 = edges[-2:]
+    h_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
 
-    draw_line_end(cr, edges[0], h_angle, draw_head)
+    cr.save()
+    draw_line_end(cr, edges[0], t_angle, draw_tail)
+    if dash is not None:
+        cr.set_dash(dash, 0)
     for x, y in edges[1:-1]:
         cr.line_to(x, y)
-    draw_line_end(cr, edges[-1], t_angle, draw_tail)
+    draw_line_end(cr, edges[-1], h_angle, draw_head)
     cr.stroke()
+    cr.restore()
 
 
 def box3d(cr, pos, size):
@@ -457,7 +467,10 @@ class CairoRenderer(GenericASTTraversal):
 
 
     def n_dependency(self, n):
-        self._draw_line(n, draw_head=draw_head_arrow, dash=(7.0, 5.0))
+        if n.data['supplier'] is n.head:
+            self._draw_line(n, draw_head=draw_head_arrow, dash=(7.0, 5.0))
+        else:
+            self._draw_line(n, draw_tail=draw_tail_arrow, dash=(7.0, 5.0))
 
 
     def n_association(self, n):
@@ -475,17 +488,15 @@ class CairoRenderer(GenericASTTraversal):
             'navigable': draw_head_arrow,
             'unknown': draw_head_none,
         }
-        dh = HEND[n.data['head']]
         dt = TEND[n.data['tail']]
-        self._draw_line(n, draw_head=dh, draw_tail=dt)
+        dh = HEND[n.data['head']]
+        self._draw_line(n, draw_tail=dt, draw_head=dh)
 
 
-    def _draw_line(self, n, draw_head=draw_head_none, draw_tail=draw_tail_none, dash=None):
+    def _draw_line(self, n, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None):
         edges = n.style.edges
         self.cr.save()
-        if dash is not None:
-            self.cr.set_dash(dash, 0)
-        draw_line(self.cr, edges, draw_head=draw_head, draw_tail=draw_tail)
+        draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
         if n.stereotypes:
             stereotype = fmts(n.stereotypes)
