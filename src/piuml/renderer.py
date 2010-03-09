@@ -428,10 +428,11 @@ class CairoRenderer(GenericASTTraversal):
         else:
             cr.rectangle(x, y, width, height)
 
-        def c(txt, shift):
+        def c(txt, shift, font):
             cr.save()
-            w, h = text_size(cr, txt, FONT_NAME)
+            w, h = text_size(cr, txt, font)
             cr.move_to(x + (width - w) / 2.0, y + h + shift)
+            set_font(cr, font)
             cr.show_text(txt)
             cr.stroke()
             cr.restore()
@@ -439,9 +440,9 @@ class CairoRenderer(GenericASTTraversal):
 
         shift = p.top
         if n.stereotypes:
-            shift = c(fmts(n.stereotypes), shift)
-            shift += 2
-        c(n.name, shift)
+            shift = c(fmts(n.stereotypes), shift, FONT)
+            shift += 4
+        c(n.name, shift, FONT_NAME)
 
         cr.stroke()
         cr.restore()
@@ -500,6 +501,7 @@ class CairoRenderer(GenericASTTraversal):
             cr = self.cr
             cr.save()
             cr.move_to(x, y + style.size.height)
+            set_font(cr, FONT)
             cr.show_text(stereotype)
             cr.stroke()
             cr.restore()
