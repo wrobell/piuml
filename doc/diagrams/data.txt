@@ -1,0 +1,16 @@
+class n "Node"
+class e "Edge"
+
+class style "Style"
+
+class a "Area"
+class p "Pos"
+class s "Size"
+
+n <= e
+n *==> style
+style *==> p
+style *==> s
+style *==> a
+style *==> a
+style *==> a
