@@ -173,8 +173,8 @@ class GVGraph(GenericASTTraversal):
         gh = h.data['gv']
         e = gv.edge(gt, gh)
 
-        gv.setv(e, 'arrowhead', 'none')
         gv.setv(e, 'arrowtail', 'none')
+        gv.setv(e, 'arrowhead', 'none')
 
         if len(node.tail) > 0:
             t = node.tail
