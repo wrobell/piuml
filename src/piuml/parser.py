@@ -122,6 +122,19 @@ class Edge(Node):
         self.head = head
 
 
+TOKENS = {
+    'INDENT': r'^\.[ ]+',
+    'NAME': (r'"[a-zA-Z]+"', lambda d: d[1:-1]),
+    'COMMENT': '^\#.*',
+    'ELEMENT': '(class|node|device|component|artifact)',
+    'ID': '[a-z][a-z_0-9]*',
+    'ASSOCIATION': '[xO*<]?==[xO*>]?',
+    'DEPENDENCY': '[-][ur]?[-]',
+    'GENERALIZATION': '(<=)|(=>)',
+    'STEREOTYPE': '<<[a-z]+>>',
+    'SPACE': '\s+',
+}
+
 
 class piUMLScanner(GenericScanner):
     """
@@ -129,11 +142,31 @@ class piUMLScanner(GenericScanner):
     
     Divides lines into tokens ready for more advanced interpretation.
     """
+    def __init__(self):
+        for name, data in TOKENS.items():
+            if isinstance(data, basestring):
+                f = lambda d: d
+            else:
+                data, f = data
+            self._create_token(name, data, f)
+        GenericScanner.__init__(self)
+
+
+    def _create_token(self, name, regex, f):
+        def tokenf(self, value):
+            t = Token(name, f(value))
+            self.rv.append(t)
+        tokenf.__doc__ = regex
+        setattr(self.__class__, 't_' + name, tokenf)
+
+
     def tokenize(self, line):
         """
         Create tokens from string.
 
-        @param line: string to scan
+        :Parameters:
+         line
+            String to scan.
         """
         self.rv = []
         GenericScanner.tokenize(self, line)
@@ -152,66 +185,6 @@ class piUMLScanner(GenericScanner):
             raise ParseError('syntax error near "%s"' % value, filename, lineno)
         else:
             raise ParseError('syntax error, invalid token %s' % value)
-
-
-    def t_COMMENT(self, value):
-        r'^\#.*'
-        t = Token('COMMENT', value)
-        self.rv.append(t)
- 
-
-    def t_INDENT(self, value):
-        r'^\.[ ]+'
-        t = Token('INDENT', value)
-        self.rv.append(t)
-
-
-    def t_ELEMENT(self, value):
-        r'(class|node|device|component|artifact)'
-        t = Token('ELEMENT', value)
-        self.rv.append(t)
-
-
-    def t_ID(self, value):
-        r'[a-z][a-z_0-9]*'
-        t = Token('ID', value)
-        self.rv.append(t)
-
-
-    def t_NAME(self, value):
-        r'"[a-zA-Z]+"'
-        t = Token('NAME', value[1:-1])
-        self.rv.append(t)
-
-
-    def t_ASSOCIATION(self, value):
-        r'[xO*<]?==[xO*>]?'
-        t = Token('ASSOCIATION', value)
-        self.rv.append(t)
-
-
-    def t_DEPENDENCY(self, value):
-        r'[-][ur]?[-]'
-        t = Token('DEPENDENCY', value)
-        self.rv.append(t)
-
-
-    def t_GENERALIZATION(self, value):
-        r'(<=)|(=>)'
-        t = Token('GENERALIZATION', value)
-        self.rv.append(t)
-
-
-    def t_STEREOTYPE(self, value):
-        r'<<[a-z]+>>'
-        t = Token('STEREOTYPE', value)
-        self.rv.append(t)
-
-
-    def t_SPACE(self, value):
-        r'\s+'
-        t = Token('SPACE', value)
-        self.rv.append(t)
 
 
 
