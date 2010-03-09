@@ -122,16 +122,33 @@ class Edge(Node):
         self.head = head
 
 
+def name_dequote(n):
+    """
+    Remove quotation from a string.
+    """
+    n = n[1:-1]
+    n = n.replace(r'\"', '"')
+    n = n.replace(r"\'", "'")
+    n = n.replace('\\\\', '\\')
+    return n
+
+
+ELEMENTS = 'class', 'node', 'device', 'component', 'artifact'
+
+RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
+RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
+RE_ELEMENT = r'(%s)' % '|'.join(ELEMENTS)
+
 TOKENS = {
     'INDENT': r'^\.[ ]+',
-    'NAME': (r'"[a-zA-Z]+"', lambda d: d[1:-1]),
+    'ID': RE_ID,
+    'NAME': (RE_NAME, name_dequote),
     'COMMENT': '^\#.*',
-    'ELEMENT': '(class|node|device|component|artifact)',
-    'ID': '[a-z][a-z_0-9]*',
+    'ELEMENT': RE_ELEMENT,
     'ASSOCIATION': '[xO*<]?==[xO*>]?',
     'DEPENDENCY': '<[ur]?-|-[ur]?>',
     'GENERALIZATION': '(<=)|(=>)',
-    'STEREOTYPE': '<<[a-z]+>>',
+    'STEREOTYPE': '<<\w+>>',
     'SPACE': '\s+',
 }
 
