@@ -5,7 +5,7 @@ piUML language parsing tests.
 import re
 import unittest
 
-from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, name_dequote
+from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, name_dequote
 
 class RETestCase(unittest.TestCase):
     def test_id(self):
@@ -48,4 +48,16 @@ class RETestCase(unittest.TestCase):
         self.assertEquals('aa"a', name_dequote(r'"aa\"a"'))
         self.assertEquals(r'aa\'a', name_dequote(r"'aa\\\'a'"))
         self.assertEquals('aa"a', name_dequote(r"'aa\"a'"))
+        self.assertEquals('aa#a', name_dequote(r"'aa\#a'"))
+
+
+    def test_comment(self):
+        """Test comment parsing
+        """
+        r = re.compile(RE_COMMENT)
+        self.assertTrue(r.search('# this is comment'))
+        self.assertTrue(r.search('#this is comment'))
+        self.assertTrue(r.search('this is not comment  # this is comment'))
+        self.assertFalse(r.search(r'\# this is not comment'))
+
 

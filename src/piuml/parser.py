@@ -130,6 +130,7 @@ def name_dequote(n):
     n = n.replace(r'\"', '"')
     n = n.replace(r"\'", "'")
     n = n.replace('\\\\', '\\')
+    n = n.replace(r'\#', '#')
     return n
 
 
@@ -138,12 +139,13 @@ ELEMENTS = 'class', 'node', 'device', 'component', 'artifact'
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'(%s)' % '|'.join(ELEMENTS)
+RE_COMMENT = r'\s*(?<!\\)\#.*'
 
 TOKENS = {
     'INDENT': r'^\.[ ]+',
     'ID': RE_ID,
     'NAME': (RE_NAME, name_dequote),
-    'COMMENT': '^\#.*',
+    'COMMENT': RE_COMMENT,
     'ELEMENT': RE_ELEMENT,
     'ASSOCIATION': '[xO*<]?==[xO*>]?',
     'DEPENDENCY': '<[ur]?-|-[ur]?>',
@@ -224,6 +226,7 @@ class piUMLParser(GenericParser):
 
     def p_expr(self, args):
         """
+        expr ::= expr comment
         expr ::= element
         expr ::= association
         expr ::= generalization
