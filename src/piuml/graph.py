@@ -30,6 +30,8 @@ class ToGVConverter(GenericASTTraversal):
 
     n_generalization = n_association = n_dependency
 
+    n_ielement = n_element
+
 
 class FromGVConverter(GenericASTTraversal):
     def __init__(self, g):
@@ -86,6 +88,7 @@ class FromGVConverter(GenericASTTraversal):
 
     n_generalization = n_association = n_dependency
 
+    n_ielement = n_element
 
 
 class GVGraph(GenericASTTraversal):
@@ -152,6 +155,18 @@ class GVGraph(GenericASTTraversal):
             gn = gv.graph(g, id)
             if self.vertical:
                 gv.setv(gn, 'labelloc', 'b')
+        gv.setv(gn, 'id', id)
+        gv.setv(gn, 'shape', 'box')
+        n.data['gv'] = gn
+
+
+    def n_ielement(self, n):
+        g = self.g
+        gv = self.gv
+
+        id = n.id
+        gn = gv.node(g, id)
+
         gv.setv(gn, 'id', id)
         gv.setv(gn, 'shape', 'box')
         n.data['gv'] = gn
