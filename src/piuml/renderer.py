@@ -7,7 +7,7 @@ Drawing routines are adapted from Gaphas and Gaphor source code.
 import cairo
 from cStringIO import StringIO
 from spark import GenericASTTraversal
-from math import atan2, ceil, floor
+from math import atan2, ceil, floor, pi
 
 from piuml.parser import Size, Pos, Style, Node
 
@@ -407,6 +407,9 @@ class CairoDimensionCalculator(GenericASTTraversal):
         height += p.top + p.bottom
         n.style.size = Size(width, height)
 
+    def n_ielement(self, n):
+        n.style.size = Size(14, 14)
+
 
 
 class CairoRenderer(GenericASTTraversal):
@@ -457,6 +460,20 @@ class CairoRenderer(GenericASTTraversal):
         cr.stroke()
         cr.restore()
 
+    def n_ielement(self, n):
+        cr = self.cr
+        required = n.data['type'] == 'required'
+        x, y = n.style.pos
+        angle = pi / 2.0
+        cr.save()
+        if required:
+            cr.arc_negative(x, y, 14, angle, pi + angle)
+        else:
+            cr.move_to(x + 10, y)
+            cr.arc(x, y, 10, 0, pi*2)
+        cr.restore()
+        cr.stroke()
+
 
     def n_generalization(self, n):
         edges = n.style.edges
@@ -467,10 +484,18 @@ class CairoRenderer(GenericASTTraversal):
 
 
     def n_dependency(self, n):
-        if n.data['supplier'] is n.head:
-            self._draw_line(n, draw_head=draw_head_arrow, dash=(7.0, 5.0))
+        supplier = n.data['supplier']
+        
+        params = {'dash': (7.0, 5.0)}
+        if supplier is n.head:
+            params['draw_head'] = draw_head_arrow
         else:
-            self._draw_line(n, draw_tail=draw_tail_arrow, dash=(7.0, 5.0))
+            params['draw_tail'] = draw_tail_arrow
+
+        if supplier.element == 'fiface':
+            params = { 'show_st': False }
+
+        self._draw_line(n, **params)
 
 
     def n_association(self, n):
@@ -493,12 +518,12 @@ class CairoRenderer(GenericASTTraversal):
         self._draw_line(n, draw_tail=dt, draw_head=dh)
 
 
-    def _draw_line(self, n, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None):
+    def _draw_line(self, n, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None, show_st=True):
         edges = n.style.edges
         self.cr.save()
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        if n.stereotypes:
+        if n.stereotypes and show_st:
             stereotype = fmts(n.stereotypes)
             style = Style()
             style.size = Size(*text_size(self.cr, stereotype, FONT))

@@ -5,7 +5,8 @@ piUML language parsing tests.
 import re
 import unittest
 
-from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, name_dequote
+from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, \
+    RE_STEREOTYPE, name_dequote
 
 class RETestCase(unittest.TestCase):
     def test_id(self):
@@ -52,12 +53,24 @@ class RETestCase(unittest.TestCase):
 
 
     def test_comment(self):
-        """Test comment parsing
+        """Test comment token parsing
         """
         r = re.compile(RE_COMMENT)
         self.assertTrue(r.search('# this is comment'))
         self.assertTrue(r.search('#this is comment'))
         self.assertTrue(r.search('this is not comment  # this is comment'))
         self.assertFalse(r.search(r'\# this is not comment'))
+
+
+    def test_stereotype(self):
+        """Test stereotype token parsing
+        """
+        r = re.compile(RE_STEREOTYPE)
+        self.assertTrue(r.search('<<test>>'))
+        self.assertTrue(r.search('<< test >>'))
+        self.assertTrue(r.search('<<t1, t2>>'))
+        self.assertTrue(r.search('<<t1,t2>>'))
+        self.assertTrue(r.search('<<  t1,t2  >>'))
+        self.assertTrue(r.search('<< t1 , t2 >>'))
 
 

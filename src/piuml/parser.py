@@ -100,7 +100,7 @@ class Node(list):
         self.parent = None
         self.type = type
         self.element = element
-        self.id = uuid()
+        self.id = str(uuid())
         self.name = name
         self.stereotypes = []
         self.data = data if data else {}
@@ -136,6 +136,14 @@ def name_dequote(n):
     return n
 
 
+def st_parse(stereotype):
+    """
+    Parse stereotypes from a string.
+    """
+    stereotype = stereotype.replace('<<', '').replace('>>', '')
+    return tuple(s.strip() for s in stereotype.split(','))
+
+
 ELEMENTS = ('artifact', 'class', 'component', 'device', 'interface',
         'node')
 
@@ -143,16 +151,18 @@ RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
+RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 
 TOKENS = {
     'ID': RE_ID,
     'NAME': (RE_NAME, name_dequote),
+    'STEREOTYPE': RE_STEREOTYPE,
     'COMMENT': RE_COMMENT,
     'ELEMENT': RE_ELEMENT,
     'ASSOCIATION': r'[xO*<]?==[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
-    'STEREOTYPE': r'<<\w+>>',
+    'FIFACE': r'(o\))|(\(o)',
     'SPACE': r'[ 	]+',
 }
 
@@ -239,10 +249,12 @@ class piUMLParser(GenericParser):
     def p_expr(self, args):
         """
         expr ::= expr comment
+        expr ::= selement
         expr ::= element
         expr ::= association
         expr ::= generalization
         expr ::= dependency
+        expr ::= fifacedep
         expr ::= comment
         expr ::= empty
         """
@@ -273,7 +285,12 @@ class piUMLParser(GenericParser):
             n.stereotypes.append(stereotype)
 
         self.nodes[id] = n
+        self._set_parent(indent, n)
 
+        return n
+
+
+    def _set_parent(self, indent, n):
         # identify diagram level on which grouping happens
         level = len(indent)
 
@@ -298,6 +315,28 @@ class piUMLParser(GenericParser):
         n.parent = parent = istack[-2][1]
         parent.append(n)
 
+
+    def p_fiface(self, args):
+        """
+        fiface ::= FIFACE SPACE NAME
+        """
+        self._trim(args)
+        dt = args[0].value
+        name = args[1].value
+        n = Node('ielement', 'fiface', name)
+        n.data['type'] = 'provided' if dt == 'o)' else 'required'
+        self.nodes[n.id] = n
+
+        self._set_parent('', n)
+        return n
+
+
+    def p_selement(self, args):
+        """
+        selement ::= element SPACE STEREOTYPE
+        """
+        n = args[0]
+        n.stereotypes.extend(st_parse(args[2].value))
         return n
 
 
@@ -319,10 +358,10 @@ class piUMLParser(GenericParser):
         if stereotypes is None:
             stereotypes = ()
 
-        tail = args[0].value
-        head = args[2].value
+        tail = args[0] if isinstance(args[0], Node) else self.nodes[args[0].value]
+        head = args[2] if isinstance(args[2], Node) else self.nodes[args[2].value]
 
-        n = Edge(element, element, self.nodes[tail], self.nodes[head], data=data)
+        n = Edge(element, element, tail, head, data=data)
 
         n.stereotypes.extend(stereotypes)
 
@@ -385,6 +424,39 @@ class piUMLParser(GenericParser):
         n = self._line('generalization', args)
         n.data['super'] = n.tail if v == '<=' else n.head
         return n
+
+
+    def p_fifacedep(self, args):
+        """
+        fifacedep ::= ID SPACE DEPENDENCY SPACE fiface
+        fifacedep ::= fiface SPACE DEPENDENCY SPACE ID
+        """
+        self._trim(args)
+#        print 'iface:', args[0].value, args[1].value, args[2].value
+
+        if args[0].type == 'ID':
+            id = args[0].value
+            iface = args[2]
+        else:
+            iface = args[0]
+            id = args[2].value
+
+        # truth matrix for stereotype and supplier
+        el = self.nodes[id]
+        tmatrix = {
+            (True, 'provided'): 'realize',    # id -> o)
+            (True, 'required'): 'use',        # id -> (o
+            (False, 'provided'): 'use',       # o) <- id
+            (False, 'required'): 'realize',   # (o <- id
+        }
+        
+        tid = args[0].type == 'ID'
+        s = tmatrix[(tid, iface.data['type'])]
+
+        n = self._line('dependency', args, stereotypes=[s])
+        n.data['supplier'] = iface
+        return n
+        
 
 
     def p_comment(self, args):
