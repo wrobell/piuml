@@ -106,7 +106,7 @@ class CairoBBContext(object):
         e = cr.text_extents(txt)
         x1, y1 = cr.user_to_device(x + e[0], y + e[1])
         x2, y2 = cr.user_to_device(x + e[0] + e[2], y + e[1] + e[3])
-        bbox = x1, y1, x2, y2
+        bbox = x1 - 2, y1 - 2, x2 + 2, y2 + 2
         self._update_bbox(bbox)
         cr.show_text(txt)
 
@@ -296,6 +296,63 @@ def set_font(cr, font):
     cr.set_font_size(float(font[-1]))
 
 
+def text_pos_at_box(style, size, align, outside=False):
+    """
+    Calculate position of the text relative to containing box.
+    """
+    #x_bear, y_bear, w, h, x_adv, y_adv = extents
+    w, h = size
+    x0, y0 = style.pos
+    width, height = style.size
+    pad = style.padding
+
+    halign, valign = align
+
+    # horizontal align
+    ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
+    # vertical align
+    ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
+
+    if outside:
+        if halign == ALIGN_LEFT:
+            x = -w - pad.left
+        elif halign == ALIGN_CENTER:
+            x = (width - w) / 2
+        elif halign == ALIGN_RIGHT:
+            x = width + pad.right
+        else:
+            assert False
+
+        if valign == ALIGN_TOP:
+            y = -h - pad.top
+        elif valign == ALIGN_MIDDLE:
+            y = (height - h) / 2
+        elif valign == ALIGN_BOTTOM:
+            y = height - h + pad.bottom
+        else:
+            assert False
+    else:
+        if halign == ALIGN_LEFT:
+            x = pad.left
+        elif halign == ALIGN_CENTER:
+            x = (width - w) / 2 + pad.left - pad.right
+        elif halign == ALIGN_RIGHT:
+            x = width - w - pad.right
+        else:
+            assert False
+
+        if valign == ALIGN_TOP:
+            y = h + pad.top
+        elif valign == ALIGN_MIDDLE:
+            y = (height - h) / 2
+        elif valign == ALIGN_BOTTOM:
+            y = height - h - pad.bottom
+        else:
+            assert False
+    return x + x0, y + y0
+
+
+
 def text_pos_at_line(style, p1, p2):
     """
     Calculate position of the text relative to a line defined by points
@@ -372,6 +429,17 @@ def text_pos_at_line(style, p1, p2):
     return x, y
 
 
+def draw_text(cr, n, txt, font=FONT, shift=(0, 0), align=(0, -1), outside=False):
+    size = text_size(cr, txt, font)
+    x, y = text_pos_at_box(n.style, size, align=align, outside=outside)
+    cr.save()
+    cr.move_to(x, y + shift[1])
+    set_font(cr, font)
+    cr.show_text(txt)
+    cr.restore()
+
+    return size
+
 
 
 def fmts(stereotypes):
@@ -432,7 +500,7 @@ class CairoRenderer(GenericASTTraversal):
     def n_element(self, n):
         pos = x, y = n.style.pos
         size = width, height = n.style.size
-        p = n.style.padding
+        pad = n.style.padding
 
         cr = self.cr
         cr.save()
@@ -441,21 +509,10 @@ class CairoRenderer(GenericASTTraversal):
         else:
             cr.rectangle(x, y, width, height)
 
-        def c(txt, shift, font):
-            cr.save()
-            w, h = text_size(cr, txt, font)
-            cr.move_to(x + (width - w) / 2.0, y + h + shift)
-            set_font(cr, font)
-            cr.show_text(txt)
-            cr.stroke()
-            cr.restore()
-            return h + shift
-
-        shift = p.top
+        shift = 0
         if n.stereotypes:
-            shift = c(fmts(n.stereotypes), shift, FONT)
-            shift += 4
-        c(n.name, shift, FONT_NAME)
+            shift += draw_text(cr, n, fmts(n.stereotypes), shift=(0, shift))[1] + 4
+        draw_text(cr, n, n.name, FONT_NAME, shift=(0, shift))
 
         cr.stroke()
         cr.restore()
@@ -477,6 +534,8 @@ class CairoRenderer(GenericASTTraversal):
             cr.arc(x + 14, y + 14, 10, 0, pi * 2.0)
         cr.restore()
         cr.stroke()
+
+        draw_text(cr, n, n.name, font=FONT_NAME, align=(0, 1), outside=True)
 
 
     def n_generalization(self, n):
