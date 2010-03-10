@@ -83,7 +83,6 @@ class FromGVConverter(GenericASTTraversal):
         dw, dh = self.size
         p = gv.getv(gn, 'pos').split()
         n.style.edges = tuple(Pos(float(t.split(',')[0]), dh - float(t.split(',')[1])) for t in p)
-        n.style.edges = tuple(reversed(n.style.edges))
 
     n_generalization = n_association = n_dependency
 
@@ -125,9 +124,9 @@ class GVGraph(GenericASTTraversal):
         self.gv.setv(g, 'clusterrank', 'local')
         self.gv.setv(g, 'nodesep', str(50 / 72.0))
         if self.vertical:
-            self.gv.setv(g, 'rankdir', 'BT')
+            self.gv.setv(g, 'rankdir', 'TB')
         else:
-            self.gv.setv(g, 'rankdir', 'RL')
+            self.gv.setv(g, 'rankdir', 'LR')
         n.data['gv'] = g
 
 

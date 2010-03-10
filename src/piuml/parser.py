@@ -118,7 +118,7 @@ class Edge(Node):
      head
         Head node. 
     """
-    def __init__(self, type, element, head, tail, name='', data=[]):
+    def __init__(self, type, element, tail, head, name='', data=[]):
         super(Edge, self).__init__(type, element, name, data)
         self.tail = tail
         self.head = head
@@ -451,11 +451,9 @@ class piUMLParser(GenericParser):
         if args[0].type == 'ID':
             id = args[0].value
             iface = args[1]
-            line = 'left'
         else:
             iface = args[0]
             id = args[1].value
-            line = 'right'
 
         # truth matrix for dependency type
         tmatrix = {
@@ -473,6 +471,7 @@ class piUMLParser(GenericParser):
         # link dependency and interface
         n.data['supplier'] = iface
         iface.data['dependency'] = n
+        print iface.name, n.head is iface
         return n
         
 

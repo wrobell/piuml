@@ -527,7 +527,7 @@ class CairoRenderer(GenericASTTraversal):
         cr.save()
         if is_usage:
             angle = pi / 2.0
-            if dep.head is n:
+            if dep.tail is n:
                 angle = -angle
             cr.arc(x + 14, y + 14, 14, angle, pi + angle)
         else:
