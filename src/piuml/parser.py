@@ -437,9 +437,11 @@ class piUMLParser(GenericParser):
         if args[0].type == 'ID':
             id = args[0].value
             iface = args[2]
+            line = 'left'
         else:
             iface = args[0]
             id = args[2].value
+            line = 'right'
 
         # truth matrix for stereotype and supplier
         el = self.nodes[id]
@@ -455,6 +457,7 @@ class piUMLParser(GenericParser):
 
         n = self._line('dependency', args, stereotypes=[s])
         n.data['supplier'] = iface
+        iface.data['line'] = line
         return n
         
 
