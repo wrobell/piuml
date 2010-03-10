@@ -136,7 +136,8 @@ def name_dequote(n):
     return n
 
 
-ELEMENTS = 'class', 'node', 'device', 'component', 'artifact'
+ELEMENTS = ('artifact', 'class', 'component', 'device', 'interface',
+        'node')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
@@ -256,6 +257,7 @@ class piUMLParser(GenericParser):
             'device': 'device',
             'component': 'component',
             'artifact': 'artifact',
+            'interface': 'interface',
         }
         self._trim(args)
 
