@@ -254,6 +254,7 @@ class piUMLParser(GenericParser):
         expr ::= association
         expr ::= generalization
         expr ::= dependency
+        expr ::= fiface
         expr ::= fifacedep
         expr ::= comment
         expr ::= empty
@@ -318,13 +319,26 @@ class piUMLParser(GenericParser):
 
     def p_fiface(self, args):
         """
-        fiface ::= FIFACE SPACE NAME
+        nfiface ::= FIFACE SPACE NAME
+        nfiface ::= NAME SPACE FIFACE
+        fiface ::= FIFACE SPACE ID SPACE NAME
         """
         self._trim(args)
-        dt = args[0].value
-        name = args[1].value
+        if len(args) == 2:
+            id = None
+            dt = args[1].value
+            name = args[0].value
+            if args[0].type == 'FIFACE':
+                dt, name = name, dt
+        else:
+            dt = args[0].value
+            id = args[1].value
+            name = args[2].value
         n = Node('ielement', 'fiface', name)
-        n.data['type'] = 'provided' if dt == 'o)' else 'required'
+        if id:
+            n.id = id
+        n.data['symbol'] = dt
+        n.data['dependency'] = None
         self.nodes[n.id] = n
 
         self._set_parent('', n)
@@ -351,7 +365,7 @@ class piUMLParser(GenericParser):
                 del args[t - i -1]
 
 
-    def _line(self, element, args, stereotypes=None, data=None):
+    def _line(self, element, args, stereotypes=None, data=None, hindex=2):
 
         if data is None:
             data = {}
@@ -359,7 +373,7 @@ class piUMLParser(GenericParser):
             stereotypes = ()
 
         tail = args[0] if isinstance(args[0], Node) else self.nodes[args[0].value]
-        head = args[2] if isinstance(args[2], Node) else self.nodes[args[2].value]
+        head = args[hindex] if isinstance(args[hindex], Node) else self.nodes[args[hindex].value]
 
         n = Edge(element, element, tail, head, data=data)
 
@@ -428,36 +442,37 @@ class piUMLParser(GenericParser):
 
     def p_fifacedep(self, args):
         """
-        fifacedep ::= ID SPACE DEPENDENCY SPACE fiface
-        fifacedep ::= fiface SPACE DEPENDENCY SPACE ID
+        fifacedep ::= ID SPACE nfiface
+        fifacedep ::= nfiface SPACE ID
         """
         self._trim(args)
 #        print 'iface:', args[0].value, args[1].value, args[2].value
 
         if args[0].type == 'ID':
             id = args[0].value
-            iface = args[2]
+            iface = args[1]
             line = 'left'
         else:
             iface = args[0]
-            id = args[2].value
+            id = args[1].value
             line = 'right'
 
-        # truth matrix for stereotype and supplier
-        el = self.nodes[id]
+        # truth matrix for dependency type
         tmatrix = {
-            (True, 'provided'): 'realize',    # id -> o)
-            (True, 'required'): 'use',        # id -> (o
-            (False, 'provided'): 'use',       # o) <- id
-            (False, 'required'): 'realize',   # (o <- id
+            (True,  'o)'): 'realize',   # id--o)
+            (True,  '(o'): 'use',       # id--(o
+            (False, 'o)'): 'use',       # o)--id
+            (False, '(o'): 'realize',   # (o--id
         }
         
         tid = args[0].type == 'ID'
-        s = tmatrix[(tid, iface.data['type'])]
+        s = tmatrix[(tid, iface.data['symbol'])]
 
-        n = self._line('dependency', args, stereotypes=[s])
+        n = self._line('dependency', args, stereotypes=[s], hindex=1)
+
+        # link dependency and interface
         n.data['supplier'] = iface
-        iface.data['line'] = line
+        iface.data['dependency'] = n
         return n
         
 

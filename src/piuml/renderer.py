@@ -520,15 +520,15 @@ class CairoRenderer(GenericASTTraversal):
 
     def n_ielement(self, n):
         cr = self.cr
-        required = n.data['type'] == 'required'
         x, y = n.style.pos
-
-        angle = pi / 2.0
-        if n.data['line'] == 'right':
-            angle = -angle
+        dep = n.data['dependency']
+        is_usage = 'use' in dep.stereotypes
 
         cr.save()
-        if required:
+        if is_usage:
+            angle = pi / 2.0
+            if dep.head is n:
+                angle = -angle
             cr.arc(x + 14, y + 14, 14, angle, pi + angle)
         else:
             cr.arc(x + 14, y + 14, 10, 0, pi * 2.0)
