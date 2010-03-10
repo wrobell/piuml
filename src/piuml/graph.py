@@ -63,7 +63,7 @@ class FromGVConverter(GenericASTTraversal):
         gv = self.gv
         gn = n.data['gv']
         if len(n) == 0:
-            return float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0
+            return Size(float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0)
         else:
             x, y, w, h = map(float, gv.getv(gn, 'bb').split(','))
             return Size(w - x, h - y)
@@ -74,7 +74,6 @@ class FromGVConverter(GenericASTTraversal):
 
 
     def n_element(self, n):
-        #print n.name, 'qq', gv.getv(gn, 'pos')
         n.style.pos = self._get_pos(n)
         n.style.size = self._get_size(n)
 
@@ -150,6 +149,7 @@ class GVGraph(GenericASTTraversal):
         if len(n) == 0:
             id = n.id
             gn = gv.node(g, id)
+            gv.setv(gn, 'fixedsize', 'true')
         else:
             id = 'cluster_' + n.id
             gn = gv.graph(g, id)
@@ -169,6 +169,7 @@ class GVGraph(GenericASTTraversal):
 
         gv.setv(gn, 'id', id)
         gv.setv(gn, 'shape', 'box')
+        gv.setv(gn, 'fixedsize', 'true')
         n.data['gv'] = gn
 
 

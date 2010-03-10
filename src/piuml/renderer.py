@@ -408,7 +408,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
         n.style.size = Size(width, height)
 
     def n_ielement(self, n):
-        n.style.size = Size(14, 14)
+        n.style.size = Size(28, 28)
 
 
 
@@ -460,6 +460,7 @@ class CairoRenderer(GenericASTTraversal):
         cr.stroke()
         cr.restore()
 
+
     def n_ielement(self, n):
         cr = self.cr
         required = n.data['type'] == 'required'
@@ -467,10 +468,9 @@ class CairoRenderer(GenericASTTraversal):
         angle = pi / 2.0
         cr.save()
         if required:
-            cr.arc_negative(x, y, 14, angle, pi + angle)
+            cr.arc(x + 14, y + 14, 14, angle, pi + angle)
         else:
-            cr.move_to(x + 10, y)
-            cr.arc(x, y, 10, 0, pi*2)
+            cr.arc(x + 14, y + 14, 10, 0, pi * 2.0)
         cr.restore()
         cr.stroke()
 
