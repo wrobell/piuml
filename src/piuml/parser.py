@@ -96,6 +96,8 @@ class Node(list):
         navigability information.
     """
     def __init__(self, type, element, name='', data=None):
+        super(Node, self).__init__()
+        self.parent = None
         self.type = type
         self.element = element
         self.id = uuid()
@@ -138,20 +140,19 @@ ELEMENTS = 'class', 'node', 'device', 'component', 'artifact'
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
-RE_ELEMENT = r'(%s)' % '|'.join(ELEMENTS)
+RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 
 TOKENS = {
-    'INDENT': r'^\.[ ]+',
     'ID': RE_ID,
     'NAME': (RE_NAME, name_dequote),
     'COMMENT': RE_COMMENT,
     'ELEMENT': RE_ELEMENT,
-    'ASSOCIATION': '[xO*<]?==[xO*>]?',
-    'DEPENDENCY': '<[ur]?-|-[ur]?>',
-    'GENERALIZATION': '(<=)|(=>)',
-    'STEREOTYPE': '<<\w+>>',
-    'SPACE': '\s+',
+    'ASSOCIATION': r'[xO*<]?==[xO*>]?',
+    'DEPENDENCY': r'<[ur]?-|-[ur]?>',
+    'GENERALIZATION': r'(<=)|(=>)',
+    'STEREOTYPE': r'<<\w+>>',
+    'SPACE': r'[ 	]+',
 }
 
 
@@ -210,13 +211,23 @@ class piUMLScanner(GenericScanner):
 class piUMLParser(GenericParser):
     """
     piUML parser.
+
+    :Attributes:
+     ast
+        Root node of the parsed tree.
+     nodes
+        All nodes stored by their id.
+     _istack
+        Element grouping stack.
     """
     def __init__(self):
         GenericParser.__init__(self, 'expr')
-        self.ast = self.parent = Node('diagram', 'diagram')
-        self.last = self.parent
-        self.parent.indent = ''
+        self.ast = Node('diagram', 'diagram')
         self.nodes = {}
+
+        # grouping with indentation is supported with stack structure
+        self._istack = []
+        self._istack.append((0, self.ast))
 
 
     def error(self, token):
@@ -240,40 +251,51 @@ class piUMLParser(GenericParser):
     def p_element(self, args):
         """
         element ::= ELEMENT SPACE ID SPACE NAME
-        element ::= INDENT ELEMENT SPACE ID SPACE NAME
         """
         STEREOTYPES = {
             'device': 'device',
             'component': 'component',
             'artifact': 'artifact',
         }
-        if len(args) == 6:
-            indent = args[0].value
-            del args[0]
-        else:
-            indent = ''
-        element = args[0].value
-        id = args[2].value
-        name = args[4].value
+        self._trim(args)
+
+        element = args[0].value.strip()
+        indent = args[0].value.split(element)[0]
+        id = args[1].value
+        name = args[2].value
         stereotype = STEREOTYPES.get(element)
 
         n = Node('element', element, name=name)
         n.id = id
         if stereotype:
             n.stereotypes.append(stereotype)
-        n.indent = indent
 
-        if len(n.indent) > len(self.last.indent):
-            self.parent = self.last
-        elif len(n.indent) < len(self.last.indent):
-            self.parent = self.parent.parent
-        #elif len(n.indent) == len(self.last.indent): pass
-
-        self.parent.append(n)
-        n.parent = self.parent
-
-        self.last = n
         self.nodes[id] = n
+
+        # identify diagram level on which grouping happens
+        level = len(indent)
+
+        # find and set parent using the indentation stack
+        istack =  self._istack
+        i = istack[-1][0]
+        if i == level:
+            # last node cannot group anymore, replace it with current one
+            if len(istack) > 1:
+                istack.pop()
+            istack.append((level, n))
+        elif i < level:
+            istack.append((level, n))
+        else: # i > level
+            while i > level:
+                i = istack.pop()[0]
+            if i < level:
+                global filename, lineno
+                raise ParseError('Inconsistent indentation', filename, lineno)
+            istack.append((level, n))
+
+        n.parent = parent = istack[-2][1]
+        parent.append(n)
+
         return n
 
 
@@ -302,7 +324,7 @@ class piUMLParser(GenericParser):
 
         n.stereotypes.extend(stereotypes)
 
-        self.parent.append(n)
+        self.ast.append(n)
         self.nodes[id] = n
         return n
 
@@ -385,13 +407,16 @@ def load(f):
     """
     global lineno, filename
     lineno = 0
-    filename = f.name
+    if hasattr(f, 'name'):
+        filename = f.name
+    else:
+        filename = '-'
 
     scanner = piUMLScanner()
     parser = piUMLParser()
 
     for line in f:
-        line = line.strip()
+        line = line.rstrip()
         lineno += 1
         if line:
             tokens = scanner.tokenize(line)
