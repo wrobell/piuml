@@ -5,7 +5,7 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.parser import load, ParseError
+from piuml.parser import load, ParseError, st_parse
 
 
 def unwind(node):
@@ -84,4 +84,34 @@ component c2 "B"
   class cls2 "B1"
 """)
         self.assertRaises(ParseError, load, f)
+
+
+
+class StereotypesTestCase(unittest.TestCase):
+    def test_single(self):
+        """Test single stereotype parsing
+        """
+        self.assertEquals(('test',), st_parse('<<test>>'))
+        self.assertEquals(('test',), st_parse('<< test >>'))
+
+
+    def test_multiple(self):
+        """Test multiple stereotypes parsing
+        """
+        self.assertEquals(('t1', 't2'), st_parse('<<t1, t2>>'))
+        self.assertEquals(('t1', 't2'), st_parse('<<t1,t2>>'))
+        self.assertEquals(('t1', 't2'), st_parse('<< t1,t2>>'))
+        self.assertEquals(('t1', 't2'), st_parse('<< t1   ,   t2   >>'))
+
+
+    def test_st_parsing(self):
+        """Test stereotype parsing
+        """
+        f = StringIO('component a "A" <<test>>')
+        ast = load(f)
+        self.assertEquals(['component', 'test'], ast[0].stereotypes)
+
+        f = StringIO('component a "A" <<t1, t2>>')
+        ast = load(f)
+        self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
 

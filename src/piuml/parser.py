@@ -136,12 +136,21 @@ def name_dequote(n):
     return n
 
 
+def st_parse(stereotype):
+    """
+    Parse stereotypes from a string.
+    """
+    stereotype = stereotype.replace('<<', '').replace('>>', '')
+    return tuple(s.strip() for s in stereotype.split(','))
+
+
 ELEMENTS = 'class', 'node', 'device', 'component', 'artifact'
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
+RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 
 TOKENS = {
     'ID': RE_ID,
@@ -151,7 +160,7 @@ TOKENS = {
     'ASSOCIATION': r'[xO*<]?==[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
-    'STEREOTYPE': r'<<\w+>>',
+    'STEREOTYPE': RE_STEREOTYPE,
     'SPACE': r'[ 	]+',
 }
 
@@ -238,6 +247,7 @@ class piUMLParser(GenericParser):
     def p_expr(self, args):
         """
         expr ::= expr comment
+        expr ::= selement
         expr ::= element
         expr ::= association
         expr ::= generalization
@@ -296,6 +306,15 @@ class piUMLParser(GenericParser):
         n.parent = parent = istack[-2][1]
         parent.append(n)
 
+        return n
+
+
+    def p_selement(self, args):
+        """
+        selement ::= element SPACE STEREOTYPE
+        """
+        n = args[0]
+        n.stereotypes.extend(st_parse(args[2].value))
         return n
 
 
