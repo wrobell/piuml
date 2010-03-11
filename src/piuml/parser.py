@@ -150,7 +150,7 @@ ELEMENTS = ('artifact', 'class', 'component', 'device', 'interface',
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
-RE_ELEMENT = r'^[ ]*%s' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
+RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 
@@ -376,7 +376,7 @@ class piUMLParser(GenericParser):
 
 
     def _get_ends(self, args):
-        nodes = self._nodes
+        nodes = self.nodes
         head = nodes[args[0].value]
         tail = nodes[args[2].value]
         return head, tail
