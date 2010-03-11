@@ -468,17 +468,20 @@ class piUMLParser(GenericParser):
             if args[0].type == 'ID':
                 n = self.nodes[args[0].value]
                 assembly = args[1]
+                tail = n
+                head = assembly.data['interface']
             else:
                 assembly = args[0]
                 n = self.nodes[args[1].value]
+                tail = assembly.data['interface']
+                head = n
 
             if n.element != 'component':
                 global filename, lineno
                 raise ParseError('Assembly allowed only between components', filename, lineno)
 
-            iface = assembly.data['interface']
-            self._line('connector', n, iface)
-
+            self._line('connector', tail, head)
+            return assembly
 
 
     def p_fdifacedep(self, args):
