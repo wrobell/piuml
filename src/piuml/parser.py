@@ -144,12 +144,13 @@ def st_parse(stereotype):
     return tuple(s.strip() for s in stereotype.split(','))
 
 
+# elements
 ELEMENTS = ('artifact', 'class', 'component', 'device', 'interface',
         'node')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
-RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(ELEMENTS)
+RE_ELEMENT = r'^[ ]*%s' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 
@@ -159,10 +160,10 @@ TOKENS = {
     'STEREOTYPE': RE_STEREOTYPE,
     'COMMENT': RE_COMMENT,
     'ELEMENT': RE_ELEMENT,
+    'FDIFACE': r'o\)|\(o', # folded interface
     'ASSOCIATION': r'[xO*<]?==[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
-    'FIFACE': r'(o\))|(\(o)',
     'SPACE': r'[ 	]+',
 }
 
@@ -254,8 +255,8 @@ class piUMLParser(GenericParser):
         expr ::= association
         expr ::= generalization
         expr ::= dependency
-        expr ::= fiface
-        expr ::= fifacedep
+        expr ::= fdifacedep
+        expr ::= assembly
         expr ::= comment
         expr ::= empty
         """
@@ -317,28 +318,21 @@ class piUMLParser(GenericParser):
         parent.append(n)
 
 
-    def p_fiface(self, args):
+    def p_fdiface(self, args):
         """
-        nfiface ::= FIFACE SPACE NAME
-        nfiface ::= NAME SPACE FIFACE
-        fiface ::= FIFACE SPACE ID SPACE NAME
+        fdiface ::= FDIFACE SPACE NAME
+        fdiface ::= NAME SPACE FDIFACE
         """
         self._trim(args)
-        if len(args) == 2:
-            id = None
-            dt = args[1].value
-            name = args[0].value
-            if args[0].type == 'FIFACE':
-                dt, name = name, dt
-        else:
-            dt = args[0].value
-            id = args[1].value
-            name = args[2].value
-        n = Node('ielement', 'fiface', name)
-        if id:
-            n.id = id
-        n.data['symbol'] = dt
+        id = None
+        name = args[0].value
+        symbol = args[1].value
+        if args[0].type == 'FDIFACE':
+            symbol, name = name, symbol
+        n = Node('ielement', 'fdiface', name)
+        n.data['symbol'] = symbol
         n.data['dependency'] = None
+        n.data['assembly'] = None
         self.nodes[n.id] = n
 
         self._set_parent('', n)
@@ -365,15 +359,12 @@ class piUMLParser(GenericParser):
                 del args[t - i -1]
 
 
-    def _line(self, element, args, stereotypes=None, data=None, hindex=2):
+    def _line(self, element, tail, head, stereotypes=None, data=None):
 
         if data is None:
             data = {}
         if stereotypes is None:
             stereotypes = ()
-
-        tail = args[0] if isinstance(args[0], Node) else self.nodes[args[0].value]
-        head = args[hindex] if isinstance(args[hindex], Node) else self.nodes[args[hindex].value]
 
         n = Edge(element, element, tail, head, data=data)
 
@@ -382,6 +373,13 @@ class piUMLParser(GenericParser):
         self.ast.append(n)
         self.nodes[id] = n
         return n
+
+
+    def _get_ends(self, args):
+        nodes = self._nodes
+        head = nodes[args[0].value]
+        tail = nodes[args[2].value]
+        return head, tail
 
 
     def p_association(self, args):
@@ -402,7 +400,7 @@ class piUMLParser(GenericParser):
             'tail': AEND[v[0]],
             'head': AEND[v[-1]],
         }
-        return self._line('association', args, data=data)
+        return self._line('association', *self._get_ends(args), data=data)
 
 
     def p_dependency(self, args):
@@ -424,7 +422,7 @@ class piUMLParser(GenericParser):
             stereotypes = []
         if len(args) == 4:
             stereotypes.append(args[3].value)
-        n = self._line('dependency', args, stereotypes=stereotypes)
+        n = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
         n.data['supplier'] = n.tail if v[0] == '<' else n.head
         return n
 
@@ -435,15 +433,58 @@ class piUMLParser(GenericParser):
         """
         self._trim(args)
         v = args[1].value
-        n = self._line('generalization', args)
+        n = self._line('generalization', *self._get_ends(args))
         n.data['super'] = n.tail if v == '<=' else n.head
         return n
 
 
-    def p_fifacedep(self, args):
+    def p_assembly(self, args):
         """
-        fifacedep ::= ID SPACE nfiface
-        fifacedep ::= nfiface SPACE ID
+        assembly ::= ID SPACE fdiface SPACE ID
+        assembly ::= ID SPACE assembly
+        assembly ::= assembly SPACE ID
+        """
+        self._trim(args)
+
+        if len(args) == 3:
+            id1 = args[0].value
+            iface = args[1]
+            id2 = args[2].value
+
+            n1 = self.nodes[id1]
+            n2 = self.nodes[id2]
+
+            if n1.element != 'component' and n2.element != 'component':
+                global filename, lineno
+                raise ParseError('Assembly allowed only between components', filename, lineno)
+
+            self._line('connector', n1, iface)
+            self._line('connector', iface, n2)
+            n = Node('connector', 'assembly')
+            n.data['interface'] = iface
+            iface.data['assembly'] = n
+            return n
+        else:
+            if args[0].type == 'ID':
+                n = self.nodes[args[0].value]
+                assembly = args[1]
+            else:
+                assembly = args[0]
+                n = self.nodes[args[1].value]
+
+            if n.element != 'component':
+                global filename, lineno
+                raise ParseError('Assembly allowed only between components', filename, lineno)
+
+            iface = assembly.data['interface']
+            self._line('connector', n, iface)
+
+
+
+    def p_fdifacedep(self, args):
+        """
+        fdifacedep ::= ID SPACE fdiface
+        fdifacedep ::= fdiface SPACE ID
         """
         self._trim(args)
 #        print 'iface:', args[0].value, args[1].value, args[2].value
@@ -451,9 +492,13 @@ class piUMLParser(GenericParser):
         if args[0].type == 'ID':
             id = args[0].value
             iface = args[1]
+            tail = iface
+            head = self.nodes[id]
         else:
             iface = args[0]
             id = args[1].value
+            tail = self.nodes[id]
+            head = iface
 
         # truth matrix for dependency type
         tmatrix = {
@@ -466,12 +511,11 @@ class piUMLParser(GenericParser):
         tid = args[0].type == 'ID'
         s = tmatrix[(tid, iface.data['symbol'])]
 
-        n = self._line('dependency', args, stereotypes=[s], hindex=1)
+        n = self._line('dependency', tail, head, stereotypes=[s])
 
         # link dependency and interface
         n.data['supplier'] = iface
         iface.data['dependency'] = n
-        print iface.name, n.head is iface
         return n
         
 

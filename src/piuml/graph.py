@@ -28,7 +28,7 @@ class ToGVConverter(GenericASTTraversal):
         gn = n.data['gv']
         self.gv.setv(gn, 'minlen', str(150.0 / 72))
 
-    n_generalization = n_association = n_dependency
+    n_connector = n_generalization = n_association = n_dependency
 
     n_ielement = n_element
 
@@ -77,6 +77,8 @@ class FromGVConverter(GenericASTTraversal):
         n.style.pos = self._get_pos(n)
         n.style.size = self._get_size(n)
 
+    def n_assembly(self, n): pass
+
     def n_dependency(self, n):
         gn = n.data['gv']
         gv = self.gv
@@ -84,7 +86,7 @@ class FromGVConverter(GenericASTTraversal):
         p = gv.getv(gn, 'pos').split()
         n.style.edges = tuple(Pos(float(t.split(',')[0]), dh - float(t.split(',')[1])) for t in p)
 
-    n_generalization = n_association = n_dependency
+    n_connector = n_generalization = n_association = n_dependency
 
     n_ielement = n_element
 
@@ -172,15 +174,21 @@ class GVGraph(GenericASTTraversal):
         n.data['gv'] = gn
 
 
-    def get_edge(self, node):
+    def get_edge(self, node, tail=None, head=None):
 
-        t = node.tail
-        if len(node.tail) > 0:
-            t = node.tail[0]
+        if tail is None:
+            t = node.tail
+            if len(node.tail) > 0:
+                t = node.tail[0]
+        else:
+            t = tail
 
-        h = node.head
-        if len(node.head) > 0:
-            h = node.head[0]
+        if head is None:
+            h = node.head
+            if len(node.head) > 0:
+                h = node.head[0]
+        else:
+            h = head
 
         gv = self.gv
         g = self.g
@@ -207,7 +215,11 @@ class GVGraph(GenericASTTraversal):
         e = self.get_edge(n)
         n.data['gv'] = e
 
-    n_generalization = n_association = n_dependency
+
+    def n_assembly(self, n):
+        pass
+
+    n_connector = n_generalization = n_association = n_dependency
 
     def n_comment(self, node):
         """

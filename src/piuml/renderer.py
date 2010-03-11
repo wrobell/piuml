@@ -521,16 +521,23 @@ class CairoRenderer(GenericASTTraversal):
     def n_ielement(self, n):
         cr = self.cr
         x, y = n.style.pos
-        dep = n.data['dependency']
-        is_usage = 'use' in dep.stereotypes
+        angle = pi / 2.0
 
-        cr.save()
-        if is_usage:
-            angle = pi / 2.0
+        is_assembly = n.data['assembly'] is not None
+        if is_assembly:
+            is_usage = False
+            if n.data['symbol'] == 'o)':
+                angle = -angle
+        else:
+            dep = n.data['dependency']
+            is_usage = 'use' in dep.stereotypes
             if dep.tail is n:
                 angle = -angle
+
+        cr.save()
+        if is_usage or is_assembly:
             cr.arc(x + 14, y + 14, 14, angle, pi + angle)
-        else:
+        if not is_usage or is_assembly:
             cr.arc(x + 14, y + 14, 10, 0, pi * 2.0)
         cr.restore()
         cr.stroke()
@@ -538,8 +545,11 @@ class CairoRenderer(GenericASTTraversal):
         draw_text(cr, n, n.name, font=FONT_NAME, align=(0, 1), outside=True)
 
 
+    def n_connector(self, n):
+        self._draw_line(n)
+
+
     def n_generalization(self, n):
-        edges = n.style.edges
         if n.data['super'] is n.head:
             self._draw_line(n, draw_head=draw_triangle)
         else:
