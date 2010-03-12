@@ -86,6 +86,7 @@ class GVGraph(GenericASTTraversal):
         self.g = g = gv.digraph('G')
         gv.setv(g, 'compound', 'true')
         gv.setv(g, 'clusterrank', 'local')
+        gv.setv(g, 'splines', 'false')
         gv.setv(g, 'nodesep', str(50 / 72.0))
         if self.vertical:
             gv.setv(g, 'rankdir', 'TB')
