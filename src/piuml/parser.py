@@ -333,6 +333,7 @@ class piUMLParser(GenericParser):
         n.data['symbol'] = symbol
         n.data['dependency'] = None
         n.data['assembly'] = None
+        n.data['lines'] = []
         self.nodes[n.id] = n
 
         self._set_parent('', n)
@@ -458,29 +459,31 @@ class piUMLParser(GenericParser):
                 global filename, lineno
                 raise ParseError('Assembly allowed only between components', filename, lineno)
 
-            self._line('connector', n1, iface)
-            self._line('connector', iface, n2)
+            c1 = self._line('connector', n1, iface)
+            c2 = self._line('connector', iface, n2)
             n = Node('connector', 'assembly')
             n.data['interface'] = iface
             iface.data['assembly'] = n
+            iface.data['lines'].extend((c1, c2))
             return n
         else:
             if args[0].type == 'ID':
                 n = self.nodes[args[0].value]
                 assembly = args[1]
                 tail = n
-                head = assembly.data['interface']
+                iface = head = assembly.data['interface']
             else:
                 assembly = args[0]
                 n = self.nodes[args[1].value]
-                tail = assembly.data['interface']
+                iface = tail = assembly.data['interface']
                 head = n
 
             if n.element != 'component':
                 global filename, lineno
                 raise ParseError('Assembly allowed only between components', filename, lineno)
 
-            self._line('connector', tail, head)
+            c = self._line('connector', tail, head)
+            iface.data['lines'].append(c)
             return assembly
 
 
@@ -519,6 +522,7 @@ class piUMLParser(GenericParser):
         # link dependency and interface
         n.data['supplier'] = iface
         iface.data['dependency'] = n
+        iface.data['lines'].append(n)
         return n
         
 
