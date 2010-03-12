@@ -94,10 +94,6 @@ class GVGraph(GenericASTTraversal):
         n.data['gv'] = g
 
 
-#    def n_diagram_exit(self, node):
-#        self._data.append('}')
-
-
     def n_element(self, n):
         """
         Generate UML element.
@@ -136,21 +132,13 @@ class GVGraph(GenericASTTraversal):
 
     def get_edge(self, node, tail=None, head=None):
 
-        if tail is None:
-            t = node.tail
-            if len(node.tail) > 0:
-                t = node.tail[0]
-        else:
-            t = tail
+        h = head if head \
+                else node.head if len(node.head) == 0 \
+                else node.head[0]
 
-        if head is None:
-            h = node.head
-            if len(node.head) > 0:
-                h = node.head[0]
-        else:
-            h = head
-
-        g = self.g
+        t = tail if tail \
+                else node.tail if len(node.tail) == 0 \
+                else node.tail[-1]
 
         gt = t.data['gv']
         gh = h.data['gv']
