@@ -124,6 +124,13 @@ class Edge(Node):
         self.head = head
 
 
+def unwind(node):
+    yield node
+    for i in node:
+        for j in unwind(i):
+            yield j
+
+
 def name_dequote(n):
     """
     Remove quotation from a string.

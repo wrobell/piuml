@@ -1,52 +1,24 @@
 from spark import GenericASTTraversal
+import gv
 
-from piuml.parser import Pos, Size
+from piuml.parser import Pos, Size, Edge, unwind
 
-class ToGVConverter(GenericASTTraversal):
-    def __init__(self, g):
+
+class GVGraph(GenericASTTraversal):
+    """
+    Generate Graphviz graph structure.
+
+    Graph information is injected into Node.data['gv'].
+    """
+    def __init__(self):
         GenericASTTraversal.__init__(self, None)
-        self.gv = __import__('gv')
-        self.g = g
-
-    def convert(self, ast):
-        self.preorder(ast)
-
-    def n_element(self, n):
-        gn = n.data['gv']
-        if len(n) == 0:
-            w, h = (str(p / 72.0) for p in n.style.size)
-            self.gv.setv(gn, 'width', w)
-            self.gv.setv(gn, 'height', h)
-        else:
-            w, h = n.style.size
-            bottom = n.style.padding.bottom
-            # a hack for cluster label and node alignment
-            self.gv.setv(gn, 'fontsize', str((h - bottom)))
-            self.gv.setv(gn, 'label', 'A')
-
-    def n_dependency(self, n):
-        gn = n.data['gv']
-        self.gv.setv(gn, 'minlen', str(150.0 / 72))
-
-    n_connector = n_generalization = n_association = n_dependency
-
-    n_ielement = n_element
-
-
-class FromGVConverter(GenericASTTraversal):
-    def __init__(self, g):
-        GenericASTTraversal.__init__(self, None)
-        self.gv = __import__('gv')
-        self.g = g
+        self.g = None
+        self.vertical = False
         self.size = Size(0, 0)
-
-    def convert(self, ast):
-        self.preorder(ast)
 
 
     def _get_pos(self, n):
         gn = n.data['gv']
-        gv = self.gv
         w, h = self._get_size(n)
         dw, dh = self.size
         if len(n) == 0:
@@ -60,7 +32,6 @@ class FromGVConverter(GenericASTTraversal):
 
 
     def _get_size(self, n):
-        gv = self.gv
         gn = n.data['gv']
         if len(n) == 0:
             return Size(float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0)
@@ -68,67 +39,58 @@ class FromGVConverter(GenericASTTraversal):
             x, y, w, h = map(float, gv.getv(gn, 'bb').split(','))
             return Size(w - x, h - y)
 
-    def n_diagram(self, n):
-        n.style.pos = Pos(0, 0)
-        self.size = n.style.size = self._get_size(n)
+    def _to_gv(self, ast):
+        for n in unwind(ast):
+            gn = n.data['gv']
+            if isinstance(n, Edge): # edges
+                gv.setv(gn, 'minlen', str(150.0 / 72))
+
+            elif len(n) == 0: # nodes
+                w, h = (str(p / 72.0) for p in n.style.size)
+                gv.setv(gn, 'width', w)
+                gv.setv(gn, 'height', h)
+
+            else: # clusters
+                w, h = n.style.size
+                bottom = n.style.padding.bottom
+                # a hack for cluster label and node alignment
+                gv.setv(gn, 'fontsize', str((h - bottom)))
+                gv.setv(gn, 'label', 'A')
 
 
-    def n_element(self, n):
-        n.style.pos = self._get_pos(n)
-        n.style.size = self._get_size(n)
+    def _from_gv(self, ast):
+        dw, dh = self.size = ast.style.size = self._get_size(ast)
 
-    def n_assembly(self, n): pass
+        for n in unwind(ast):
+            if isinstance(n, Edge):
+                gn = n.data['gv']
+                p = gv.getv(gn, 'pos').split()
+                n.style.edges = tuple(Pos(float(t.split(',')[0]), dh - float(t.split(',')[1])) for t in p)
+            else:
+                n.style.pos = self._get_pos(n)
+                n.style.size = self._get_size(n)
 
-    def n_dependency(self, n):
-        gn = n.data['gv']
-        gv = self.gv
-        dw, dh = self.size
-        p = gv.getv(gn, 'pos').split()
-        n.style.edges = tuple(Pos(float(t.split(',')[0]), dh - float(t.split(',')[1])) for t in p)
-
-    n_connector = n_generalization = n_association = n_dependency
-
-    n_ielement = n_element
-
-
-class GVGraph(GenericASTTraversal):
-    """
-    Generate Graphviz graph structure.
-
-    Graph information is injected into Node.data['gv'].
-    """
-    def __init__(self):
-        GenericASTTraversal.__init__(self, None)
-        self.gv = __import__('gv')
-        self.g = None
-        self.vertical = False
 
     def create(self, ast):
         self.preorder(ast)
 
+
     def layout(self, ast):
-        gv = self.gv
-        g = self.g
+        self._to_gv(ast)
+        gv.layout(self.g, 'dot')
+        gv.render(self.g, 'xdot')
+        self._from_gv(ast)
 
-        converter = ToGVConverter(g)
-        converter.convert(ast)
-
-        gv.layout(g, 'dot')
-        gv.render(g, 'xdot')
-        #gv.render(g, 'svg', 'a.svg')
-
-        converter = FromGVConverter(g)
-        converter.convert(ast)
 
     def n_diagram(self, n):
-        self.g = g = self.gv.digraph('G')
-        self.gv.setv(g, 'compound', 'true')
-        self.gv.setv(g, 'clusterrank', 'local')
-        self.gv.setv(g, 'nodesep', str(50 / 72.0))
+        self.g = g = gv.digraph('G')
+        gv.setv(g, 'compound', 'true')
+        gv.setv(g, 'clusterrank', 'local')
+        gv.setv(g, 'nodesep', str(50 / 72.0))
         if self.vertical:
-            self.gv.setv(g, 'rankdir', 'TB')
+            gv.setv(g, 'rankdir', 'TB')
         else:
-            self.gv.setv(g, 'rankdir', 'LR')
+            gv.setv(g, 'rankdir', 'LR')
         n.data['gv'] = g
 
 
@@ -142,7 +104,6 @@ class GVGraph(GenericASTTraversal):
         """
         global filename, lineno
         g = self.g
-        gv = self.gv
 
         if n.parent.type == 'element':
             g = n.parent.data['gv']
@@ -163,7 +124,6 @@ class GVGraph(GenericASTTraversal):
 
     def n_ielement(self, n):
         g = self.g
-        gv = self.gv
 
         id = n.id
         gn = gv.node(g, id)
@@ -190,7 +150,6 @@ class GVGraph(GenericASTTraversal):
         else:
             h = head
 
-        gv = self.gv
         g = self.g
 
         gt = t.data['gv']

@@ -5,14 +5,7 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.parser import load, ParseError, st_parse
-
-
-def unwind(node):
-    yield node
-    for i in node:
-        for j in unwind(i):
-            yield j
+from piuml.parser import load, ParseError, st_parse, unwind
 
 
 class GroupingTestCase(unittest.TestCase):
