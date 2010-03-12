@@ -565,7 +565,7 @@ class CairoRenderer(GenericASTTraversal):
         else:
             params['draw_tail'] = draw_tail_arrow
 
-        if supplier.element == 'fiface':
+        if supplier.element == 'fdiface':
             params = { 'show_st': False }
 
         self._draw_line(n, **params)
