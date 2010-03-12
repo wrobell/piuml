@@ -130,15 +130,12 @@ class GVGraph(GenericASTTraversal):
         n.data['gv'] = gn
 
 
-    def get_edge(self, node, tail=None, head=None):
-
-        h = head if head \
-                else node.head if len(node.head) == 0 \
-                else node.head[0]
-
-        t = tail if tail \
-                else node.tail if len(node.tail) == 0 \
-                else node.tail[-1]
+    def get_edge(self, edge):
+        # use edge's tail/head but if they are clusters, then use
+        # first/last grouped node; fixme: in case of subclusters we need to
+        # search deeper
+        t = edge.tail if len(edge.tail) == 0 else edge.tail[-1]
+        h = edge.head if len(edge.head) == 0 else edge.head[0]
 
         gt = t.data['gv']
         gh = h.data['gv']
@@ -147,12 +144,14 @@ class GVGraph(GenericASTTraversal):
         gv.setv(e, 'arrowtail', 'none')
         gv.setv(e, 'arrowhead', 'none')
 
-        if len(node.tail) > 0:
-            t = node.tail
+        # set cluster connection data for tail
+        if len(edge.tail) > 0:
+            t = edge.tail
             gv.setv(e, 'ltail', gv.getv(t.data['gv'], 'id'))
 
-        if len(node.head) > 0:
-            h = node.head
+        # set cluster connection data for head
+        if len(edge.head) > 0:
+            h = edge.head
             gv.setv(e, 'lhead', gv.getv(h.data['gv'], 'id'))
 
         return e 
