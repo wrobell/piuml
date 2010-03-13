@@ -495,12 +495,12 @@ class CairoDimensionCalculator(GenericASTTraversal):
             h += pad.top * 2
             sizes.append(Size(w, h))
 
-
         width = max(w for w, h in sizes)
         height = sum(h for w, h in sizes) * LINE_STRETCH
         width += pad.left + pad.right
         height += pad.top + pad.bottom
         n.style.size = Size(width, max(height, 40))
+
 
     def n_ielement(self, n):
         n.style.size = Size(28, 28)

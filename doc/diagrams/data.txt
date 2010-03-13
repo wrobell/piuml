@@ -20,17 +20,17 @@ class style "Style"
     : margin: Area
     : inner: Area
 
-class a "Area" <<tuple>>
+class a "Area: tuple"
     : top: double
     : right: double
     : bottom: double
     : left: double
 
-class p "Pos" <<tuple>>
+class p "Pos: tuple"
     : x: double
     : y: double
 
-class s "Size" <<tuple>>
+class s "Size: tuple"
     : width: double
     : height: double
 
