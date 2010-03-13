@@ -1,5 +1,6 @@
 from spark import GenericScanner, GenericParser, GenericASTTraversal
 
+import re
 from uuid import uuid4 as uuid
 from collections import namedtuple
 
@@ -57,7 +58,7 @@ class Style(object):
         self.size = Size(0, 0)
         self.edges = ()
         self.margin = Area(0, 0, 0, 0)
-        self.padding = Area(5, 10, 20, 10)
+        self.padding = Area(5, 10, 5, 10)
         self.inner = Area(0, 0, 0, 0)
 
 
@@ -106,6 +107,9 @@ class Node(list):
         self.data = data if data else {}
         self.style = Style()
 
+
+    def is_packaging(self):
+        return len([n for n in self if n.element in ELEMENTS]) > 0
 
 
 class Edge(Node):
@@ -160,6 +164,7 @@ RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
+RE_ATTRIBUTE = r'^\s+:\s*\w.*'
 
 TOKENS = {
     'ID': RE_ID,
@@ -171,6 +176,7 @@ TOKENS = {
     'ASSOCIATION': r'[xO*<]?==[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
+    'ATTRIBUTE': RE_ATTRIBUTE,
     'SPACE': r'[ 	]+',
 }
 
@@ -259,6 +265,7 @@ class piUMLParser(GenericParser):
         expr ::= expr comment
         expr ::= selement
         expr ::= element
+        expr ::= attribute
         expr ::= association
         expr ::= generalization
         expr ::= dependency
@@ -531,7 +538,21 @@ class piUMLParser(GenericParser):
         iface.data['dependency'] = n
         iface.data['lines'].append(n)
         return n
-        
+
+
+    def p_attribute(self, args):
+        """
+        attribute ::= ATTRIBUTE
+        """
+        v = args[0].value
+        indent = v.split(':')[0]
+
+        n = Node('feature', 'attribute')
+        n.name = v.strip()[1:].strip()
+
+        self._set_parent(indent, n)
+
+        return n
 
 
     def p_comment(self, args):

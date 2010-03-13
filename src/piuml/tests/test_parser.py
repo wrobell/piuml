@@ -108,3 +108,26 @@ class StereotypesTestCase(unittest.TestCase):
         ast = load(f)
         self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
 
+
+
+class FeatureTestCase(unittest.TestCase):
+    """
+    Adding features (i.e. attributes) to elements.
+    """
+    def test_attribute(self):
+        """Test adding an attribute
+        """
+        f = StringIO("""
+class c1 "A"
+    : x: int
+    : y: int
+""")
+        ast = load(f)
+        ast.id = 'diagram'
+        data = dict((n.id, n) for n in unwind(ast))
+        cls = data['c1']
+        self.assertEquals(2, len(cls))
+        self.assertEquals('x: int', cls[0].name)
+        self.assertEquals('y: int', cls[1].name)
+
+

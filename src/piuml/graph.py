@@ -18,50 +18,58 @@ class GVGraph(GenericASTTraversal):
 
 
     def _get_pos(self, n):
+        assert 'gv' in n.data
         gn = n.data['gv']
         w, h = self._get_size(n)
         dw, dh = self.size
-        if len(n) == 0:
+        if n.is_packaging():
+            x, y = map(float, gv.getv(gn, 'bb').split(','))[:2]
+            y = dh - y - h
+        else:
             x, y = map(float, gv.getv(gn, 'pos').split(','))
             x = x - w / 2.0
             y = dh - y - h / 2.0
-        else:
-            x, y = map(float, gv.getv(gn, 'bb').split(','))[:2]
-            y = dh - y - h
         return Pos(x, y)
 
 
     def _get_size(self, n):
+        assert 'gv' in n.data
         gn = n.data['gv']
-        if len(n) == 0:
-            return Size(float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0)
-        else:
+        if n.is_packaging():
             x, y, w, h = map(float, gv.getv(gn, 'bb').split(','))
             return Size(w - x, h - y)
+        else:
+            return Size(float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0)
+
 
     def _to_gv(self, ast):
         for n in unwind(ast):
+            if n.type == 'feature':
+                continue
+
             gn = n.data['gv']
             if isinstance(n, Edge): # edges
                 gv.setv(gn, 'minlen', str(150.0 / 72))
 
-            elif len(n) == 0: # nodes
-                w, h = (str(p / 72.0) for p in n.style.size)
-                gv.setv(gn, 'width', w)
-                gv.setv(gn, 'height', h)
-
-            else: # clusters
+            elif n.is_packaging(): # clusters
                 w, h = n.style.size
                 bottom = n.style.padding.bottom
                 # a hack for cluster label and node alignment
                 gv.setv(gn, 'fontsize', str((h - bottom)))
                 gv.setv(gn, 'label', 'A')
 
+            else: # clusters
+                w, h = (str(p / 72.0) for p in n.style.size)
+                gv.setv(gn, 'width', w)
+                gv.setv(gn, 'height', h)
+
 
     def _from_gv(self, ast):
         dw, dh = self.size = ast.style.size = self._get_size(ast)
 
         for n in unwind(ast):
+            if n.type == 'feature':
+                continue
             if isinstance(n, Edge):
                 gn = n.data['gv']
                 p = gv.getv(gn, 'pos').split()
@@ -105,15 +113,15 @@ class GVGraph(GenericASTTraversal):
         if n.parent.type == 'element':
             g = n.parent.data['gv']
 
-        if len(n) == 0:
-            id = n.id
-            gn = gv.node(g, id)
-            gv.setv(gn, 'fixedsize', 'true')
-        else:
+        if n.is_packaging():
             id = 'cluster_' + n.id
             gn = gv.graph(g, id)
             if self.vertical:
                 gv.setv(gn, 'labelloc', 'b')
+        elif n.type != 'feature':
+            id = n.id
+            gn = gv.node(g, id)
+            gv.setv(gn, 'fixedsize', 'true')
         gv.setv(gn, 'id', id)
         gv.setv(gn, 'shape', 'box')
         n.data['gv'] = gn
@@ -135,8 +143,8 @@ class GVGraph(GenericASTTraversal):
         # use edge's tail/head but if they are clusters, then use
         # first/last grouped node; fixme: in case of subclusters we need to
         # search deeper
-        t = edge.tail if len(edge.tail) == 0 else edge.tail[-1]
-        h = edge.head if len(edge.head) == 0 else edge.head[0]
+        t = edge.tail[-1] if edge.tail.is_packaging() else edge.tail
+        h = edge.head[0]  if edge.head.is_packaging() else edge.head
 
         gt = t.data['gv']
         gh = h.data['gv']
@@ -146,12 +154,12 @@ class GVGraph(GenericASTTraversal):
         gv.setv(e, 'arrowhead', 'none')
 
         # set cluster connection data for tail
-        if len(edge.tail) > 0:
+        if edge.tail.is_packaging():
             t = edge.tail
             gv.setv(e, 'ltail', gv.getv(t.data['gv'], 'id'))
 
         # set cluster connection data for head
-        if len(edge.head) > 0:
+        if edge.head.is_packaging():
             h = edge.head
             gv.setv(e, 'lhead', gv.getv(h.data['gv'], 'id'))
 

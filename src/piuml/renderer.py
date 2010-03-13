@@ -27,6 +27,8 @@ FONT_ABSTRACT_NAME = 'sans bold italic 10'
 # Small text, e.g. the (from ...) line in classes
 FONT_SMALL = 'sans 8'
 
+LINE_STRETCH=1.3
+
 
 class CairoBBContext(object):
     """
@@ -279,9 +281,9 @@ def box3d(cr, pos, size):
 def text_size(cr, txt, font):
     cr.save()
     set_font(cr, font)
-    size = cr.text_extents(txt)[2:4]
+    sizes = [cr.text_extents(t)[2:4] for t in txt.split('\n')]
     cr.restore()
-    return size
+    return max(p[0] for p in sizes), sum(p[1] for p in sizes)
 
 
 def set_font(cr, font):
@@ -294,7 +296,9 @@ def set_font(cr, font):
     cr.select_font_face(font[0],
         cairo.FONT_SLANT_ITALIC if 'italic' in font else cairo.FONT_SLANT_NORMAL,
         cairo.FONT_WEIGHT_BOLD  if 'bold' in font else cairo.FONT_WEIGHT_NORMAL)
-    cr.set_font_size(float(font[-1]))
+    size = float(font[-1])
+    cr.set_font_size(size)
+    return float(font[-1])
 
 
 def text_pos_at_box(style, size, align, outside=False):
@@ -343,11 +347,11 @@ def text_pos_at_box(style, size, align, outside=False):
             assert False
 
         if valign == ALIGN_TOP:
-            y = h + pad.top
+            y = pad.top
         elif valign == ALIGN_MIDDLE:
-            y = (height - h) / 2
+            y = height / 2
         elif valign == ALIGN_BOTTOM:
-            y = height - h - pad.bottom
+            y = height - pad.bottom
         else:
             assert False
     return x + x0, y + y0
@@ -430,16 +434,24 @@ def text_pos_at_line(style, p1, p2):
     return x, y
 
 
-def draw_text(cr, n, txt, font=FONT, shift=(0, 0), align=(0, -1), outside=False):
+def draw_text(cr, style, txt, font=FONT, top=0, align=(0, -1), outside=False):
+    font_size = set_font(cr, font)
     size = text_size(cr, txt, font)
-    x, y = text_pos_at_box(n.style, size, align=align, outside=outside)
+    x0, y0 = text_pos_at_box(style, size, align=align, outside=outside)
+    txts = txt.split('\n')
+
+    y = y0 + top + font_size
+    skip = size[1] * LINE_STRETCH
+    dh = skip / len(txts)
+
     cr.save()
-    cr.move_to(x, y + shift[1])
-    set_font(cr, font)
-    cr.show_text(txt)
+    for t in txts:
+        cr.move_to(x0, y)
+        cr.show_text(t)
+        y += dh
     cr.restore()
 
-    return size
+    return skip
 
 
 
@@ -464,17 +476,31 @@ class CairoDimensionCalculator(GenericASTTraversal):
 
     def n_element(self, n):
         cr = self.cr
-        sizes = []
+        pad = n.style.padding
+        sizes = [(60, 0)]
+
         if n.stereotypes:
             sizes.append(text_size(cr, fmts(n.stereotypes), FONT))
-
         sizes.append(text_size(cr, n.name, FONT_NAME))
+
+        compartments = []
+        attrs = '\n'.join(f.name for f in n if f.element == 'attribute')
+        opers = '\n'.join(f.name for f in n if f.element == 'operation')
+        if attrs:
+            w, h = text_size(cr, attrs, FONT)
+            h += pad.top * 2
+            sizes.append(Size(w, h))
+        if opers:
+            w, h = text_size(cr, opers, FONT)
+            h += pad.top * 2
+            sizes.append(Size(w, h))
+
+
         width = max(w for w, h in sizes)
-        height = sum(h for w, h in sizes)
-        p = n.style.padding
-        width += p.left + p.right
-        height += p.top + p.bottom
-        n.style.size = Size(width, height)
+        height = sum(h for w, h in sizes) * LINE_STRETCH
+        width += pad.left + pad.right
+        height += pad.top + pad.bottom
+        n.style.size = Size(width, max(height, 40))
 
     def n_ielement(self, n):
         n.style.size = Size(28, 28)
@@ -502,6 +528,7 @@ class CairoRenderer(GenericASTTraversal):
         pos = x, y = n.style.pos
         size = width, height = n.style.size
         pad = n.style.padding
+        DEBUG = False
 
         cr = self.cr
         cr.save()
@@ -509,11 +536,27 @@ class CairoRenderer(GenericASTTraversal):
             box3d(cr, pos, size)
         else:
             cr.rectangle(x, y, width, height)
+            if DEBUG:
+                cr.rectangle(x + pad.left, y + pad.top, width - pad.left - pad.right, height - pad.top - pad.bottom)
 
-        shift = 0
+        skip = 0
         if n.stereotypes:
-            shift += draw_text(cr, n, fmts(n.stereotypes), shift=(0, shift))[1] + 4
-        draw_text(cr, n, n.name, FONT_NAME, shift=(0, shift))
+            skip += draw_text(cr, n.style, fmts(n.stereotypes))
+        skip += draw_text(cr, n.style, n.name, FONT_NAME, top=skip)
+        skip += pad.top
+        if DEBUG:
+            cr.move_to(x + pad.left, y + skip)
+            cr.line_to(x - pad.right + width, y + skip)
+
+        attrs = '\n'.join(a.name for a in n if a.element == 'attribute')
+        if attrs:
+            skip += pad.top
+            cr.move_to(x, y + skip)
+            cr.line_to(x + width, y + skip)
+            if DEBUG:
+                cr.move_to(x, y + skip + pad.top)
+                cr.line_to(x + width, y + skip + pad.top)
+            skip += draw_text(cr, n.style, attrs, top=skip, align=(-1, -1))
 
         cr.stroke()
         cr.restore()
@@ -574,7 +617,7 @@ class CairoRenderer(GenericASTTraversal):
             cr.stroke()
             cr.restore()
 
-        draw_text(cr, n, n.name, font=FONT_NAME, align=(0, 1), outside=True)
+        draw_text(cr, n.style, n.name, font=FONT_NAME, align=(0, 1), outside=True)
 
 
     def n_connector(self, n):

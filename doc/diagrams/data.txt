@@ -3,14 +3,24 @@ class e "Edge"
 
 class style "Style"
 
-class a "Area"
-class p "Pos"
-class s "Size"
+class a "Area" <<style>>
+    : top: double
+    : right: double
+    : bottom: double
+    : left: double
 
-n <= e
+class p "Pos"
+    : x: double
+    : y: double
+
+class s "Size"
+    : width: double
+    : height: double
+
+e <= n
 n *==> style
 style *==> p
 style *==> s
-style *==> a
-style *==> a
+#style *==> a
+#style *==> a
 style *==> a
