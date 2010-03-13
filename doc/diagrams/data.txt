@@ -1,4 +1,4 @@
-class n "Node"
+class n "Node: list"
     : parent: Node = None
     : type: str
     : element: str
@@ -6,6 +6,7 @@ class n "Node"
     : name: str
     : stereotypes: list = []
     : data: dict = {}
+    : is_packaging(): boolean
 
 class e "Edge"
     : tail: Node

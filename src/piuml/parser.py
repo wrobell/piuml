@@ -164,7 +164,8 @@ RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
-RE_ATTRIBUTE = r'^\s+:\s*\w.*'
+RE_ATTRIBUTE = r'^\s+:\s*[^:]\w+\s*($|:.+?$)'
+RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
 
 TOKENS = {
     'ID': RE_ID,
@@ -177,6 +178,7 @@ TOKENS = {
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
     'ATTRIBUTE': RE_ATTRIBUTE,
+    'OPERATION': RE_OPERATION,
     'SPACE': r'[ 	]+',
 }
 
@@ -266,6 +268,7 @@ class piUMLParser(GenericParser):
         expr ::= selement
         expr ::= element
         expr ::= attribute
+        expr ::= operation
         expr ::= association
         expr ::= generalization
         expr ::= dependency
@@ -540,19 +543,29 @@ class piUMLParser(GenericParser):
         return n
 
 
-    def p_attribute(self, args):
-        """
-        attribute ::= ATTRIBUTE
-        """
-        v = args[0].value
-        indent = v.split(':')[0]
+    def _feature(self, feature, value):
+        indent = value.split(':')[0]
 
-        n = Node('feature', 'attribute')
-        n.name = v.strip()[1:].strip()
+        n = Node('feature', feature)
+        n.name = value.strip()[1:].strip()
 
         self._set_parent(indent, n)
 
         return n
+
+
+    def p_attribute(self, args):
+        """
+        attribute ::= ATTRIBUTE
+        """
+        return self._feature('attribute', args[0].value)
+
+
+    def p_operation(self, args):
+        """
+        operation ::= OPERATION
+        """
+        return self._feature('operation', args[0].value)
 
 
     def p_comment(self, args):

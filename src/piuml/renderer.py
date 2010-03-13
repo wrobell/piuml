@@ -557,6 +557,17 @@ class CairoRenderer(GenericASTTraversal):
                 cr.move_to(x, y + skip + pad.top)
                 cr.line_to(x + width, y + skip + pad.top)
             skip += draw_text(cr, n.style, attrs, top=skip, align=(-1, -1))
+            skip += pad.top
+
+        opers = '\n'.join(a.name for a in n if a.element == 'operation')
+        if opers:
+            skip += pad.top
+            cr.move_to(x, y + skip)
+            cr.line_to(x + width, y + skip)
+            if DEBUG:
+                cr.move_to(x, y + skip + pad.top)
+                cr.line_to(x + width, y + skip + pad.top)
+            skip += draw_text(cr, n.style, opers, top=skip, align=(-1, -1))
 
         cr.stroke()
         cr.restore()

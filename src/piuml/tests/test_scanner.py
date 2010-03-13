@@ -6,7 +6,7 @@ import re
 import unittest
 
 from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, \
-    RE_STEREOTYPE, name_dequote
+    RE_STEREOTYPE, RE_ATTRIBUTE, RE_OPERATION, name_dequote
 
 class RETestCase(unittest.TestCase):
     def test_id(self):
@@ -73,4 +73,26 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search('<<  t1,t2  >>'))
         self.assertTrue(r.search('<< t1 , t2 >>'))
 
+
+    def test_attribute(self):
+        """Test attribute token parsing
+        """
+        r = re.compile(RE_ATTRIBUTE)
+        self.assertTrue(r.search(' : attr'))
+        self.assertTrue(r.search(' :attr'))
+        self.assertTrue(r.search(' : attr: int'))
+        self.assertTrue(r.search(' : attr: int = 1'))
+        self.assertTrue(r.search(' : attr: str = "test"'))
+        self.assertFalse(r.search(' : oper()'))
+        self.assertFalse(r.search(' : oper(a: int, b: str)'))
+        self.assertFalse(r.search(' : oper(a: int, b: str): double'))
+
+
+    def test_operation(self):
+        """Test operation token parsing
+        """
+        r = re.compile(RE_OPERATION)
+        self.assertTrue(r.search(' : oper()'))
+        self.assertTrue(r.search(' : oper(a: int)'))
+        self.assertTrue(r.search(' : oper(a: int, b: str): double'))
 
