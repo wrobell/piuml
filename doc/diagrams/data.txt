@@ -1,7 +1,25 @@
+interface r "Renderer"
+
 class n "Node"
+    : parent: Node = None
+    : type: str
+    : element: str
+    : id: str = uuid()
+    : name: str
+    : stereotypes: list = []
+    : data: dict = {}
+
 class e "Edge"
+    : tail: Node
+    : head: Node
 
 class style "Style"
+    : pos: Pos
+    : size: Size
+    : edges: Pos[*]
+    : padding: Area
+    : margin: Area
+    : inner: Area
 
 class a "Area" <<style>>
     : top: double
@@ -19,8 +37,12 @@ class s "Size"
 
 e <= n
 n *==> style
-style *==> p
-style *==> s
+r -u> p
+r -u> s
+r -u> a
+
+#style *==> p
+#style *==> s
 #style *==> a
 #style *==> a
-style *==> a
+#style *==> a
