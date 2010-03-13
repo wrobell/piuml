@@ -1,12 +1,12 @@
 class n "Node: list"
-    : parent: Node = None
+#    : parent: Node = None
     : type: str
     : element: str
     : id: str = uuid()
     : name: str
     : stereotypes: list = []
     : data: dict = {}
-    : is_packaging(): boolean
+    : is_packaging(): bool
 
 class e "Edge"
     : tail: Node
@@ -21,18 +21,20 @@ class style "Style"
     : inner: Area
 
 class a "Area: tuple"
-    : top: double
-    : right: double
-    : bottom: double
-    : left: double
+    : top: float
+    : right: float
+    : bottom: float
+    : left: float
 
 class p "Pos: tuple"
-    : x: double
-    : y: double
+    : x: float
+    : y: float
 
 class s "Size: tuple"
-    : width: double
-    : height: double
+    : width: float
+    : height: float
 
 e <= n
 n *==> style
+#n ==> n # parent
+#n ==> n # 0..* children
