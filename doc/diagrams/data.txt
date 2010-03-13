@@ -1,5 +1,3 @@
-interface r "Renderer"
-
 class n "Node"
     : parent: Node = None
     : type: str
@@ -37,12 +35,3 @@ class s "Size"
 
 e <= n
 n *==> style
-r -u> p
-r -u> s
-r -u> a
-
-#style *==> p
-#style *==> s
-#style *==> a
-#style *==> a
-#style *==> a
