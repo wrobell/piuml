@@ -83,6 +83,7 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : attr: int'))
         self.assertTrue(r.search(' : attr: int = 1'))
         self.assertTrue(r.search(' : attr: str = "test"'))
+        self.assertTrue(r.search(' : attr: str = "test()"'))
         self.assertFalse(r.search(' : oper()'))
         self.assertFalse(r.search(' : oper(a: int, b: str)'))
         self.assertFalse(r.search(' : oper(a: int, b: str): double'))
