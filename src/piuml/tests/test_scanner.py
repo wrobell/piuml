@@ -6,7 +6,8 @@ import re
 import unittest
 
 from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, \
-    RE_STEREOTYPE, RE_ATTRIBUTE, RE_OPERATION, name_dequote
+    RE_STEREOTYPE, RE_ATTRIBUTE, RE_OPERATION, RE_STATTRIBUTES, \
+    name_dequote
 
 class RETestCase(unittest.TestCase):
     def test_id(self):
@@ -72,6 +73,7 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search('<<t1,t2>>'))
         self.assertTrue(r.search('<<  t1,t2  >>'))
         self.assertTrue(r.search('<< t1 , t2 >>'))
+        self.assertFalse(r.search(': <<test>>'))
 
 
     def test_attribute(self):
@@ -82,6 +84,7 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' :attr'))
         self.assertTrue(r.search(' : attr: int'))
         self.assertTrue(r.search(' : attr: int = 1'))
+        self.assertTrue(r.search(' : attr = "test"'))
         self.assertTrue(r.search(' : attr: str = "test"'))
         self.assertTrue(r.search(' : attr: str = "test()"'))
         self.assertFalse(r.search(' : oper()'))
@@ -96,4 +99,13 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : oper()'))
         self.assertTrue(r.search(' : oper(a: int)'))
         self.assertTrue(r.search(' : oper(a: int, b: str): double'))
+
+
+    def test_st_attributes(self):
+        """Test stereotype attributes token parsing
+        """
+        r = re.compile(RE_STATTRIBUTES)
+        self.assertTrue(r.search(' : <<test>>'))
+        self.assertFalse(r.search(' : <<t1, t2>>'))
+
 

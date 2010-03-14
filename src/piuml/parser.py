@@ -163,9 +163,10 @@ RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
-RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
-RE_ATTRIBUTE = r'^\s+:\s*[^:]\w+\s*($|:.+?$)'
+RE_STEREOTYPE = r'(?<!:[ ])<<[ ]*\w[\w ,]*>>'
+RE_ATTRIBUTE = r'^\s+:\s*[^:]\w+\s*($|:.+?$|=.+?$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
+RE_STATTRIBUTES = r'^\.\s+:\s*<<\w+>>\s*$'
 
 TOKENS = {
     'ID': RE_ID,
@@ -179,6 +180,7 @@ TOKENS = {
     'GENERALIZATION': r'(<=)|(=>)',
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
+    'STATTRIBUTES': RE_STATTRIBUTES,
     'SPACE': r'[ 	]+',
 }
 
@@ -265,10 +267,11 @@ class piUMLParser(GenericParser):
     def p_expr(self, args):
         """
         expr ::= expr comment
-        expr ::= selement
+        expr ::= stelement
         expr ::= element
         expr ::= attribute
         expr ::= operation
+        expr ::= stattributes
         expr ::= association
         expr ::= generalization
         expr ::= dependency
@@ -357,9 +360,9 @@ class piUMLParser(GenericParser):
         return n
 
 
-    def p_selement(self, args):
+    def p_stelement(self, args):
         """
-        selement ::= element SPACE STEREOTYPE
+        stelement ::= element SPACE STEREOTYPE
         """
         n = args[0]
         n.stereotypes.extend(st_parse(args[2].value))
@@ -566,6 +569,15 @@ class piUMLParser(GenericParser):
         operation ::= OPERATION
         """
         return self._feature('operation', args[0].value)
+
+
+    def p_stattributes(self, args):
+        """
+        stattributes ::= STATTRIBUTES
+        """
+        n = self._feature('stattributes', args[0].value[1:])
+        n.name = st_parse(n.name)[0]
+        return n
 
 
     def p_comment(self, args):

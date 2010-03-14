@@ -5,12 +5,13 @@ Drawing routines are adapted from Gaphas and Gaphor source code.
 """
 
 import cairo
+import re
 from cStringIO import StringIO
 from spark import GenericASTTraversal
 from math import atan2, ceil, floor, pi
 from functools import partial
 
-from piuml.parser import Size, Pos, Style, Node
+from piuml.parser import Size, Pos, Style, Node, unwind
 
 # Default font
 FONT = 'sans 10'
@@ -27,8 +28,9 @@ FONT_ABSTRACT_NAME = 'sans bold italic 10'
 # Small text, e.g. the (from ...) line in classes
 FONT_SMALL = 'sans 8'
 
-LINE_STRETCH=1.3
+LINE_STRETCH=1.0
 
+DEBUG = False
 
 class CairoBBContext(object):
     """
@@ -279,11 +281,19 @@ def box3d(cr, pos, size):
 
 
 def text_size(cr, txt, font):
+    """
+    Calculate total size of a text for specified font.
+
+    Text can be multiline - '\n', '\c' and '\r' are recognized as end of
+    line.
+    """
     cr.save()
     set_font(cr, font)
-    sizes = [cr.text_extents(t)[2:4] for t in txt.split('\n')]
+    txts = re.split(r'\\[cnr]', txt)
+    widths = [cr.text_extents(t)[0] + cr.text_extents(t)[-2] for t in txts] 
+    height = cr.font_extents()[2] * len(txts)
     cr.restore()
-    return max(p[0] for p in sizes), sum(p[1] for p in sizes)
+    return max(widths), height
 
 
 def set_font(cr, font):
@@ -435,21 +445,28 @@ def text_pos_at_line(style, p1, p2):
 
 
 def draw_text(cr, style, txt, font=FONT, top=0, align=(0, -1), outside=False):
-    font_size = set_font(cr, font)
-    size = text_size(cr, txt, font)
-    x0, y0 = text_pos_at_box(style, size, align=align, outside=outside)
-    txts = txt.split('\n')
+    h, v = align
+    set_font(cr, font)
+    TALIGN = { -1: 'n', 0: 'c', 1: 'r', }
+    ALIGN = { 'n': -1, 'c': 0, 'r': 1, }
 
-    y = y0 + top + font_size
-    skip = size[1] * LINE_STRETCH
-    dh = skip / len(txts)
+    txts = re.split(r'\\[ncr]', txt)
+    ends = re.findall(r'\\([ncr])', txt) + [TALIGN[h]]
 
-    cr.save()
-    for t in txts:
-        cr.move_to(x0, y)
+    skip = 0
+    for t, e in zip(txts, ends):
+        h = ALIGN[e]
+
+        size = text_size(cr, t, font)
+        x0, y0 = text_pos_at_box(style, size, align=(h, v), outside=outside)
+
+        skip += size[1] * LINE_STRETCH
+        y = y0 + top + skip
+
+        cr.save()
+        cr.move_to(x0, y - 2) # little hack as text appears bit below than expected, to be fixed
         cr.show_text(t)
-        y += dh
-    cr.restore()
+        cr.restore()
 
     return skip
 
@@ -477,28 +494,35 @@ class CairoDimensionCalculator(GenericASTTraversal):
     def n_element(self, n):
         cr = self.cr
         pad = n.style.padding
-        sizes = [(60, 0)]
+        sizes = [(80, 0)]
 
         if n.stereotypes:
             sizes.append(text_size(cr, fmts(n.stereotypes), FONT))
         sizes.append(text_size(cr, n.name, FONT_NAME))
 
         compartments = []
-        attrs = '\n'.join(f.name for f in n if f.element == 'attribute')
-        opers = '\n'.join(f.name for f in n if f.element == 'operation')
+        attrs = '\\n'.join(f.name for f in n if f.element == 'attribute')
+        opers = '\\n'.join(f.name for f in n if f.element == 'operation')
+        cl = 0
         if attrs:
             w, h = text_size(cr, attrs, FONT)
-            h += pad.top * 2
             sizes.append(Size(w, h))
+            cl += 1
         if opers:
             w, h = text_size(cr, opers, FONT)
-            h += pad.top * 2
             sizes.append(Size(w, h))
+            cl += 1
+        st_attrs = (f for f in n if f.element == 'stattributes')
+        for f in st_attrs:
+            attrs = fmts([f.name]) + '\\n' + '\\n'.join(a.name for a in f)
+            w, h = text_size(cr, attrs, FONT)
+            sizes.append(Size(w, h))
+            cl += 1
 
         width = max(w for w, h in sizes)
         height = sum(h for w, h in sizes) * LINE_STRETCH
         width += pad.left + pad.right
-        height += pad.top + pad.bottom
+        height += pad.top + pad.bottom + cl * pad.top * 2
         n.style.size = Size(width, max(height, 40))
 
 
@@ -524,50 +548,65 @@ class CairoRenderer(GenericASTTraversal):
         self.preorder(ast)
 
 
-    def n_element(self, n):
-        pos = x, y = n.style.pos
-        size = width, height = n.style.size
-        pad = n.style.padding
-        DEBUG = False
+    def _compartment(self, parent, node, filter, skip, title=None):
+        cr = self.cr
+        pos = x, y = parent.style.pos
+        size = width, height = parent.style.size
+        pad = parent.style.padding
+
+        features = '\\n'.join(f.name for f in node if filter(f))
+        if title:
+            features = title + features
+        if features:
+            skip += pad.top
+            cr.move_to(x, y + skip)
+            cr.line_to(x + width, y + skip)
+            if DEBUG:
+                cr.move_to(x + pad.left, y + skip + pad.top)
+                cr.line_to(x + width - pad.right, y + skip + pad.top)
+            skip += draw_text(cr, parent.style, features, top=skip, align=(-1, -1))
+            skip += pad.top
+        return skip
+
+
+    def n_element(self, node):
+        pos = x, y = node.style.pos
+        size = width, height = node.style.size
+        pad = node.style.padding
 
         cr = self.cr
         cr.save()
-        if n.element in ('node', 'device'):
+        if node.element in ('node', 'device'):
             box3d(cr, pos, size)
         else:
             cr.rectangle(x, y, width, height)
+            cr.stroke()
             if DEBUG:
+                cr.save()
+                cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
                 cr.rectangle(x + pad.left, y + pad.top, width - pad.left - pad.right, height - pad.top - pad.bottom)
+                cr.stroke()
+                cr.restore()
 
         skip = 0
-        if n.stereotypes:
-            skip += draw_text(cr, n.style, fmts(n.stereotypes))
-        skip += draw_text(cr, n.style, n.name, FONT_NAME, top=skip)
+        if node.stereotypes:
+            skip += draw_text(cr, node.style, fmts(node.stereotypes))
+        skip += draw_text(cr, node.style, node.name, FONT_NAME, top=skip)
         skip += pad.top
         if DEBUG:
+            cr.save()
+            cr.set_source_rgba(0.0, 1.0, 0.0, 0.5)
             cr.move_to(x + pad.left, y + skip)
             cr.line_to(x - pad.right + width, y + skip)
+            cr.stroke()
+            cr.restore()
 
-        attrs = '\n'.join(a.name for a in n if a.element == 'attribute')
-        if attrs:
-            skip += pad.top
-            cr.move_to(x, y + skip)
-            cr.line_to(x + width, y + skip)
-            if DEBUG:
-                cr.move_to(x, y + skip + pad.top)
-                cr.line_to(x + width, y + skip + pad.top)
-            skip += draw_text(cr, n.style, attrs, top=skip, align=(-1, -1))
-            skip += pad.top
-
-        opers = '\n'.join(a.name for a in n if a.element == 'operation')
-        if opers:
-            skip += pad.top
-            cr.move_to(x, y + skip)
-            cr.line_to(x + width, y + skip)
-            if DEBUG:
-                cr.move_to(x, y + skip + pad.top)
-                cr.line_to(x + width, y + skip + pad.top)
-            skip += draw_text(cr, n.style, opers, top=skip, align=(-1, -1))
+        skip = self._compartment(node, node, lambda f: f.element == 'attribute', skip)
+        skip = self._compartment(node, node, lambda f: f.element == 'operation', skip)
+        st_attrs = (f for f in node if f.element == 'stattributes')
+        for f in st_attrs:
+            title = fmts([f.name]) + '\\c' 
+            skip = self._compartment(node, f, lambda f: f.element == 'attribute', skip, title)
 
         cr.stroke()
         cr.restore()
