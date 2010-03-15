@@ -540,6 +540,8 @@ class CairoRenderer(GenericASTTraversal):
         self.calc = CairoDimensionCalculator()
         self.surface = None
         self.cr = None
+        self.output = None
+        self.filetype = 'pdf'
 
     def dims(self, ast):
         self.calc.calc(ast)
@@ -757,19 +759,34 @@ class CairoRenderer(GenericASTTraversal):
 
 
     def n_diagram_exit(self, n):
+        """
+        Generate PDF, SVG or PNG file with UML diagram.
+        """
         self.cr.restore()
         x0, y0 = self.origin
 
         x1, y1, x2, y2 = self.cr.bbox
         x1, y1, x2, y2 = map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2)))
-        w = abs(x2 - x1)
-        h = abs(y2 - y1)
+        w = abs(x2 - x1) - x0
+        h = abs(y2 - y1) - y0
 
-        s = cairo.PDFSurface('a.pdf', w - x0, h - y0)
+        if self.filetype == 'png':
+            s = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+        elif self.filetype == 'svg':
+            s = cairo.SVGSurface(self.output, w, h)
+        else:
+            s = cairo.PDFSurface(self.output, w, h)
+
         cr = cairo.Context(s)
-        cr.save()
         cr.set_source_surface(self.surface, -(x0 + x1) + 1, -(y0 + y1) + 1)
         cr.paint()
-        cr.restore()
-        s.write_to_png('a.png')
+        cr.show_page()
+        if self.filetype == 'png':
+            s.write_to_png(self.output)
+
+        self.surface.flush()
+        self.surface.finish()
+
+        s.flush()
+        s.finish()
 

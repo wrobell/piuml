@@ -4,14 +4,45 @@ from piuml.parser import load
 from piuml.graph import GVGraph
 from piuml.renderer import CairoRenderer
 
-graph = GVGraph()
-renderer = CairoRenderer()
-
 import sys
-f = open(sys.argv[1])
+import os.path
+import optparse
 
-ast = load(f)
-graph.create(ast)
-renderer.dims(ast)
-graph.layout(ast)
-renderer.render(ast)
+usage = """\
+%prog [OPTION]... FILE...
+
+Process files written in piUML language and generate UML diagrams in PDF,
+SVG or PNG format.\
+"""
+
+parser = optparse.OptionParser(usage=usage)
+parser.add_option('--type', '-T',
+        action='store',
+        type='string',
+        dest='filetype',
+        default='pdf',
+        help='Type of output file: pdf (default), svg or png')
+
+options, args = parser.parse_args()
+
+if len(args) < 1:
+    parser.print_help()
+    sys.exit(1)
+
+for fn in args:
+    fnout, ext = os.path.splitext(fn)
+
+    f = open(fn)
+    graph = GVGraph()
+    renderer = CairoRenderer()
+    renderer.filetype = options.filetype
+    renderer.output = fnout + '.' + options.filetype
+
+    ast = load(f)
+    graph.create(ast)
+    renderer.dims(ast)
+    graph.layout(ast)
+    renderer.render(ast)
+
+    f.close()
+
