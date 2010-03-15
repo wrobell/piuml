@@ -10,16 +10,17 @@ class ParseError(Exception):
     Parsing exception. Raised when input data cannot be parse or when
     created gallery data model is inconsistent.
     """
-    def __init__(self, message, filename = None, lineno = None):
-        super(ParseError, self).__init__()
-        self.message = message
+    def __init__(self, msg):
+        super(ParseError, self).__init__(msg)
+        global filename, lineno
+        self.msg = msg
         self.filename = filename
         self.lineno = lineno
 
 
     def __str__(self):
         if self.filename and self.lineno:
-            return '%s:%d:%s' % (self.filename, self.lineno, self.message)
+            return '%s:%d:%s' % (self.filename, self.lineno, self.msg)
         else:
             return super(ParseError, self).__str__()
 
@@ -234,17 +235,12 @@ class piUMLScanner(GenericScanner):
 
 
     def error(self, value, pos):
-        global filename, lineno
-        raise ParseError('syntax error', filename, lineno)
+        raise ParseError('Syntax error')
 
 
     def t_default(self, value):
         r'(.|\n)+'
-        global filename, lineno
-        if 'filename' in globals() and 'lineno' in globals():
-            raise ParseError('syntax error near "%s"' % value, filename, lineno)
-        else:
-            raise ParseError('syntax error, invalid token %s' % value)
+        raise ParseError('Syntax error near "%s"' % value)
 
 
 
@@ -272,7 +268,7 @@ class piUMLParser(GenericParser):
 
     def error(self, token):
         global filename, lineno
-        raise ParseError('syntax error %s %s' % (token, token.type), filename, lineno)
+        raise ParseError('syntax error %s %s' % (token, token.type))
 
 
     def p_expr(self, args):
@@ -342,8 +338,7 @@ class piUMLParser(GenericParser):
             while i > level:
                 i = istack.pop()[0]
             if i < level:
-                global filename, lineno
-                raise ParseError('Inconsistent indentation', filename, lineno)
+                raise ParseError('Inconsistent indentation')
             istack.append((level, n))
 
         n.parent = parent = istack[-2][1]
@@ -479,8 +474,7 @@ class piUMLParser(GenericParser):
         tail, head = self._get_ends(args)
         # one of ends shall be comment
         if not (tail.element == 'comment') ^ (head.element == 'comment'):
-            global filename, lineno
-            raise UMLError('One of comment line ends shall be comment', filename, lineno)
+            raise UMLError('One of comment line ends shall be comment')
         n = self._line('commentline', tail, head)
         return n
 
@@ -502,8 +496,7 @@ class piUMLParser(GenericParser):
             n2 = self.nodes[id2]
 
             if n1.element != 'component' and n2.element != 'component':
-                global filename, lineno
-                raise ParseError('Assembly allowed only between components', filename, lineno)
+                raise ParseError('Assembly allowed only between components')
 
             c1 = self._line('connector', n1, iface)
             c2 = self._line('connector', iface, n2)
@@ -525,8 +518,7 @@ class piUMLParser(GenericParser):
                 head = n
 
             if n.element != 'component':
-                global filename, lineno
-                raise ParseError('Assembly allowed only between components', filename, lineno)
+                raise ParseError('Assembly allowed only between components')
 
             c = self._line('connector', tail, head)
             iface.data['lines'].append(c)
