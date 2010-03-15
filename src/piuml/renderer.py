@@ -575,11 +575,28 @@ class CairoRenderer(GenericASTTraversal):
         pos = x, y = node.style.pos
         size = width, height = node.style.size
         pad = node.style.padding
+        font = FONT_NAME
 
         cr = self.cr
         cr.save()
         if node.element in ('node', 'device'):
             box3d(cr, pos, size)
+            cr.stroke()
+        elif node.element == 'comment':
+            font = FONT
+            ear = 15
+            w = x + width
+            h = y + height
+            cr.move_to(w - ear, y)
+            line_to = cr.line_to
+            line_to(w - ear, y + ear)
+            line_to(w, y + ear)
+            line_to(w - ear, y)
+            line_to(x, y)
+            line_to(x, h)
+            line_to(w, h)
+            line_to(w, y + ear)
+            cr.stroke()
         else:
             cr.rectangle(x, y, width, height)
             cr.stroke()
@@ -593,7 +610,7 @@ class CairoRenderer(GenericASTTraversal):
         skip = 0
         if node.stereotypes:
             skip += draw_text(cr, node.style, fmts(node.stereotypes))
-        skip += draw_text(cr, node.style, node.name, FONT_NAME, top=skip)
+        skip += draw_text(cr, node.style, node.name, font=font, top=skip)
         skip += pad.top
         if DEBUG:
             cr.save()
@@ -674,6 +691,13 @@ class CairoRenderer(GenericASTTraversal):
 
     def n_connector(self, n):
         self._draw_line(n)
+
+
+    def n_commentline(self, node):
+        """
+        Draw comment line between elements.
+        """
+        self._draw_line(node, dash=(7.0, 5.0))
 
 
     def n_generalization(self, n):

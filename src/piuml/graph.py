@@ -174,7 +174,8 @@ class GVGraph(GenericASTTraversal):
     def n_assembly(self, n):
         pass
 
-    n_connector = n_generalization = n_association = n_dependency
+    n_commentline = n_connector = n_generalization = n_association \
+        = n_dependency
 
     def n_comment(self, node):
         """

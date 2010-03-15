@@ -23,6 +23,16 @@ class ParseError(Exception):
         else:
             return super(ParseError, self).__str__()
 
+
+
+class UMLError(ParseError):
+    """
+    UML semantics error. Raised when some UML semantics error is
+    discovered.
+    """
+
+
+
 class Token(object):
     """
     piUML language token data with type and value.
@@ -156,8 +166,8 @@ def st_parse(stereotype):
 
 
 # elements
-ELEMENTS = ('artifact', 'class', 'component', 'device', 'interface',
-        'node')
+ELEMENTS = ('artifact', 'comment', 'class', 'component', 'device',
+        'interface', 'node')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
@@ -178,6 +188,7 @@ TOKENS = {
     'ASSOCIATION': r'[xO*<]?==[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
+    'COMMENTLINE': r'--',
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
     'STATTRIBUTES': RE_STATTRIBUTES,
@@ -274,6 +285,7 @@ class piUMLParser(GenericParser):
         expr ::= stattributes
         expr ::= association
         expr ::= generalization
+        expr ::= commentline
         expr ::= dependency
         expr ::= fdifacedep
         expr ::= assembly
@@ -456,6 +468,20 @@ class piUMLParser(GenericParser):
         v = args[1].value
         n = self._line('generalization', *self._get_ends(args))
         n.data['super'] = n.tail if v == '<=' else n.head
+        return n
+
+
+    def p_commentline(self, args):
+        """
+        commentline ::= ID SPACE COMMENTLINE SPACE ID
+        """
+        self._trim(args)
+        tail, head = self._get_ends(args)
+        # one of ends shall be comment
+        if not (tail.element == 'comment') ^ (head.element == 'comment'):
+            global filename, lineno
+            raise UMLError('One of comment line ends shall be comment', filename, lineno)
+        n = self._line('commentline', tail, head)
         return n
 
 

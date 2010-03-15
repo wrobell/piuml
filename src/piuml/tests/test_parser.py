@@ -5,7 +5,7 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.parser import load, ParseError, st_parse, unwind
+from piuml.parser import load, ParseError, UMLError, st_parse, unwind
 
 
 class GroupingTestCase(unittest.TestCase):
@@ -129,5 +129,28 @@ class c1 "A"
         self.assertEquals(2, len(cls))
         self.assertEquals('x: int', cls[0].name)
         self.assertEquals('y: int', cls[1].name)
+
+
+
+class UMLCheckTestCase(unittest.TestCase):
+    """
+    UML semantics test case.
+    """
+    def test_commentline(self):
+        """Test comment line creation.
+        """
+        f = StringIO("""
+comment c1 "Test comment 1"
+comment c2 "Test comment 2"
+c1 -- c2
+""")
+        self.assertRaises(UMLError, load, f)
+
+        f = StringIO("""
+class c1 "TestClass1"
+class c2 "TestClass2"
+c1 -- c2
+""")
+        self.assertRaises(UMLError, load, f)
 
 
