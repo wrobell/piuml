@@ -235,7 +235,7 @@ class piUMLScanner(GenericScanner):
 
 
     def error(self, value, pos):
-        raise ParseError('Syntax error')
+        raise ParseError('Syntax error near "%s"' % value)
 
 
     def t_default(self, value):
@@ -267,8 +267,7 @@ class piUMLParser(GenericParser):
 
 
     def error(self, token):
-        global filename, lineno
-        raise ParseError('syntax error %s %s' % (token, token.type))
+        raise ParseError('Syntax error near "%s"' % token)
 
 
     def p_expr(self, args):
@@ -486,6 +485,8 @@ class piUMLParser(GenericParser):
         assembly ::= assembly SPACE ID
         """
         self._trim(args)
+        error_fmt = 'Invalid id "%s" - component assembly allowed' \
+                ' between components only'
 
         if len(args) == 3:
             id1 = args[0].value
@@ -495,8 +496,10 @@ class piUMLParser(GenericParser):
             n1 = self.nodes[id1]
             n2 = self.nodes[id2]
 
-            if n1.element != 'component' and n2.element != 'component':
-                raise ParseError('Assembly allowed only between components')
+            if n1.element != 'component':
+                raise UMLError(error_fmt % n1.id)
+            if n2.element != 'component':
+                raise UMLError(error_fmt % n2.id)
 
             c1 = self._line('connector', n1, iface)
             c2 = self._line('connector', iface, n2)
@@ -518,7 +521,7 @@ class piUMLParser(GenericParser):
                 head = n
 
             if n.element != 'component':
-                raise ParseError('Assembly allowed only between components')
+                raise UMLError(error_fmt % n.id)
 
             c = self._line('connector', tail, head)
             iface.data['lines'].append(c)
@@ -616,7 +619,9 @@ class piUMLParser(GenericParser):
 
 def load(f):
     """
-    :param: f
+    :Parameters:
+     f
+        File to load diagram data from.
     """
     global lineno, filename
     lineno = 0
@@ -635,3 +640,6 @@ def load(f):
             tokens = scanner.tokenize(line)
             parser.parse(tokens)
     return parser.ast
+
+
+# vim: sw=4:et:ai

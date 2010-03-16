@@ -137,7 +137,7 @@ class UMLCheckTestCase(unittest.TestCase):
     UML semantics test case.
     """
     def test_commentline(self):
-        """Test comment line creation.
+        """Test comment line creation
         """
         f = StringIO("""
 comment c1 "Test comment 1"
@@ -150,6 +150,26 @@ c1 -- c2
 class c1 "TestClass1"
 class c2 "TestClass2"
 c1 -- c2
+""")
+        self.assertRaises(UMLError, load, f)
+
+
+    def test_assembly(self):
+        """Test component assembly creation
+        """
+        f = StringIO("""
+component c "Component"
+class cls "Class"
+c o) "Iface" cls
+""")
+        self.assertRaises(UMLError, load, f)
+
+        f = StringIO("""
+component c1 "C1"
+component c2 "C2"
+component c3 "C3"
+class cls "Class"
+c1 c2 o) "A" c3 cls
 """)
         self.assertRaises(UMLError, load, f)
 
