@@ -42,6 +42,33 @@ class GVGraph(GenericASTTraversal):
             return Size(float(gv.getv(gn, 'width')) * 72.0, float(gv.getv(gn, 'height')) * 72.0)
 
 
+    def _get_edge(self, edge):
+        # use edge's tail/head but if they are clusters, then use
+        # first/last grouped node; fixme: in case of subclusters we need to
+        # search deeper
+        t = edge.tail[-1] if edge.tail.is_packaging() else edge.tail
+        h = edge.head[0]  if edge.head.is_packaging() else edge.head
+
+        gt = t.data['gv']
+        gh = h.data['gv']
+        e = gv.edge(gt, gh)
+
+        gv.setv(e, 'arrowtail', 'none')
+        gv.setv(e, 'arrowhead', 'none')
+
+        # set cluster connection data for tail
+        if edge.tail.is_packaging():
+            t = edge.tail
+            gv.setv(e, 'ltail', gv.getv(t.data['gv'], 'id'))
+
+        # set cluster connection data for head
+        if edge.head.is_packaging():
+            h = edge.head
+            gv.setv(e, 'lhead', gv.getv(h.data['gv'], 'id'))
+
+        return e 
+
+
     def _to_gv(self, ast):
         for n in unwind(ast):
             if n.type == 'feature':
@@ -139,56 +166,11 @@ class GVGraph(GenericASTTraversal):
         n.data['gv'] = gn
 
 
-    def get_edge(self, edge):
-        # use edge's tail/head but if they are clusters, then use
-        # first/last grouped node; fixme: in case of subclusters we need to
-        # search deeper
-        t = edge.tail[-1] if edge.tail.is_packaging() else edge.tail
-        h = edge.head[0]  if edge.head.is_packaging() else edge.head
-
-        gt = t.data['gv']
-        gh = h.data['gv']
-        e = gv.edge(gt, gh)
-
-        gv.setv(e, 'arrowtail', 'none')
-        gv.setv(e, 'arrowhead', 'none')
-
-        # set cluster connection data for tail
-        if edge.tail.is_packaging():
-            t = edge.tail
-            gv.setv(e, 'ltail', gv.getv(t.data['gv'], 'id'))
-
-        # set cluster connection data for head
-        if edge.head.is_packaging():
-            h = edge.head
-            gv.setv(e, 'lhead', gv.getv(h.data['gv'], 'id'))
-
-        return e 
-
-
     def n_dependency(self, n):
         e = self.get_edge(n)
         n.data['gv'] = e
 
 
-    def n_assembly(self, n):
-        pass
-
     n_commentline = n_connector = n_generalization = n_association \
         = n_dependency
-
-    def n_comment(self, node):
-        """
-        Process comment node, which is ignored.
-        """
-        pass
-
-
-    def n_empty(self, node):
-        """
-        Process empty node, which is ignored.
-        """
-        pass
-
-
 
