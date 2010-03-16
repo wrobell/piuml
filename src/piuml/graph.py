@@ -86,7 +86,7 @@ class GVGraph(GenericASTTraversal):
     def layout(self, ast):
         self._to_gv(ast)
         gv.layout(self.g, 'dot')
-        gv.render(self.g, 'xdot')
+        gv.render(self.g, 'xdot', None)
         self._from_gv(ast)
 
 
