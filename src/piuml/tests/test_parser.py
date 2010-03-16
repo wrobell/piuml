@@ -132,6 +132,22 @@ class c1 "A"
 
 
 
+class GeneralLanguageTestCase(unittest.TestCase):
+    """
+    General piUML language tests.
+    """
+    def test_undefined_id(self):
+        """Test an edge to an undefined id
+        """
+        f = StringIO("""
+class c1 "Test1"
+class c2 "Test2"
+c1 -- cx
+""")
+        self.assertRaises(ParseError, load, f)
+
+
+
 class UMLCheckTestCase(unittest.TestCase):
     """
     UML semantics test case.

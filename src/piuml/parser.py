@@ -139,6 +139,27 @@ class Edge(Node):
         self.head = head
 
 
+
+class NodeCache(dict):
+    """
+    Cache of nodes.
+
+    A node is accessed by its id.
+    """
+    def __getitem__(self, key):
+        """
+        Provides access to nodes by their ids.
+
+        If node is not stored in the cache, then parsing exception is
+        raised.
+        """
+        if key not in self:
+            raise ParseError('Id "%s" is not defined' % key)
+        else:
+            return super(NodeCache, self).__getitem__(key)
+
+
+
 def unwind(node):
     yield node
     for i in node:
@@ -259,7 +280,7 @@ class piUMLParser(GenericParser):
     def __init__(self):
         GenericParser.__init__(self, 'expr')
         self.ast = Node('diagram', 'diagram')
-        self.nodes = {}
+        self.nodes = NodeCache()
 
         # grouping with indentation is supported with stack structure
         self._istack = []
@@ -613,7 +634,6 @@ class piUMLParser(GenericParser):
         empty ::= EMPTY
         """
         return Node('empty', 'empty')
-
 
 
 
