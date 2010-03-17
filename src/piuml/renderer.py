@@ -444,6 +444,19 @@ def text_pos_at_line(style, p1, p2):
     return x, y
 
 
+def line_center(edges):
+    """
+    Get mid point and angle of middle segment of a line defined by
+    specified edges.
+    """
+    med = len(edges) / 2
+    p1, p2 = edges[med - 1: med + 1]
+
+    pos = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
+    angle = atan2(p2.y - p1.y, p2.x - p1.x)
+    return pos, angle
+
+
 def draw_text(cr, style, txt, font=FONT, top=0, align=(0, -1), outside=False):
     h, v = align
     set_font(cr, font)
@@ -722,7 +735,7 @@ class CairoRenderer(GenericASTTraversal):
         self._draw_line(n, **params)
 
 
-    def n_association(self, n):
+    def n_association(self, node):
         TEND = {
             'none': draw_tail_x,
             'shared': draw_tail_diamond,
@@ -737,9 +750,24 @@ class CairoRenderer(GenericASTTraversal):
             'navigable': draw_head_arrow,
             'unknown': draw_head_none,
         }
-        dt = TEND[n.data['tail']]
-        dh = HEND[n.data['head']]
-        self._draw_line(n, draw_tail=dt, draw_head=dh)
+        dt = TEND[node.data['tail']]
+        dh = HEND[node.data['head']]
+        self._draw_line(node, draw_tail=dt, draw_head=dh)
+
+        if node.data['direction']:
+            cr = self.cr
+            pos, angle = line_center(node.style.edges)
+            if node.data['direction'] == 'tail':
+                angle += pi
+            cr.save()
+            cr.translate(*pos)
+            cr.rotate(angle)
+            cr.move_to(0, 0)
+            cr.line_to(6, 5)
+            cr.line_to(0, 10)
+            cr.fill()
+            cr.restore()
+
 
 
     def _draw_line(self, n, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None, show_st=True):

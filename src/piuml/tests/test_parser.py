@@ -190,3 +190,23 @@ c1 c2 o) "A" c3 cls
         self.assertRaises(UMLError, load, f)
 
 
+
+class LinesTestCase(unittest.TestCase):
+    def test_association_dir(self):
+        """Test association direction
+        """
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+class c3 "C3"
+
+c1 =>= c2
+c2 =<= c3
+c3 == c1
+""")
+        ast = load(f)
+        dirs = [n.data['direction'] for n in unwind(ast) \
+            if n.element == 'association']
+        self.assertEquals(['head', 'tail', None], dirs)
+       
+

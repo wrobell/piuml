@@ -207,7 +207,7 @@ TOKENS = {
     'COMMENT': RE_COMMENT,
     'ELEMENT': RE_ELEMENT,
     'FDIFACE': r'o\)|\(o', # folded interface
-    'ASSOCIATION': r'[xO*<]?==[xO*>]?',
+    'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
     'DEPENDENCY': r'<[ur]?-|-[ur]?>',
     'GENERALIZATION': r'(<=)|(=>)',
     'COMMENTLINE': r'--',
@@ -447,6 +447,9 @@ class piUMLParser(GenericParser):
         data = {
             'tail': AEND[v[0]],
             'head': AEND[v[-1]],
+            'direction': 'head' if '=>=' in v \
+                    else 'tail' if '=<=' in v \
+                    else None,
         }
         return self._line('association', *self._get_ends(args), data=data)
 
