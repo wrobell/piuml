@@ -444,14 +444,22 @@ def text_pos_at_line(style, p1, p2):
     return x, y
 
 
+def line_middle_segment(edges):
+    """
+    Get positions of middle segment of a line represented by specified
+    edges.
+    """
+    med = len(edges) / 2
+    p1, p2 = edges[med - 1: med + 1]
+    return p1, p2
+
+
 def line_center(edges):
     """
     Get mid point and angle of middle segment of a line defined by
     specified edges.
     """
-    med = len(edges) / 2
-    p1, p2 = edges[med - 1: med + 1]
-
+    p1, p2 = line_middle_segment(edges)
     pos = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
     angle = atan2(p2.y - p1.y, p2.x - p1.x)
     return pos, angle
@@ -735,7 +743,14 @@ class CairoRenderer(GenericASTTraversal):
         self._draw_line(n, **params)
 
 
-    def n_association(self, node):
+    def n_association(self, edge):
+        """
+        Draw association represented by edge.
+
+        :Parameters:
+         edge
+            Edge representing an association.
+        """
         TEND = {
             'none': draw_tail_x,
             'shared': draw_tail_diamond,
@@ -750,14 +765,14 @@ class CairoRenderer(GenericASTTraversal):
             'navigable': draw_head_arrow,
             'unknown': draw_head_none,
         }
-        dt = TEND[node.data['tail']]
-        dh = HEND[node.data['head']]
-        self._draw_line(node, draw_tail=dt, draw_head=dh)
+        dt = TEND[edge.data['tail']]
+        dh = HEND[edge.data['head']]
+        self._draw_line(edge, draw_tail=dt, draw_head=dh)
 
-        if node.data['direction']:
+        if edge.data['direction']:
             cr = self.cr
-            pos, angle = line_center(node.style.edges)
-            if node.data['direction'] == 'tail':
+            pos, angle = line_center(edge.style.edges)
+            if edge.data['direction'] == 'tail':
                 angle += pi
             cr.save()
             cr.translate(*pos)
@@ -775,6 +790,7 @@ class CairoRenderer(GenericASTTraversal):
             draw_tail=draw_tail_none,
             draw_head=draw_head_none,
             dash=None,
+            show_name=True,
             show_st=True):
         """
         Draw line between tail and head of an edge.
@@ -786,28 +802,35 @@ class CairoRenderer(GenericASTTraversal):
             Function used to draw tail of the edge.
          draw_head
             Function used to draw head of the edge.
+         show_name
+            If set, then draw name of the edge.
          show_st
-            Draw stereotypes defined for the edge.
+            If set, then draw stereotypes defined for the edge.
         """
 
         edges = edge.style.edges
         self.cr.save()
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
+        text = ''
         if edge.stereotypes and show_st:
-            stereotype = fmts(edge.stereotypes)
-            style = Style()
-            style.size = Size(*text_size(self.cr, stereotype, FONT))
+            text = fmts(edge.stereotypes)
 
-            med = len(edges) / 2
-            p1, p2 = edges[med - 1: med + 1]
+        if show_name:
+            text += edge.name
+
+        if text:
+            style = Style()
+            style.size = Size(*text_size(self.cr, text, FONT))
+
+            p1, p2 = line_middle_segment(edges)
 
             x, y = text_pos_at_line(style, p1, p2)
             cr = self.cr
             cr.save()
-            cr.move_to(x, y + style.size.height)
+            cr.move_to(x, y + edge.style.padding.top)
             set_font(cr, FONT)
-            cr.show_text(stereotype)
+            cr.show_text(text)
             cr.stroke()
             cr.restore()
 

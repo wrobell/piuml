@@ -433,8 +433,16 @@ class piUMLParser(GenericParser):
     def p_association(self, args):
         """
         association ::= ID SPACE ASSOCIATION SPACE ID
+        association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
         """
         self._trim(args)
+
+        name = None
+        if len(args) == 4:
+            assert args[2].type == 'NAME'
+            name = args[2].value
+            del args[2]
+
         AEND = {
             'x': 'none',
             'O': 'shared',
@@ -451,7 +459,10 @@ class piUMLParser(GenericParser):
                     else 'tail' if '=<=' in v \
                     else None,
         }
-        return self._line('association', *self._get_ends(args), data=data)
+        e = self._line('association', *self._get_ends(args), data=data)
+        if name:
+            e.name = name
+        return e
 
 
     def p_dependency(self, args):

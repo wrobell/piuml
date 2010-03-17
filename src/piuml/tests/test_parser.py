@@ -208,5 +208,19 @@ c3 == c1
         dirs = [n.data['direction'] for n in unwind(ast) \
             if n.element == 'association']
         self.assertEquals(['head', 'tail', None], dirs)
+
+
+    def test_association_name(self):
+        """Test association name
+        """
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+
+c1 == "An association" c2
+""")
+        ast = load(f)
+        names = [n.name for n in unwind(ast) if n.element == 'association']
+        self.assertEquals(['An association'], names)
        
 
