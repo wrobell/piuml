@@ -167,7 +167,7 @@ class GVGraph(GenericASTTraversal):
 
 
     def n_dependency(self, n):
-        e = self.get_edge(n)
+        e = self._get_edge(n)
         n.data['gv'] = e
 
 
