@@ -770,21 +770,38 @@ class CairoRenderer(GenericASTTraversal):
 
 
 
-    def _draw_line(self, n, draw_tail=draw_tail_none, draw_head=draw_head_none, dash=None, show_st=True):
-        edges = n.style.edges
+    def _draw_line(self,
+            edge,
+            draw_tail=draw_tail_none,
+            draw_head=draw_head_none,
+            dash=None,
+            show_st=True):
+        """
+        Draw line between tail and head of an edge.
+
+        :Parameters:
+         edge
+            Edge to be drawn.
+         draw_tail
+            Function used to draw tail of the edge.
+         draw_head
+            Function used to draw head of the edge.
+         show_st
+            Draw stereotypes defined for the edge.
+        """
+
+        edges = edge.style.edges
         self.cr.save()
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        if n.stereotypes and show_st:
-            stereotype = fmts(n.stereotypes)
+        if edge.stereotypes and show_st:
+            stereotype = fmts(edge.stereotypes)
             style = Style()
             style.size = Size(*text_size(self.cr, stereotype, FONT))
 
             med = len(edges) / 2
             p1, p2 = edges[med - 1: med + 1]
 
-            pos = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
-            angle = atan2(p2.y - p1.y, p2.x - p1.x)
             x, y = text_pos_at_line(style, p1, p2)
             cr = self.cr
             cr.save()
@@ -793,11 +810,10 @@ class CairoRenderer(GenericASTTraversal):
             cr.show_text(stereotype)
             cr.stroke()
             cr.restore()
-            #if inverted:
-            #    angle += pi
 
         self.cr.stroke()
         self.cr.restore()
+
 
     def n_diagram(self, n):
         w, h = n.style.size
