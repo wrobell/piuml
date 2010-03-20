@@ -86,6 +86,7 @@ class CairoBBContext(object):
         """
         cr = self._cr
         self._bbox(cr.fill_extents)
+        cr.fill_preserve()
 
     def stroke(self, b=None):
         """
@@ -101,6 +102,7 @@ class CairoBBContext(object):
         """
         cr = self._cr
         self._bbox(cr.stroke_extents, line=True)
+        cr.stroke_preserve()
 
     def show_text(self, txt):
         """
@@ -200,7 +202,7 @@ def draw_tail_diamond(cr, filled=False):
     """
     draw_diamond(cr)
     if filled:
-        context.cairo.fill_preserve()
+        cr.fill_preserve()
     cr.stroke()
     cr.move_to(20, 0)
 
@@ -754,14 +756,14 @@ class CairoRenderer(GenericASTTraversal):
         TEND = {
             'none': draw_tail_x,
             'shared': draw_tail_diamond,
-            'composite': draw_tail_diamond,
+            'composite': partial(draw_tail_diamond, filled=True),
             'navigable': draw_tail_arrow,
             'unknown': draw_tail_none,
         }
         HEND = {
             'none': draw_head_x,
             'shared': draw_head_diamond,
-            'composite': draw_head_diamond,
+            'composite': partial(draw_head_diamond, filled=True),
             'navigable': draw_head_arrow,
             'unknown': draw_head_none,
         }
