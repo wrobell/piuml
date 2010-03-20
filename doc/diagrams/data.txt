@@ -3,7 +3,7 @@ class n "Node: list"
     : type: str
     : element: str
     : id: str = uuid()
-    : name: str
+    : name: str = ''
     : stereotypes: list = []
     : data: dict = {}
     : is_packaging(): bool
@@ -36,6 +36,6 @@ class s "Size: tuple"
 
 e <= n
 #n -> style <<AAAA>>
-n *=>=> 'has style' <<t1, t2>> style
+n *=>=> 'has style' style
 #n ==> n # parent
 #n ==> n # 0..* children
