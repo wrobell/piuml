@@ -124,6 +124,22 @@ a -> <<test>> b
         self.assertEquals(['test'], dep.stereotypes)
 
 
+    def test_association_stereotypes(self):
+        """Test association stereotype parsing
+        """
+        f = StringIO("""
+class a 'A' <<aaa>>
+class b 'B' <<bbb>>
+
+a == 'a name' <<t1, t2>> b
+""")
+        ast = load(f)
+        assocs = [n for n in unwind(ast) if n.element == 'association']
+        assoc = assocs[0]
+        self.assertEquals('a name', assoc.name)
+        self.assertEquals(['t1', 't2'], assoc.stereotypes)
+
+
 
 class FeatureTestCase(unittest.TestCase):
     """

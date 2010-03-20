@@ -434,14 +434,21 @@ class piUMLParser(GenericParser):
         """
         association ::= ID SPACE ASSOCIATION SPACE ID
         association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
+        association ::= ID SPACE ASSOCIATION SPACE NAME SPACE STEREOTYPE SPACE ID
         """
         self._trim(args)
 
         name = None
-        if len(args) == 4:
-            assert args[2].type == 'NAME'
+        if args[2].type == 'NAME':
             name = args[2].value
             del args[2]
+
+        stereotypes = []
+        if args[2].type == 'STEREOTYPE':
+            stereotypes.extend(st_parse(args[2].value))
+            del args[2]
+
+        assert args[0].type == 'ID' and args[2].type == 'ID'
 
         AEND = {
             'x': 'none',
@@ -453,13 +460,17 @@ class piUMLParser(GenericParser):
         }
         v = args[1].value
         data = {
+            'name': name,
             'tail': AEND[v[0]],
             'head': AEND[v[-1]],
             'direction': 'head' if '=>=' in v \
                     else 'tail' if '=<=' in v \
                     else None,
         }
-        e = self._line('association', *self._get_ends(args), data=data)
+        e = self._line('association',
+                *self._get_ends(args),
+                data=data,
+                stereotypes=stereotypes)
         if name:
             e.name = name
         return e

@@ -499,7 +499,7 @@ def fmts(stereotypes):
     """
     Format list of stereotypes.
     """
-    return '\xc2\xab%s\xc2\xbb' % ', '.join(stereotypes)
+    return u'\xab%s\xbb' % ', '.join(stereotypes)
 
 
 class CairoDimensionCalculator(GenericASTTraversal):
@@ -813,7 +813,7 @@ class CairoRenderer(GenericASTTraversal):
             text.append(name_fmt % edge.name)
 
         if text:
-            text = '\\c'.join(text)
+            text = ' '.join(text)
             style = Style()
             style.padding = edge.style.padding
             style.margin = edge.style.margin

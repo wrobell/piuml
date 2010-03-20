@@ -36,6 +36,6 @@ class s "Size: tuple"
 
 e <= n
 #n -> style <<AAAA>>
-n *=>=> 'has style' style
+n *=>=> 'has style' <<t1, t2>> style
 #n ==> n # parent
 #n ==> n # 0..* children
