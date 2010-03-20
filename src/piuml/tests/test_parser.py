@@ -109,6 +109,21 @@ class StereotypesTestCase(unittest.TestCase):
         self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
 
 
+    def test_dependency_stereotypes(self):
+        """Test dependency stereotype parsing
+        """
+        f = StringIO("""
+class a 'A' <<aaa>>
+class b 'B' <<bbb>>
+
+a -> <<test>> b
+""")
+        ast = load(f)
+        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        dep = deps[0]
+        self.assertEquals(['test'], dep.stereotypes)
+
+
 
 class FeatureTestCase(unittest.TestCase):
     """

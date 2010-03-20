@@ -468,7 +468,7 @@ class piUMLParser(GenericParser):
     def p_dependency(self, args):
         """
         dependency ::= ID SPACE DEPENDENCY SPACE ID
-        dependency ::= ID SPACE DEPENDENCY SPACE ID SPACE STEREOTYPE
+        dependency ::= ID SPACE DEPENDENCY SPACE STEREOTYPE SPACE ID
         """
         self._trim(args)
         TYPE = {
@@ -482,8 +482,10 @@ class piUMLParser(GenericParser):
             stereotypes = [s]
         else:
             stereotypes = []
-        if len(args) == 4:
-            stereotypes.append(args[3].value)
+        if args[2].type == 'STEREOTYPE':
+            stereotypes.extend(st_parse(args[2].value))
+            del args[2]
+        assert args[0].type == 'ID' and args[2].type == 'ID'
         n = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
         n.data['supplier'] = n.tail if v[0] == '<' else n.head
         return n
