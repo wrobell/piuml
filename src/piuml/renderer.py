@@ -410,7 +410,7 @@ def text_pos_at_line(style, p1, p2):
 
     pad = style.padding
     width, height = style.size
-    halign, valign = ALIGN_CENTER, ALIGN_MIDDLE
+    halign, valign = ALIGN_CENTER, ALIGN_TOP
 
     # move to center and move by delta depending on line angle
     if d2 < 0.5774: # <0, 30>, <150, 180>, <-180, -150>, <-30, 0>
@@ -420,9 +420,9 @@ def text_pos_at_line(style, p1, p2):
 
         x = x0 - w2
         if valign == ALIGN_TOP:
-            y = y0 - height - pad.bottom - hint
+            y = y0 - pad.bottom - hint
         else:
-            y = y0 + pad.top + hint
+            y = y0 + pad.top + hint + height
     else:
         # much better in case of vertical lines
 
@@ -767,22 +767,15 @@ class CairoRenderer(GenericASTTraversal):
         }
         dt = TEND[edge.data['tail']]
         dh = HEND[edge.data['head']]
-        self._draw_line(edge, draw_tail=dt, draw_head=dh)
 
-        if edge.data['direction']:
-            cr = self.cr
-            pos, angle = line_center(edge.style.edges)
-            if edge.data['direction'] == 'tail':
-                angle += pi
-            cr.save()
-            cr.translate(*pos)
-            cr.rotate(angle)
-            cr.move_to(0, 0)
-            cr.line_to(6, 5)
-            cr.line_to(0, 10)
-            cr.fill()
-            cr.restore()
-
+        dir = edge.data['direction']
+        name_fmt = '%s'
+        if dir and dir == 'head':
+            name_fmt = u'%s \u25b6'
+        else:
+            name_fmt = u'\u25c0  %s'
+            
+        self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
 
 
     def _draw_line(self,
@@ -790,7 +783,7 @@ class CairoRenderer(GenericASTTraversal):
             draw_tail=draw_tail_none,
             draw_head=draw_head_none,
             dash=None,
-            show_name=True,
+            name_fmt='%s',
             show_st=True):
         """
         Draw line between tail and head of an edge.
@@ -802,25 +795,26 @@ class CairoRenderer(GenericASTTraversal):
             Function used to draw tail of the edge.
          draw_head
             Function used to draw head of the edge.
-         show_name
-            If set, then draw name of the edge.
-         show_st
-            If set, then draw stereotypes defined for the edge.
+         name_fmt
+            String format used to format name of an edge.
         """
 
         edges = edge.style.edges
         self.cr.save()
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        text = ''
-        if edge.stereotypes and show_st:
-            text = fmts(edge.stereotypes)
+        text = []
+        if edge.stereotypes:
+            text.append(fmts(edge.stereotypes))
 
-        if show_name:
-            text += edge.name
+        if edge.name:
+            text.append(name_fmt % edge.name)
 
         if text:
+            text = '\\c'.join(text)
             style = Style()
+            style.padding = edge.style.padding
+            style.margin = edge.style.margin
             style.size = Size(*text_size(self.cr, text, FONT))
 
             p1, p2 = line_middle_segment(edges)
@@ -828,7 +822,7 @@ class CairoRenderer(GenericASTTraversal):
             x, y = text_pos_at_line(style, p1, p2)
             cr = self.cr
             cr.save()
-            cr.move_to(x, y + edge.style.padding.top)
+            cr.move_to(x, y)
             set_font(cr, FONT)
             cr.show_text(text)
             cr.stroke()

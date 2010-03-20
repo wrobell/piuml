@@ -35,6 +35,7 @@ class s "Size: tuple"
     : height: float
 
 e <= n
+#n -> style <<AAAA>>
 n *=>=> 'has style' style
 #n ==> n # parent
 #n ==> n # 0..* children
