@@ -511,8 +511,10 @@ class CairoDimensionCalculator(GenericASTTraversal):
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
         self.cr = cairo.Context(self.surface)
 
+
     def calc(self, ast):
         self.postorder(ast)
+
 
     def n_element(self, n):
         cr = self.cr
@@ -551,6 +553,19 @@ class CairoDimensionCalculator(GenericASTTraversal):
 
     def n_ielement(self, n):
         n.style.size = Size(28, 28)
+
+
+    def n_dependency(self, edge):
+        cr = self.cr
+        lens = [text_size(cr, edge.name, FONT)[0]]
+        if edge.stereotypes:
+            lens.append(text_size(cr, fmts(edge.stereotypes), FONT)[0])
+        length = max(75, 1.5 * sum(lens))
+        edge.style.size = Size(length, 0)
+
+
+    n_commentline = n_connector = n_generalization = n_association \
+        = n_dependency
 
 
 

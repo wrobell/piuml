@@ -76,7 +76,11 @@ class GVGraph(GenericASTTraversal):
 
             gn = n.data['gv']
             if isinstance(n, Edge): # edges
-                gv.setv(gn, 'minlen', str(150.0 / 72))
+                # use len attribute...
+                gv.setv(gn, 'len', str(n.style.size.width / 72.0))
+                # ... and minlen as well, which is rank difference - divide
+                # by 30 to normalize to rank difference
+                gv.setv(gn, 'minlen', str(n.style.size.width / 30.0))
 
             elif n.is_packaging(): # clusters
                 w, h = n.style.size
