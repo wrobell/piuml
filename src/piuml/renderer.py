@@ -830,23 +830,17 @@ class CairoRenderer(GenericASTTraversal):
         """
 
         edges = edge.style.edges
-        self.cr.save()
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
         text = []
         if edge.stereotypes:
             text.append(fmts(edge.stereotypes))
-
         if edge.name:
             text.append(name_fmt % edge.name)
-
         if text:
             text = '\\c'.join(text)
             segment = line_middle_segment(edges)
             draw_text(self.cr, segment, edge.style, text, align=(0, -1), align_f=text_pos_at_line)
-
-        self.cr.stroke()
-        self.cr.restore()
 
 
     def n_diagram(self, n):
