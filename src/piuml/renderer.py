@@ -13,22 +13,28 @@ from functools import partial
 
 from piuml.parser import Size, Pos, Style, Node, unwind
 
-# Default font
+# Default font.
 FONT = 'sans 10'
 
-# Default font for abstract named (e.g. attributes)
+# Default font for abstract named (e.g. attributes).
 FONT_ABSTRACT = 'sans italic 10'
 
-# Font for names of elements (such as classes)
+# Font for names of elements (such as classes).
 FONT_NAME = 'sans bold 10'
 
-# Abstract classes use this font for their name
+# Abstract classes use this font for their name.
 FONT_ABSTRACT_NAME = 'sans bold italic 10'
 
-# Small text, e.g. the (from ...) line in classes
+# Small text, e.g. the (from ...) line in classes.
 FONT_SMALL = 'sans 8'
 
 LINE_STRETCH=1.0
+
+# Horizontal align.
+ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
+
+# Vertical align.
+ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
 DEBUG = False
 
@@ -313,22 +319,28 @@ def set_font(cr, font):
     return float(font[-1])
 
 
-def text_pos_at_box(style, size, align, outside=False):
+def text_pos_at_box(size, box, style, align, outside=False):
     """
     Calculate position of the text relative to containing box.
+
+    :Parameters:
+     size
+        Width and height of text to be aligned.
+     box
+        Containing box.
+     style
+        Style of containing box (i.e. position and padding).
+     align
+        Horizontal and vertical alignment of text.
+     outside
+        If true the text is aligned outside the box.
     """
-    #x_bear, y_bear, w, h, x_adv, y_adv = extents
-    w, h = size
+    w, h = size # size of the text
+    width, height = box
     x0, y0 = style.pos
-    width, height = style.size
     pad = style.padding
 
     halign, valign = align
-
-    # horizontal align
-    ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
-    # vertical align
-    ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
     if outside:
         if halign == ALIGN_LEFT:
@@ -369,32 +381,31 @@ def text_pos_at_box(style, size, align, outside=False):
     return x + x0, y + y0
 
 
-
-def text_pos_at_line(style, p1, p2):
+def text_pos_at_line(size, line, style, align, outside=False):
     """
-    Calculate position of the text relative to a line defined by points
-    (p1, p2). Text is aligned using align and padding information. 
+    Calculate position of the text relative to specified line. Text is
+    aligned using line style (i.e. padding) information. 
 
     :Parameters:
+     size
+        Width and height of text to be aligned.
+     line
+        Two points defining a line.
      style
-         Text style information like position, size, etc.
-     p1
-         Beginning of line.
-     p2
-         End of line.
+        Line style information like padding.
+     align
+        Horizontal and vertical alignment of text.
+     outside
+        If true the text is aligned outside the box.
     """
     EPSILON = 1e-6
-
-    # horizontal align
-    ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
-    # vertical align
-    ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
     # hint tuples to move text depending on quadrant
     WIDTH_HINT = (0, 0, -1)    # width hint tuple
     R_WIDTH_HINT = (-1, -1, 0)    # width hint tuple
     PADDING_HINT = (1, 1, -1)  # padding hint tuple
 
+    p1, p2 = line
     x0 = (p1[0] + p2[0]) / 2.0
     y0 = (p1[1] + p2[1]) / 2.0
     dx = p2[0] - p1[0]
@@ -410,9 +421,9 @@ def text_pos_at_line(style, p1, p2):
         d1 = dy / dx
         d2 = abs(d1)
 
+    width, height = size
     pad = style.padding
-    width, height = style.size
-    halign, valign = ALIGN_CENTER, ALIGN_TOP
+    halign, valign = align
 
     # move to center and move by delta depending on line angle
     if d2 < 0.5774: # <0, 30>, <150, 180>, <-180, -150>, <-30, 0>
@@ -422,9 +433,9 @@ def text_pos_at_line(style, p1, p2):
 
         x = x0 - w2
         if valign == ALIGN_TOP:
-            y = y0 - pad.bottom - hint
+            y = y0 - pad.top - hint - height
         else:
-            y = y0 + pad.top + hint + height
+            y = y0 + pad.bottom + hint
     else:
         # much better in case of vertical lines
 
@@ -467,7 +478,9 @@ def line_center(edges):
     return pos, angle
 
 
-def draw_text(cr, style, txt, font=FONT, top=0, align=(0, -1), outside=False):
+def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1), outside=False,
+        align_f=text_pos_at_box):
+
     h, v = align
     set_font(cr, font)
     TALIGN = { -1: 'n', 0: 'c', 1: 'r', }
@@ -481,13 +494,13 @@ def draw_text(cr, style, txt, font=FONT, top=0, align=(0, -1), outside=False):
         h = ALIGN[e]
 
         size = text_size(cr, t, font)
-        x0, y0 = text_pos_at_box(style, size, align=(h, v), outside=outside)
+        x0, y0 = align_f(size, shape, style, align=(h, v), outside=outside)
 
         skip += size[1] * LINE_STRETCH
         y = y0 + top + skip
 
         cr.save()
-        cr.move_to(x0, y - 2) # little hack as text appears bit below than expected, to be fixed
+        cr.move_to(x0, y - 2) # fixme: little hack as text appears bit below than expected, to be fixed
         cr.show_text(t)
         cr.restore()
 
@@ -604,7 +617,7 @@ class CairoRenderer(GenericASTTraversal):
             if DEBUG:
                 cr.move_to(x + pad.left, y + skip + pad.top)
                 cr.line_to(x + width - pad.right, y + skip + pad.top)
-            skip += draw_text(cr, parent.style, features, top=skip, align=(-1, -1))
+            skip += draw_text(cr, parent.style.size, parent.style, features, top=skip, align=(-1, -1))
             skip += pad.top
         return skip
 
@@ -647,8 +660,8 @@ class CairoRenderer(GenericASTTraversal):
 
         skip = 0
         if node.stereotypes:
-            skip += draw_text(cr, node.style, fmts(node.stereotypes))
-        skip += draw_text(cr, node.style, node.name, font=font, top=skip)
+            skip += draw_text(cr, node.style.size, node.style, fmts(node.stereotypes), align=(0, -1))
+        skip += draw_text(cr, node.style.size, node.style, node.name, font=font, align=(0, -1), top=skip)
         skip += pad.top
         if DEBUG:
             cr.save()
@@ -724,7 +737,7 @@ class CairoRenderer(GenericASTTraversal):
             cr.stroke()
             cr.restore()
 
-        draw_text(cr, n.style, n.name, font=FONT_NAME, align=(0, 1), outside=True)
+        draw_text(cr, n.style.size, n.style, n.name, font=FONT_NAME, align=(0, 1), outside=True)
 
 
     def n_connector(self, n):
@@ -828,22 +841,9 @@ class CairoRenderer(GenericASTTraversal):
             text.append(name_fmt % edge.name)
 
         if text:
-            text = ' '.join(text)
-            style = Style()
-            style.padding = edge.style.padding
-            style.margin = edge.style.margin
-            style.size = Size(*text_size(self.cr, text, FONT))
-
-            p1, p2 = line_middle_segment(edges)
-
-            x, y = text_pos_at_line(style, p1, p2)
-            cr = self.cr
-            cr.save()
-            cr.move_to(x, y)
-            set_font(cr, FONT)
-            cr.show_text(text)
-            cr.stroke()
-            cr.restore()
+            text = '\\c'.join(text)
+            segment = line_middle_segment(edges)
+            draw_text(self.cr, segment, edge.style, text, align=(0, -1), align_f=text_pos_at_line)
 
         self.cr.stroke()
         self.cr.restore()

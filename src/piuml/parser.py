@@ -137,6 +137,7 @@ class Edge(Node):
         super(Edge, self).__init__(type, element, name, data)
         self.tail = tail
         self.head = head
+        self.style.padding = Area(3, 10, 3, 10)
 
 
 
