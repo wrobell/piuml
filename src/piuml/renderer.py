@@ -11,7 +11,7 @@ from spark import GenericASTTraversal
 from math import atan2, ceil, floor, pi
 from functools import partial
 
-from piuml.parser import Size, Pos, Style, Node, unwind
+from piuml.parser import Size, Pos, Style, Node, unwind, RE_ASSOCIATION_END
 
 # Default font.
 FONT = 'sans 10'
@@ -35,6 +35,8 @@ ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 
 # Vertical align.
 ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
+
+RE_ASSOCIATION_END = re.compile(RE_ASSOCIATION_END)
 
 DEBUG = False
 
@@ -827,6 +829,25 @@ class CairoRenderer(GenericASTTraversal):
             name_fmt = u'\u25c0  %s'
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
+
+        if len(edge) > 0:
+            dt = partial(draw_text, self.cr, edge.style.edges, edge.style, align_f=text_pos_at_line)
+            self._draw_association_end(dt, edge, 0, -1)
+            self._draw_association_end(dt, edge, 1, 1)
+
+
+    def _draw_association_end(self, dt, edge, num_end, align):
+        """
+        Draw association end.
+        """
+        if num_end < len(edge):
+            end = edge[num_end]
+            mre = RE_ASSOCIATION_END.search(end.name)
+            n, m = mre.group('name', 'mult')
+            if n:
+                dt(n, align=(align, -1))
+            if m:
+                dt(m, align=(align, 1))
 
 
     def _draw_line(self,

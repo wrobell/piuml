@@ -162,6 +162,27 @@ class c1 "A"
         self.assertEquals('y: int', cls[1].name)
 
 
+    def test_association_ends(self):
+        """Test adding an association end
+        """
+        f = StringIO("""
+class c1 "A"
+class c2 "B"
+
+c1 == c2
+    : one [0..1]
+    : two
+""")
+        ast = load(f)
+        ast.id = 'diagram'
+        assocs = [n for n in unwind(ast) if n.element == 'association']
+        self.assertEquals(2, len(assocs))
+
+        assoc = assocs[0]
+        self.assertEquals(1, len(assoc))
+        self.assertEquals('one [0..1]', assoc[0].name)
+        self.assertEquals('two', assoc[1].name)
+
 
 class GeneralLanguageTestCase(unittest.TestCase):
     """

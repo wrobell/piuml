@@ -7,7 +7,7 @@ import unittest
 
 from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, \
     RE_STEREOTYPE, RE_ATTRIBUTE, RE_OPERATION, RE_STATTRIBUTES, \
-    name_dequote
+    RE_ASSOCIATION_END, name_dequote
 
 class RETestCase(unittest.TestCase):
     def test_id(self):
@@ -87,6 +87,8 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : attr = "test"'))
         self.assertTrue(r.search(' : attr: str = "test"'))
         self.assertTrue(r.search(' : attr: str = "test()"'))
+        self.assertTrue(r.search(' : attr[11]'))
+        self.assertTrue(r.search(' : attr [0..1]'))
         self.assertFalse(r.search(' : oper()'))
         self.assertFalse(r.search(' : oper(a: int, b: str)'))
         self.assertFalse(r.search(' : oper(a: int, b: str): double'))
@@ -99,6 +101,18 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : oper()'))
         self.assertTrue(r.search(' : oper(a: int)'))
         self.assertTrue(r.search(' : oper(a: int, b: str): double'))
+
+
+    def test_association_end(self):
+        """Test association end parsing
+        """
+        r = re.compile(RE_ASSOCIATION_END)
+        mre = r.search('attr')
+        self.assertEquals('attr', mre.group('name'))
+
+        mre = r.search('attr [0..1]')
+        self.assertEquals('attr', mre.group('name'))
+        self.assertEquals('0..1', mre.group('mult'))
 
 
     def test_st_attributes(self):
