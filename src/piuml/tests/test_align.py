@@ -22,11 +22,12 @@ Text alignment tests.
 """
 
 from functools import partial
+from math import pi
 import cairo
 import unittest
 
 from piuml.parser import Style, Pos, Area, Size
-from piuml.renderer import draw_text
+from piuml.renderer import draw_text, text_pos_at_line
 
 class BoxAlignTestCase(unittest.TestCase):
     """
@@ -84,14 +85,93 @@ class BoxAlignTestCase(unittest.TestCase):
     def test_inner_align(self):
         """Test inner box align
         """
-        self._draw('align_i', (0, 0, 0, 0))
-        self._draw('align_ip', (20, 10, 20, 10))
+        self._draw('box_align_i', (0, 0, 0, 0))
+        self._draw('box_align_ip', (20, 10, 20, 10))
 
     def test_outer_align(self):
         """Test outer box align
         """
-        self._draw('align_o', (0, 0, 0, 0), True)
-        self._draw('align_op', (20, 10, 20, 10), True)
+        self._draw('box_align_o', (0, 0, 0, 0), True)
+        self._draw('box_align_op', (20, 10, 20, 10), True)
+        
+
+
+class LineAlignTestCase(unittest.TestCase):
+    """
+    Text alignment at a line tests.
+    """
+    def _draw(self, name, line, pad):
+        s = cairo.PDFSurface('src/piuml/tests/%s.pdf' % name, 400, 300)
+        cr = cairo.Context(s)
+
+        cr.move_to(*line[0])
+        cr.arc(line[0][0], line[0][1], 1.0, 0.0, 2.0 * pi)
+        for p1, p2 in zip(line[:-1], line[1:]):
+            cr.move_to(*p1)
+            cr.line_to(*p2)
+            cr.arc(p2[0], p2[1], 1.0, 0.0, 2.0 * pi)
+        cr.stroke()
+
+        if any(pad):
+            cr.save()
+            cr.set_line_width(0.75)
+            cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
+            p1 = line[0]
+            p2 = line[-1]
+            cr.rectangle(p1[0] + pad[3],
+                    p1[1] + pad[0],
+                    p2[0] - p1[0] - (pad[1] + pad[3]),
+                    p2[1] - p1[1] - (pad[0] + pad[2]))
+            cr.stroke()
+            cr.restore()
+
+        style = Style()
+        style.size = Size(0, 0)
+        style.pos = Pos(0, 0)
+        style.padding = Area(*pad)
+
+        dt = partial(draw_text, cr, line, style, align_f=text_pos_at_line)
+        dt('(TOP)', align=(0, -1))
+        dt('(BOTTOM)', align=(0, 1))
+        dt('(LEFT TOP)', align=(-1, -1))
+        dt('(RIGHT TOP)', align=(1, -1))
+        dt('(L-BOTTOM)', align=(-1, 1))
+        dt('(R-BOTTOM)', align=(1, 1))
+
+        s.flush()
+        s.finish()
+
+
+    def test_halign(self):
+        """Test text at horizontal line alignment
+        """
+        line = tuple((x, 150) for x in (100, 150, 250, 300))
+        self._draw('line_align_h', line, (0, 0, 0, 0))
+        self._draw('line_align_hp', line, (10, 5, 10, 5))
+
+
+    def test_valign(self):
+        """Test text at vertical line alignment
+        """
+        line = tuple((200, y) for y in (100, 125, 175, 200))
+        self._draw('line_align_v', line, (0, 0, 0, 0))
+        self._draw('line_align_vp', line, (10, 5, 10, 5))
+
+
+    def test_ahalign(self):
+        """Test text at almost horizontal line alignment
+        """
+        line = tuple(zip((100, 150, 250, 300), (150, 140, 160, 150)))
+        self._draw('line_align_ah', line, (0, 0, 0, 0))
+        self._draw('line_align_ahp', line, (10, 5, 10, 5))
+
+
+    def test_avalign(self):
+        """Test text at almost vertical line alignment
+        """
+        line = tuple(zip((200, 190, 210, 200), (100, 125, 175, 200)))
+        self._draw('line_align_av', line, (0, 0, 0, 0))
+        self._draw('line_align_avp', line, (10, 5, 10, 5))
 
 
 # vim: sw=4:et:ai

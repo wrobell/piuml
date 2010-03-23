@@ -390,22 +390,29 @@ def text_pos_at_line(size, line, style, align, outside=False):
      size
         Width and height of text to be aligned.
      line
-        Two points defining a line.
+        Points defining a line.
      style
         Line style information like padding.
      align
         Horizontal and vertical alignment of text.
      outside
         If true the text is aligned outside the box.
+
+    fixme: works for straight vertical and horizontal lines
     """
     EPSILON = 1e-6
 
-    # hint tuples to move text depending on quadrant
-    WIDTH_HINT = (0, 0, -1)    # width hint tuple
-    R_WIDTH_HINT = (-1, -1, 0)    # width hint tuple
-    PADDING_HINT = (1, 1, -1)  # padding hint tuple
+    width, height = size
+    pad = style.padding
+    halign, valign = align
 
-    p1, p2 = line
+    if halign == ALIGN_LEFT:
+        p1, p2 = line[:2]
+    elif halign == ALIGN_RIGHT:
+        p1, p2 = line[-2:]
+    else: # ALIGN_CENTER
+        p1, p2 = line_middle_segment(line)
+
     x0 = (p1[0] + p2[0]) / 2.0
     y0 = (p1[1] + p2[1]) / 2.0
     dx = p2[0] - p1[0]
@@ -421,23 +428,29 @@ def text_pos_at_line(size, line, style, align, outside=False):
         d1 = dy / dx
         d2 = abs(d1)
 
-    width, height = size
-    pad = style.padding
-    halign, valign = align
-
     # move to center and move by delta depending on line angle
     if d2 < 0.5774: # <0, 30>, <150, 180>, <-180, -150>, <-30, 0>
         # horizontal mode
         w2 = width / 2.0
         hint = w2 * d2
 
-        x = x0 - w2
+        if halign == ALIGN_LEFT:
+            x = p1[0] + pad.left
+        elif halign == ALIGN_RIGHT:
+            x = p2[0] - width - pad.right
+        else:
+            x = x0 - w2
+
         if valign == ALIGN_TOP:
             y = y0 - pad.top - hint - height
         else:
             y = y0 + pad.bottom + hint
-    else:
-        # much better in case of vertical lines
+    else: # much better in case of vertical lines
+
+        # hint tuples to move text depending on quadrant
+        WIDTH_HINT = (0, 0, -1)    # width hint tuple
+        R_WIDTH_HINT = (-1, -1, 0)    # width hint tuple
+        PADDING_HINT = (1, 1, -1)  # padding hint tuple
 
         # determine quadrant, we are interested in 1 or 3 and 2 or 4
         # see hint tuples below
@@ -448,11 +461,19 @@ def text_pos_at_line(size, line, style, align, outside=False):
         else:
             hint = h2 / d2
 
-        if valign == ALIGN_TOP:
-            x = x0 + PADDING_HINT[q] * (pad.left + hint) + width * WIDTH_HINT[q]
+        if halign == ALIGN_LEFT:
+            y = p1[1] + pad.top
+        elif halign == ALIGN_RIGHT:
+            y = p2[1] - pad.bottom - height
         else:
-            x = x0 - PADDING_HINT[q] * (pad.right + hint) + width * R_WIDTH_HINT[q]
-        y = y0 - h2
+            y = y0 - h2
+
+        if valign == ALIGN_TOP:
+            x = p1[0] - width - pad.left
+        elif valign == ALIGN_BOTTOM:
+            x = p1[0] + pad.right + hint
+        else:
+            assert False
 
     return x, y
 
