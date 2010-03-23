@@ -353,9 +353,9 @@ def text_pos_at_box(size, box, style, align, outside=False):
             assert False
 
         if valign == ALIGN_TOP:
-            y = -pad.top
+            y = -h - pad.top
         elif valign == ALIGN_MIDDLE:
-            y = height / 2.0
+            y = (height - h) / 2.0 + pad.top - pad.bottom
         elif valign == ALIGN_BOTTOM:
             y = height + pad.bottom
         else:
@@ -373,9 +373,9 @@ def text_pos_at_box(size, box, style, align, outside=False):
         if valign == ALIGN_TOP:
             y = pad.top
         elif valign == ALIGN_MIDDLE:
-            y = height / 2
+            y = (height - h) / 2.0 + pad.top - pad.bottom
         elif valign == ALIGN_BOTTOM:
-            y = height - pad.bottom
+            y = height - h - pad.bottom
         else:
             assert False
     return x + x0, y + y0
