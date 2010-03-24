@@ -89,6 +89,7 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : attr: str = "test()"'))
         self.assertTrue(r.search(' : attr[11]'))
         self.assertTrue(r.search(' : attr [0..1]'))
+        self.assertTrue(r.search(' : attr [n..m]'))
         self.assertTrue(r.search(' : [0..1]'))
         self.assertFalse(r.search(' : oper()'))
         self.assertFalse(r.search(' : oper(a: int, b: str)'))
@@ -119,6 +120,9 @@ class RETestCase(unittest.TestCase):
         self.assertFalse(mre.group('name'))
         self.assertEquals('0..1', mre.group('mult'))
 
+        mre = r.search('attr [n..m]')
+        self.assertEquals('attr', mre.group('name'))
+        self.assertEquals('n..m', mre.group('mult'))
 
     def test_st_attributes(self):
         """Test stereotype attributes token parsing
