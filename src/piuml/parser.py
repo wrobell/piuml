@@ -197,11 +197,11 @@ RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'(?<!:[ ])<<[ ]*\w[\w ,]*>>'
-RE_ATTRIBUTE = r'^\s+:\s*[^:]\w+\s*($|:.+?$|=.+?$|\[(\d+|\d+\.\.\d+)\]$)'
+RE_ATTRIBUTE = r'^\s+:\s*[^:](\w+|\[(\d+|\d+\.\.\d+)\])\s*($|:.+?$|=.+?$|\[(\d+|\d+\.\.\d+)\]$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
 RE_STATTRIBUTES = r'^\.\s+:\s*<<\w+>>\s*$'
 
-RE_ASSOCIATION_END = r'(?P<name>\w+)\s*($|\[(?P<mult>\d+|\d+\.\.\d+)\])'
+RE_ASSOCIATION_END = r'(?P<name>\w+)?\s*($|\[(?P<mult>\d+|\d+\.\.\d+)\])'
 
 TOKENS = {
     'ID': RE_ID,
@@ -477,6 +477,9 @@ class piUMLParser(GenericParser):
                 stereotypes=stereotypes)
         if name:
             e.name = name
+
+        # change default style for an association
+        e.style.padding = Area(3, 18, 3, 18)
 
         return e
 

@@ -89,6 +89,7 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search(' : attr: str = "test()"'))
         self.assertTrue(r.search(' : attr[11]'))
         self.assertTrue(r.search(' : attr [0..1]'))
+        self.assertTrue(r.search(' : [0..1]'))
         self.assertFalse(r.search(' : oper()'))
         self.assertFalse(r.search(' : oper(a: int, b: str)'))
         self.assertFalse(r.search(' : oper(a: int, b: str): double'))
@@ -112,6 +113,10 @@ class RETestCase(unittest.TestCase):
 
         mre = r.search('attr [0..1]')
         self.assertEquals('attr', mre.group('name'))
+        self.assertEquals('0..1', mre.group('mult'))
+
+        mre = r.search('[0..1]')
+        self.assertFalse(mre.group('name'))
         self.assertEquals('0..1', mre.group('mult'))
 
 
