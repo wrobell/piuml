@@ -11,7 +11,7 @@ from spark import GenericASTTraversal
 from math import atan2, ceil, floor, pi
 from functools import partial
 
-from piuml.parser import Size, Pos, Style, Node, unwind, RE_ASSOCIATION_END
+from piuml.parser import Size, Pos, Style, Node, unwind
 
 # Default font.
 FONT = 'sans 10'
@@ -35,8 +35,6 @@ ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 
 # Vertical align.
 ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
-
-RE_ASSOCIATION_END = re.compile(RE_ASSOCIATION_END)
 
 DEBUG = False
 
@@ -600,19 +598,41 @@ class CairoDimensionCalculator(GenericASTTraversal):
         n.style.size = Size(28, 28)
 
 
-    def n_dependency(self, edge):
+    def _set_edge_len(self, edge, length=0):
+        """
+        Calculate and set minimal length of an edge.
+
+        :Parameters:
+         edge
+            Edge, which length shall be calculated.
+         length
+            Additional length to be added to calculated length.
+        """
         cr = self.cr
-        lens = [text_size(cr, edge.name, FONT)[0]]
+        lens = [text_size(cr, edge.name, FONT)[0] + length]
         if edge.stereotypes:
             lens.append(text_size(cr, fmts(edge.stereotypes), FONT)[0])
-        for end in edge:
-            lens.append(text_size(cr, end.name, FONT)[0])
-        length = max(75, 1.5 * sum(lens))
-        edge.style.size = Size(length, 0)
+        l = max(75, 2 * sum(lens))
+        edge.style.size = Size(l, 0)
+        return sum(lens)
 
 
-    n_commentline = n_connector = n_generalization = n_association \
-        = n_dependency
+    def n_dependency(self, edge):
+        """
+        Calculate minimal length of a dependency line.
+        """
+        self._set_edge_len(edge)
+
+    n_commentline = n_connector = n_generalization = n_dependency
+
+    def n_association(self, edge):
+        """
+        Calculate minimal length of an association line.
+        """
+        te = edge.data['tail']
+        he = edge.data['head']
+        txt = ''.join(t for t in te[:3] + he[:3] if t)
+        self._set_edge_len(edge, text_size(self.cr, txt, FONT)[0])
 
 
 
@@ -829,8 +849,8 @@ class CairoRenderer(GenericASTTraversal):
             'navigable': draw_head_arrow,
             'unknown': draw_head_none,
         }
-        dt = TEND[edge.data['tail']]
-        dh = HEND[edge.data['head']]
+        dt = TEND[edge.data['tail'][-1]]
+        dh = HEND[edge.data['head'][-1]]
 
         dir = edge.data['direction']
         name_fmt = '%s'
@@ -841,24 +861,28 @@ class CairoRenderer(GenericASTTraversal):
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
 
-        if len(edge) > 0:
-            dt = partial(draw_text, self.cr, edge.style.edges, edge.style, align_f=text_pos_at_line)
-            self._draw_association_end(dt, edge, 0, -1)
-            self._draw_association_end(dt, edge, 1, 1)
+        dt = partial(draw_text, self.cr, edge.style.edges, edge.style, align_f=text_pos_at_line)
+        self._draw_association_end(dt, edge.data['tail'], -1)
+        self._draw_association_end(dt, edge.data['head'], 1)
 
 
-    def _draw_association_end(self, dt, edge, num_end, align):
+    def _draw_association_end(self, dt, end, halign):
         """
         Draw association end.
+
+        :Parameters:
+         dt
+            Function used to draw association end text.
+         end
+            Tuple containing association end data.
+         halign
+            Horizontal alignment of the association end.
         """
-        if num_end < len(edge):
-            end = edge[num_end]
-            mre = RE_ASSOCIATION_END.search(end.name)
-            n, m = mre.group('name', 'mult')
-            if n:
-                dt(n, align=(align, -1))
-            if m:
-                dt(m, align=(align, 1))
+        c, n, m, _ = end
+        if n:
+            dt(n, align=(halign, -1))
+        if m:
+            dt(m, align=(halign, 1))
 
 
     def _draw_line(self,

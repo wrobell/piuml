@@ -124,6 +124,7 @@ class RETestCase(unittest.TestCase):
         self.assertEquals('attr', mre.group('name'))
         self.assertEquals('n..m', mre.group('mult'))
 
+
     def test_st_attributes(self):
         """Test stereotype attributes token parsing
         """

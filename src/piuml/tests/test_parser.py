@@ -198,9 +198,11 @@ c1 == c2
         self.assertEquals(1, len(assocs))
 
         assoc = assocs[0]
-        self.assertEquals(2, len(assoc))
-        self.assertEquals('one [0..1]', assoc[0].name)
-        self.assertEquals('two', assoc[1].name)
+        self.assertEquals(0, len(assoc))
+        self.assertEquals('one', assoc.data['tail'][1])
+        self.assertEquals('0..1', assoc.data['tail'][2])
+        self.assertEquals('two', assoc.data['head'][1])
+        self.assertEquals(None, assoc.data['head'][2])
 
 
 class GeneralLanguageTestCase(unittest.TestCase):
@@ -308,6 +310,25 @@ c1 =>= c2
     : c
 """)
         self.assertRaises(UMLError, load, f)
+
+
+    def test_association_head_only(self):
+        """Test association with association end at head only
+        """
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+
+c1 == "An association" c2
+    :: head [0..n]
+""")
+        ast = load(f)
+        assocs = [n for n in unwind(ast) if n.element == 'association']
+        self.assertEquals(['An association'], [n.name for n in assocs])
+        assoc = assocs[0]
+        self.assertEquals(0, len(assoc))
+        self.assertEquals((None, None, None, 'unknown'), assoc.data['tail'])
+        self.assertEquals((None, 'head', '0..n', 'unknown'), assoc.data['head'])
        
 
 # vim: sw=4:et:ai

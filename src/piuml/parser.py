@@ -215,11 +215,15 @@ RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
 RE_STEREOTYPE = r'(?<!:[ ])<<[ ]*\w[\w ,]*>>'
-RE_ATTRIBUTE = r'^\s+:\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
+RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
 RE_STATTRIBUTES = r'^\.\s+:\s*<<\w+>>\s*$'
 
-RE_ASSOCIATION_END = r'(?P<name>\w+)?\s*($|\[(?P<mult>\w+|\w+\.\.\w+)\])'
+RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
+    ($
+        | \[(?P<mult>\w+|\w+\.\.\w+)\] # multiplicity, i.e. [0], [n], [n..m]
+    )
+""", re.VERBOSE)
 
 TOKENS = {
     'ID': RE_ID,
@@ -483,8 +487,8 @@ class piUMLParser(GenericParser):
         v = args[1].value
         data = {
             'name': name,
-            'tail': AEND[v[0]],
-            'head': AEND[v[-1]],
+            'tail': (None, None, None, AEND[v[0]]),
+            'head': (None, None, None, AEND[v[-1]]),
             'direction': 'head' if '=>=' in v \
                     else 'tail' if '=<=' in v \
                     else None,
@@ -643,17 +647,33 @@ class piUMLParser(GenericParser):
 
     def _feature(self, feature, value):
         indent = value.split(':')[0]
+        txt = value.strip()[1:].strip()
 
-        n = Node('feature', feature)
-        n.name = value.strip()[1:].strip()
-
-        self._set_parent(indent, n)
+        parent = self._istack[-1][1]
 
         # special treatment for an association
-        if n.parent.element == 'association' and len(n.parent) == 3:
-            raise UMLError('Too many association ends')
+        if parent.element == 'association':
+            is_head = value.strip().startswith('::')
 
-        return n
+            if parent.data['tail'][1] is None and not is_head:
+                end = 'tail'
+            elif parent.data['head'][1] is None:
+                end = 'head'
+            else:
+                raise UMLError('Too many association ends')
+
+            et = parent.data[end][-1]
+            mre = RE_ASSOCIATION_END.search(txt)
+            constaint = None
+            name, mult = mre.group('name', 'mult')
+            if name is None:
+                name = ''
+            parent.data[end] = (constaint, name, mult, et)
+        else:
+            n = Node('feature', feature)
+            n.name = txt
+            self._set_parent(indent, n)
+            return n
 
 
     def p_attribute(self, args):
