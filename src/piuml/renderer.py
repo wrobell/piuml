@@ -283,7 +283,7 @@ def draw_line(cr, edges, draw_tail=draw_tail_none, draw_head=draw_head_none, das
     cr.restore()
 
 
-def box3d(cr, pos, size):
+def draw_box3d(cr, pos, size):
     cr.save()
     d = 10
     x, y = pos
@@ -299,6 +299,30 @@ def box3d(cr, pos, size):
     cr.line_to(x + w + d, y - d)
     cr.stroke()
     cr.restore()
+
+
+def draw_tabbed_box(cr, pos, size, tab=Size(50, 20)):
+    """
+    Draw tabbed box.
+
+    :Parameters:
+     cr
+        Cairo context.
+     pos
+        Position of the box.
+     size
+        Size of the box.
+     tab
+        Size of the tab.
+    """
+    x = pos.x + tab.width
+    y = pos.y - tab.height
+    cr.rectangle(pos.x, pos.y, size.width, size.height)
+    cr.move_to(pos.x, pos.y)
+    cr.line_to(pos.x, y)
+    cr.line_to(x, y)
+    cr.line_to(x, pos.y)
+    cr.stroke()
 
 
 def text_size(cr, txt, font):
@@ -689,8 +713,9 @@ class CairoRenderer(GenericASTTraversal):
         cr = self.cr
         cr.save()
         if node.element in ('node', 'device'):
-            box3d(cr, pos, size)
-            cr.stroke()
+            draw_box3d(cr, pos, size)
+        elif node.element == 'package':
+            draw_tabbed_box(cr, pos, size)
         elif node.element == 'comment':
             font = FONT
             ear = 15

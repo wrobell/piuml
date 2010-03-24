@@ -208,7 +208,7 @@ def st_parse(stereotype):
 
 # elements
 ELEMENTS = ('artifact', 'comment', 'class', 'component', 'device',
-        'interface', 'node')
+        'interface', 'node', 'package')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
@@ -233,7 +233,7 @@ TOKENS = {
     'ELEMENT': RE_ELEMENT,
     'FDIFACE': r'o\)|\(o', # folded interface
     'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
-    'DEPENDENCY': r'<[ur]?-|-[ur]?>',
+    'DEPENDENCY': r'<[urim]?-|-[urim]?>',
     'GENERALIZATION': r'(<=)|(=>)',
     'COMMENTLINE': r'--',
     'ATTRIBUTE': RE_ATTRIBUTE,
@@ -515,10 +515,12 @@ class piUMLParser(GenericParser):
         TYPE = {
             'u': 'use',
             'r': 'realize',
+            'i': 'import', # only between packages
+            'm': 'merge',  # only between packages
         }
         v = args[1].value
 
-        s = TYPE.get(v[1]) # get defaul stereotype
+        s = TYPE.get(v[1]) # get default stereotype
         if s:
             stereotypes = [s]
         else:
@@ -527,9 +529,15 @@ class piUMLParser(GenericParser):
             stereotypes.extend(st_parse(args[2].value))
             del args[2]
         assert args[0].type == 'ID' and args[2].type == 'ID'
-        n = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
-        n.data['supplier'] = n.tail if v[0] == '<' else n.head
-        return n
+        e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
+        e.data['supplier'] = e.tail if v[0] == '<' else e.head
+
+        if s in ('i', 'm') and e.tail.element != 'package' \
+                and e.head.element != 'package':
+            raise UMLError('Package merge or import can be specified only' \
+                ' between packages')
+
+        return e
 
 
     def p_generalization(self, args):

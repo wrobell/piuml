@@ -1,0 +1,8 @@
+package pu 'piuml'
+package pp 'parser'
+package pr 'renderer'
+package pl 'layout'
+
+pu -i> pp
+pu -i> pl
+pu -i> pr
