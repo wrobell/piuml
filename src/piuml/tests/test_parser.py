@@ -176,10 +176,10 @@ c1 == c2
         ast = load(f)
         ast.id = 'diagram'
         assocs = [n for n in unwind(ast) if n.element == 'association']
-        self.assertEquals(2, len(assocs))
+        self.assertEquals(1, len(assocs))
 
         assoc = assocs[0]
-        self.assertEquals(1, len(assoc))
+        self.assertEquals(2, len(assoc))
         self.assertEquals('one [0..1]', assoc[0].name)
         self.assertEquals('two', assoc[1].name)
 

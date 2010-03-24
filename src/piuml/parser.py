@@ -422,6 +422,7 @@ class piUMLParser(GenericParser):
         n.stereotypes.extend(stereotypes)
 
         self.ast.append(n)
+        self._istack[-1] = (0, n)
         self.nodes[id] = n
         return n
 
@@ -476,8 +477,6 @@ class piUMLParser(GenericParser):
                 stereotypes=stereotypes)
         if name:
             e.name = name
-
-        self._set_parent('', e)
 
         return e
 
