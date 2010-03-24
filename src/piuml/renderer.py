@@ -219,14 +219,18 @@ def draw_head_arrow(cr):
     association head.
     """
     dash = cr.get_dash()
-    #cr.set_dash((), 0)
+
+    # finish the line
     cr.line_to(0, 0)
     cr.stroke()
+
+    # draw the arrow
+    cr.set_dash((), 0)
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
     cr.stroke()
-    #cr.set_dash(*dash)
+    cr.set_dash(*dash)
 
 
 def draw_tail_arrow(cr):
