@@ -605,6 +605,8 @@ class CairoDimensionCalculator(GenericASTTraversal):
         lens = [text_size(cr, edge.name, FONT)[0]]
         if edge.stereotypes:
             lens.append(text_size(cr, fmts(edge.stereotypes), FONT)[0])
+        for end in edge:
+            lens.append(text_size(cr, end.name, FONT)[0])
         length = max(75, 1.5 * sum(lens))
         edge.style.size = Size(length, 0)
 
