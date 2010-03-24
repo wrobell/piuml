@@ -34,7 +34,7 @@ class s "Size: tuple"
     : width: float
     : height: float
 
-e <= n
+e => n
 #n -> style <<AAAA>>
 n =>=> 'has style' style
     : [1]
