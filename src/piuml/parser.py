@@ -631,6 +631,10 @@ class piUMLParser(GenericParser):
 
         self._set_parent(indent, n)
 
+        # special treatment for an association
+        if n.parent.element == 'association' and len(n.parent) == 3:
+            raise UMLError('Too many association ends')
+
         return n
 
 
