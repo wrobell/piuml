@@ -246,7 +246,16 @@ def draw_tail_arrow(cr):
     #cr.set_dash(*dash)
 
 
-def draw_triangle(cr):
+def draw_head_triangle(cr):
+    cr.line_to(15, 0)
+    cr.move_to(0, 0)
+    cr.line_to(15, -10)
+    cr.line_to(15, 10)
+    cr.close_path()
+    cr.stroke()
+
+
+def draw_tail_triangle(cr):
     cr.move_to(0, 0)
     cr.line_to(15, -10)
     cr.line_to(15, 10)
@@ -776,9 +785,9 @@ class CairoRenderer(GenericASTTraversal):
 
     def n_generalization(self, n):
         if n.data['super'] is n.head:
-            self._draw_line(n, draw_head=draw_triangle)
+            self._draw_line(n, draw_head=draw_head_triangle)
         else:
-            self._draw_line(n, draw_tail=draw_triangle)
+            self._draw_line(n, draw_tail=draw_tail_triangle)
 
 
     def n_dependency(self, n):
