@@ -1,0 +1,12 @@
+actor w 'Writer'
+
+subsystem pu 'piUML'
+    usecase m 'Create Model'
+
+subsystem doc 'Documentation'
+    usecase wd 'Create'
+
+w ==> m
+w ==> wd
+
+m -e> wd
