@@ -345,6 +345,36 @@ def draw_ellipse(cr, pos, r1, r2):
     cr.restore()
 
 
+def draw_note(cr, pos, size, ear=15):
+    """
+    Draw note shape.
+
+    Parameters:
+     cr
+        Cairo context.
+     pos
+        Position of note rectangle.
+     size
+        Width and height of the note rectangle.
+     ear
+        Length of "ear" of the line.
+    """
+    width, height = size
+    x, y = pos
+    w = x + width
+    h = y + height
+    cr.move_to(w - ear, y)
+    line_to = cr.line_to
+    line_to(w - ear, y + ear)
+    line_to(w, y + ear)
+    line_to(w - ear, y)
+    line_to(x, y)
+    line_to(x, h)
+    line_to(w, h)
+    line_to(w, y + ear)
+    cr.stroke()
+
+
 def text_size(cr, txt, font):
     """
     Calculate total size of a text for specified font.
@@ -735,27 +765,16 @@ class CairoRenderer(GenericASTTraversal):
         elif node.element == 'package':
             draw_tabbed_box(cr, pos, size)
         elif node.element == 'usecase':
+            align = (0, 0)
+
             r1 = size.width / 2.0
             r2 = size.height / 2.0
             x0 = pos.x + r1
             y0 = pos.y + r2
             draw_ellipse(cr, (x0, y0), r1, r2)
-            align = (0, 0)
         elif node.element == 'comment':
             font = FONT
-            ear = 15
-            w = x + width
-            h = y + height
-            cr.move_to(w - ear, y)
-            line_to = cr.line_to
-            line_to(w - ear, y + ear)
-            line_to(w, y + ear)
-            line_to(w - ear, y)
-            line_to(x, y)
-            line_to(x, h)
-            line_to(w, h)
-            line_to(w, y + ear)
-            cr.stroke()
+            draw_note(cr, pos, size)
         else:
             cr.rectangle(x, y, width, height)
             cr.stroke()
