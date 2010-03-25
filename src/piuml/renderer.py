@@ -375,6 +375,45 @@ def draw_note(cr, pos, size, ear=15):
     cr.stroke()
 
 
+def draw_human(cr, pos, size):
+    """
+    Draw human figure.
+
+    :Parameters:
+     pos
+        Left, top position of the figure.
+     size
+        Width and height of the figure.
+    """
+    head = 11
+    arm  = 19
+    neck = 10
+    body = 20
+    width, height = size
+    x0, y0 = pos
+
+    fx = width / (arm * 2);
+    fy = height / (head + neck + body + arm)
+
+    x = x0 + arm * fx
+    y = y0 + (head / 2.0) * fy
+    cy = head * fy
+
+    cr.move_to(x + head * fy / 2.0, y)
+    cr.arc(x, y, head * fy / 2.0, 0, 2 * pi)
+
+    cr.move_to(x, y + cy / 2)
+    cr.line_to(x0 + arm * fx, y0 + (head + neck + body) * fy)
+
+    cr.move_to(x0, y0 + (head + neck) * fy)
+    cr.line_to(x0 + arm * 2 * fx, y0 + (head + neck) * fy)
+
+    cr.move_to(x0, y0 + (head + neck + body + arm) * fy)
+    cr.line_to(x0 + arm * fx, y0 + (head + neck + body) * fy)
+    cr.line_to(x0 + arm * 2 * fx, y0 + (head + neck + body + arm) * fy)
+    cr.stroke()
+
+
 def text_size(cr, txt, font):
     """
     Calculate total size of a text for specified font.
@@ -637,18 +676,29 @@ class CairoDimensionCalculator(GenericASTTraversal):
         self.postorder(ast)
 
 
-    def n_element(self, n):
+    def n_element(self, node):
+        """
+        Calculate minimal size of a node.
+
+        :Parameters:
+         node
+            Node, which size shall be calculated.
+        """
+        if node.element == 'actor':
+            node.style.size = Size(40, 60)
+            return
+
         cr = self.cr
-        pad = n.style.padding
+        pad = node.style.padding
         sizes = [(80, 0)]
 
-        if n.stereotypes:
-            sizes.append(text_size(cr, fmts(n.stereotypes), FONT))
-        sizes.append(text_size(cr, n.name, FONT_NAME))
+        if node.stereotypes:
+            sizes.append(text_size(cr, fmts(node.stereotypes), FONT))
+        sizes.append(text_size(cr, node.name, FONT_NAME))
 
         compartments = []
-        attrs = '\\n'.join(f.name for f in n if f.element == 'attribute')
-        opers = '\\n'.join(f.name for f in n if f.element == 'operation')
+        attrs = '\\node'.join(f.name for f in node if f.element == 'attribute')
+        opers = '\\node'.join(f.name for f in node if f.element == 'operation')
         cl = 0
         if attrs:
             w, h = text_size(cr, attrs, FONT)
@@ -658,9 +708,9 @@ class CairoDimensionCalculator(GenericASTTraversal):
             w, h = text_size(cr, opers, FONT)
             sizes.append(Size(w, h))
             cl += 1
-        st_attrs = (f for f in n if f.element == 'stattributes')
+        st_attrs = (f for f in node if f.element == 'stattributes')
         for f in st_attrs:
-            attrs = fmts([f.name]) + '\\n' + '\\n'.join(a.name for a in f)
+            attrs = fmts([f.name]) + '\\node' + '\\node'.join(a.name for a in f)
             w, h = text_size(cr, attrs, FONT)
             sizes.append(Size(w, h))
             cl += 1
@@ -669,7 +719,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
         height = sum(h for w, h in sizes) * LINE_STRETCH
         width += pad.left + pad.right
         height += pad.top + pad.bottom + cl * pad.top * 2
-        n.style.size = Size(width, max(height, 40))
+        node.style.size = Size(width, max(height, 40))
 
 
     def n_ielement(self, n):
@@ -757,6 +807,7 @@ class CairoRenderer(GenericASTTraversal):
         pad = node.style.padding
         font = FONT_NAME
         align = (0, -1)
+        outside = False
 
         cr = self.cr
         cr.save()
@@ -772,6 +823,10 @@ class CairoRenderer(GenericASTTraversal):
             x0 = pos.x + r1
             y0 = pos.y + r2
             draw_ellipse(cr, (x0, y0), r1, r2)
+        elif node.element == 'actor':
+            align = (0, 1)
+            outside = True
+            draw_human(cr, pos, size)
         elif node.element == 'comment':
             font = FONT
             draw_note(cr, pos, size)
@@ -781,8 +836,13 @@ class CairoRenderer(GenericASTTraversal):
 
         skip = 0
         if node.stereotypes:
-            skip += draw_text(cr, node.style.size, node.style, fmts(node.stereotypes), align=align)
-        skip += draw_text(cr, node.style.size, node.style, node.name, font=font, align=align, top=skip)
+            skip += draw_text(cr, node.style.size, node.style,
+                    fmts(node.stereotypes),
+                    align=align, outside=outside)
+        skip += draw_text(cr, node.style.size, node.style,
+                node.name,
+                font=font, align=align, outside=outside,
+                top=skip)
         skip += pad.top
 
         skip = self._compartment(node, node, lambda f: f.element == 'attribute', skip)

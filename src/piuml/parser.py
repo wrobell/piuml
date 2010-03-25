@@ -363,6 +363,10 @@ class piUMLParser(GenericParser):
         self.nodes[id] = n
         self._set_parent(indent, n)
 
+        if n.element == 'actor':
+            # change default style for an actor
+            n.style.padding = Area(0, 0, 0, 0)
+
         return n
 
 
