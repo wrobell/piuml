@@ -265,6 +265,89 @@ c1 c2 o) "A" c3 cls
 
 
 class LinesTestCase(unittest.TestCase):
+    """
+    Line elements tests.
+    """
+    def test_package_merge_import(self):
+        """Test package merge and package import
+        """
+        f = StringIO("""
+package p1 "P1"
+package p2 "P2"
+
+p1 -m> p2
+p1 -i> p2
+""")
+        ast = load(f)
+        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        self.assertEquals(['merge'], deps[0].stereotypes)
+        self.assertEquals(['import'], deps[1].stereotypes)
+
+
+    def test_package_merge_error(self):
+        """Test package merge error
+        """
+        f = StringIO("""
+package p1 "P1"
+class p2 "P2"
+
+p1 -m> p2
+""")
+        self.assertRaises(UMLError, load, f)
+
+
+    def test_package_import_error(self):
+        """Test package import error
+        """
+        f = StringIO("""
+package p1 "P1"
+class p2 "P2"
+
+p1 -i> p2
+""")
+        self.assertRaises(UMLError, load, f)
+
+
+    def test_usecase_include_extend(self):
+        """Test use case inclusion and extension dependencies
+        """
+        f = StringIO("""
+usecase u1 "U1"
+usecase u2 "U2"
+
+u1 -i> u2
+u1 -e> u2
+""")
+        ast = load(f)
+        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        self.assertEquals(['include'], deps[0].stereotypes)
+        self.assertEquals(['extend'], deps[1].stereotypes)
+
+
+    def test_usecase_include_error(self):
+        """Test use case inclusion error
+        """
+        f = StringIO("""
+usecase u1 "U1"
+class u2 "U2"
+
+u1 -i> u2
+""")
+        self.assertRaises(UMLError, load, f)
+
+
+    def test_usecase_extend_error(self):
+        """Test use case extension error
+        """
+        f = StringIO("""
+usecase u1 "U1"
+class u2 "U2"
+
+u1 -e> u2
+""")
+        self.assertRaises(UMLError, load, f)
+
+
     def test_association_dir(self):
         """Test association direction
         """

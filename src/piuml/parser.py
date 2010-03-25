@@ -233,7 +233,7 @@ TOKENS = {
     'ELEMENT': RE_ELEMENT,
     'FDIFACE': r'o\)|\(o', # folded interface
     'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
-    'DEPENDENCY': r'<[urim]?-|-[urim]?>',
+    'DEPENDENCY': r'<[{0}]?-|-[{0}]?>'.format('urime'),
     'GENERALIZATION': r'(<=)|(=>)',
     'COMMENTLINE': r'--',
     'ATTRIBUTE': RE_ATTRIBUTE,
@@ -520,12 +520,14 @@ class piUMLParser(GenericParser):
         TYPE = {
             'u': 'use',
             'r': 'realize',
-            'i': 'import', # only between packages
+            'i': 'import/include', # only between packages or use cases
             'm': 'merge',  # only between packages
+            'e': 'extend', # only between use cases
         }
         v = args[1].value
+        dt = v[1] # dependency type
 
-        s = TYPE.get(v[1]) # get default stereotype
+        s = TYPE.get(dt) # get default stereotype
         if s:
             stereotypes = [s]
         else:
@@ -539,10 +541,27 @@ class piUMLParser(GenericParser):
         e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
         e.data['supplier'] = e.tail if v[0] == '<' else e.head
 
-        if s in ('i', 'm') and e.tail.element != 'package' \
-                and e.head.element != 'package':
-            raise UMLError('Package merge or import can be specified only' \
-                ' between packages')
+        if dt and dt in 'ime':
+            t = e.tail.element, e.head.element
+            t_p = 'package', 'package'
+            t_u = 'usecase', 'usecase'
+
+            # fix the stereotype
+            if dt == 'i' and t == t_p:
+                e.stereotypes[0] = 'import'
+            elif dt == 'i' and t == t_u:
+                e.stereotypes[0] = 'include'
+
+            if dt == 'i' and (t != t_p and t != t_u):
+                raise UMLError('Dependency -i> (package import or use case' \
+                    ' inclusion) can be specified only' \
+                    ' between two packages or two use cases')
+            elif dt == 'm' and t != t_p:
+                raise UMLError('Dependency -m> (package merge) can be' \
+                    ' specified only between two packages')
+            elif dt == 'e' and t != t_u:
+                raise UMLError('Dependency -e> (use case extension) can be' \
+                    ' specified only between two use cases')
 
         return e
 
