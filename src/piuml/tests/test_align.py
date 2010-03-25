@@ -29,13 +29,14 @@ import unittest
 from piuml.parser import Style, Pos, Area, Size
 from piuml.renderer import draw_text, text_pos_at_line
 
+surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 400, 300)
+cr = cairo.Context(surface)
+
 class BoxAlignTestCase(unittest.TestCase):
     """
     Text alignment at a box tests.
     """
     def _draw(self, name, pad, outside=False):
-        s = cairo.PDFSurface('src/piuml/tests/%s.pdf' % name, 400, 300)
-        cr = cairo.Context(s)
         cr.rectangle(100, 100, 200, 100)
         cr.stroke()
 
@@ -78,8 +79,7 @@ class BoxAlignTestCase(unittest.TestCase):
         dt('(LBOTTOM)', align=(-1, 1))
         dt('(RBOTTOM)', align=(1, 1))
 
-        s.flush()
-        s.finish()
+        cr.show_page()
 
 
     def test_inner_align(self):
@@ -101,9 +101,6 @@ class LineAlignTestCase(unittest.TestCase):
     Text alignment at a line tests.
     """
     def _draw(self, name, line, pad):
-        s = cairo.PDFSurface('src/piuml/tests/%s.pdf' % name, 400, 300)
-        cr = cairo.Context(s)
-
         cr.move_to(*line[0])
         cr.arc(line[0][0], line[0][1], 1.0, 0.0, 2.0 * pi)
         for p1, p2 in zip(line[:-1], line[1:]):
@@ -138,8 +135,7 @@ class LineAlignTestCase(unittest.TestCase):
         dt('(L-BOTTOM)', align=(-1, 1))
         dt('(R-BOTTOM)', align=(1, 1))
 
-        s.flush()
-        s.finish()
+        cr.show_page()
 
 
     def test_halign(self):
