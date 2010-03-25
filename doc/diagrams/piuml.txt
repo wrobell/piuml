@@ -1,0 +1,16 @@
+# the idea of piUML
+
+component c 'piUML'
+    component cp 'Parser'
+    component cl 'Layout'
+    component cr 'Renderer'
+
+artifact f 'model.txt' <<piuml, source>>
+artifact m 'model.pdf' <<document>>
+
+# parser uses model.txt to create model.pdf
+f <u- cp
+cr -> <<create>> m
+
+cp <- cl
+cl <- cr
