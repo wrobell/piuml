@@ -8,7 +8,6 @@ component c 'piUML'
 artifact f 'model.txt' <<piuml, source>>
 artifact m 'model.pdf' <<document>>
 
-# parser uses model.txt to create model.pdf
 f <u- cp
 cr -> <<create>> m
 
