@@ -6,6 +6,7 @@ Drawing routines are adapted from Gaphas and Gaphor source code.
 
 import cairo
 import re
+import sys
 from cStringIO import StringIO
 from spark import GenericASTTraversal
 from math import atan2, ceil, floor, pi
@@ -45,18 +46,20 @@ class CairoBBContext(object):
 
     def __init__(self, cr):
         self._cr = cr
-        self.bbox = (0, 0, 0, 0)
+        self.bbox = (sys.maxint, sys.maxint, 0, 0)
 
     def __getattr__(self, key):
         return getattr(self._cr, key)
 
     def _update_bbox(self, bbox):
+        if bbox == (0, 0, 0, 0):
+            return
         x1, y1, x2,  y2 = bbox
         xb1, yb1, xb2, yb2 = self.bbox
         self.bbox = min(x1, xb1), min(y1, yb1), max(x2, xb2), max(y2, yb2)
 
 
-    def _bbox(self, f, line=False):
+    def _bbox(self, f):
         """
         Calculate the bounding box for a given drawing operation.
         if ``line`` is True, the current line-width is taken into account.
@@ -66,13 +69,6 @@ class CairoBBContext(object):
         cr.identity_matrix()
         bbox = f()
         cr.restore()
-
-        if line:
-            lw = cr.get_line_width() / 2.0
-            d = cr.user_to_device_distance(lw, lw)
-            db = d[0] + d[1]
-            x1, y1, x2, y2 = bbox
-            bbox = x1 - db, y1 - db, x2 + db, y2 + db
         self._update_bbox(bbox)
         return bbox
 
@@ -97,7 +93,7 @@ class CairoBBContext(object):
         Interceptor for Cairo drawing method.
         """
         cr = self._cr
-        self._bbox(cr.stroke_extents, line=True)
+        self._bbox(cr.stroke_extents)
         cr.stroke()
 
     def stroke_preserve(self):
@@ -105,7 +101,7 @@ class CairoBBContext(object):
         Interceptor for Cairo drawing method.
         """
         cr = self._cr
-        self._bbox(cr.stroke_extents, line=True)
+        self._bbox(cr.stroke_extents)
         cr.stroke_preserve()
 
     def show_text(self, txt):
@@ -1061,10 +1057,9 @@ class CairoRenderer(GenericASTTraversal):
         w, h = n.style.size
         w = int(ceil(w))
         h = int(ceil(h))
-        self.origin = int(floor(w / 4.0)), int(floor(h / 4.0))
         self.surface = cairo.PDFSurface(StringIO(), w * 2, h * 2)
         self.cr = CairoBBContext(cairo.Context(self.surface))
-        self.cr.translate(*self.origin)
+        self.cr.translate(int(w / 4), int(h / 4))
         self.cr.save()
 
 
@@ -1073,12 +1068,11 @@ class CairoRenderer(GenericASTTraversal):
         Generate PDF, SVG or PNG file with UML diagram.
         """
         self.cr.restore()
-        x0, y0 = self.origin
 
         x1, y1, x2, y2 = self.cr.bbox
         x1, y1, x2, y2 = map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2)))
-        w = abs(x2 - x1) - x0
-        h = abs(y2 - y1) - y0
+        w = abs(x2 - x1)
+        h = abs(y2 - y1)
 
         if self.filetype == 'png':
             s = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
@@ -1088,7 +1082,7 @@ class CairoRenderer(GenericASTTraversal):
             s = cairo.PDFSurface(self.output, w, h)
 
         cr = cairo.Context(s)
-        cr.set_source_surface(self.surface, -(x0 + x1) + 1, -(y0 + y1) + 1)
+        cr.set_source_surface(self.surface, -x1, -y1)
         cr.paint()
         cr.show_page()
         if self.filetype == 'png':
