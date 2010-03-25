@@ -36,8 +36,6 @@ ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 # Vertical align.
 ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
-DEBUG = False
-
 class CairoBBContext(object):
     """
     Delegate all calls to the wrapped CairoBoundingBoxContext, intercept
@@ -323,6 +321,28 @@ def draw_tabbed_box(cr, pos, size, tab=Size(50, 20)):
     cr.line_to(x, y)
     cr.line_to(x, pos.y)
     cr.stroke()
+
+
+def draw_ellipse(cr, pos, r1, r2):
+    """
+    Draw ellipse.
+    
+    :Parameters:
+     cr
+        Cairo context.
+     pos
+        Center of the ellipse.
+     r1
+        Ellipse horizontal radius.
+     r2
+        Ellipse vertical radius.
+    """
+    cr.save()
+    cr.translate(*pos)
+    cr.scale(r1, r2)
+    cr.move_to(1.0, 0.0)
+    cr.arc(0.0, 0.0, 1.0, 0.0, 2.0 * pi)
+    cr.restore()
 
 
 def text_size(cr, txt, font):
@@ -696,9 +716,6 @@ class CairoRenderer(GenericASTTraversal):
             skip += pad.top
             cr.move_to(x, y + skip)
             cr.line_to(x + width, y + skip)
-            if DEBUG:
-                cr.move_to(x + pad.left, y + skip + pad.top)
-                cr.line_to(x + width - pad.right, y + skip + pad.top)
             skip += draw_text(cr, parent.style.size, parent.style, features, top=skip, align=(-1, -1))
             skip += pad.top
         return skip
@@ -709,6 +726,7 @@ class CairoRenderer(GenericASTTraversal):
         size = width, height = node.style.size
         pad = node.style.padding
         font = FONT_NAME
+        align = (0, -1)
 
         cr = self.cr
         cr.save()
@@ -716,6 +734,13 @@ class CairoRenderer(GenericASTTraversal):
             draw_box3d(cr, pos, size)
         elif node.element == 'package':
             draw_tabbed_box(cr, pos, size)
+        elif node.element == 'usecase':
+            r1 = size.width / 2.0
+            r2 = size.height / 2.0
+            x0 = pos.x + r1
+            y0 = pos.y + r2
+            draw_ellipse(cr, (x0, y0), r1, r2)
+            align = (0, 0)
         elif node.element == 'comment':
             font = FONT
             ear = 15
@@ -734,25 +759,12 @@ class CairoRenderer(GenericASTTraversal):
         else:
             cr.rectangle(x, y, width, height)
             cr.stroke()
-            if DEBUG:
-                cr.save()
-                cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
-                cr.rectangle(x + pad.left, y + pad.top, width - pad.left - pad.right, height - pad.top - pad.bottom)
-                cr.stroke()
-                cr.restore()
 
         skip = 0
         if node.stereotypes:
-            skip += draw_text(cr, node.style.size, node.style, fmts(node.stereotypes), align=(0, -1))
-        skip += draw_text(cr, node.style.size, node.style, node.name, font=font, align=(0, -1), top=skip)
+            skip += draw_text(cr, node.style.size, node.style, fmts(node.stereotypes), align=align)
+        skip += draw_text(cr, node.style.size, node.style, node.name, font=font, align=align, top=skip)
         skip += pad.top
-        if DEBUG:
-            cr.save()
-            cr.set_source_rgba(0.0, 1.0, 0.0, 0.5)
-            cr.move_to(x + pad.left, y + skip)
-            cr.line_to(x - pad.right + width, y + skip)
-            cr.stroke()
-            cr.restore()
 
         skip = self._compartment(node, node, lambda f: f.element == 'attribute', skip)
         skip = self._compartment(node, node, lambda f: f.element == 'operation', skip)
