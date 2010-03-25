@@ -528,7 +528,9 @@ class piUMLParser(GenericParser):
         if args[2].type == 'STEREOTYPE':
             stereotypes.extend(st_parse(args[2].value))
             del args[2]
+
         assert args[0].type == 'ID' and args[2].type == 'ID'
+
         e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
         e.data['supplier'] = e.tail if v[0] == '<' else e.head
 
