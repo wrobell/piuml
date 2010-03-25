@@ -6,7 +6,10 @@ subsystem pu 'piUML'
 subsystem doc 'Documentation'
     usecase wd 'Create'
 
+comment c 'For example\n\n- Sphinx\n- Epydoc\n- TeX\n'
+
 w ==> m
 w ==> wd
 
 m -e> wd
+doc -- c
