@@ -208,7 +208,7 @@ def st_parse(stereotype):
 
 # elements
 ELEMENTS = ('actor', 'artifact', 'comment', 'class', 'component', 'device',
-        'interface', 'node', 'package', 'usecase')
+        'interface', 'node', 'package', 'subsystem', 'usecase')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
@@ -345,6 +345,7 @@ class piUMLParser(GenericParser):
             'component': 'component',
             'artifact': 'artifact',
             'interface': 'interface',
+            'subsystem': 'subsystem',
         }
         self._trim(args)
 
