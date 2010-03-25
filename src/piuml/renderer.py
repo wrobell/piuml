@@ -211,7 +211,7 @@ def draw_tail_diamond(cr, filled=False):
     cr.move_to(20, 0)
 
 
-def draw_head_arrow(cr):
+def draw_head_arrow(cr, fill=False):
     """
     Draw a normal arrow to indicate association end navigability at
     association head.
@@ -227,11 +227,14 @@ def draw_head_arrow(cr):
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
+    if fill:
+        cr.close_path()
+        cr.fill()
     cr.stroke()
     cr.set_dash(*dash)
 
 
-def draw_tail_arrow(cr):
+def draw_tail_arrow(cr, fill=False):
     """
     Draw a normal arrow to indicate association end navigability at
     association tail.
@@ -241,6 +244,9 @@ def draw_tail_arrow(cr):
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
+    if fill:
+        cr.close_path()
+        cr.fill()
     cr.stroke()
     cr.move_to(0, 0)
     #cr.set_dash(*dash)
@@ -813,7 +819,7 @@ class CairoRenderer(GenericASTTraversal):
         cr.save()
         if node.element in ('node', 'device'):
             draw_box3d(cr, pos, size)
-        elif node.element == 'package':
+        elif node.element in ('package', 'profile'):
             draw_tabbed_box(cr, pos, size)
         elif node.element == 'usecase':
             align = (0, 0)
@@ -955,6 +961,17 @@ class CairoRenderer(GenericASTTraversal):
          edge
             Edge representing an association.
         """
+        if edge.element == 'extension':
+            params = {}
+            if edge.tail.element == 'metaclass':
+                params['draw_tail'] = partial(draw_tail_arrow, fill=True)
+            elif edge.head.element == 'metaclass':
+                params['draw_head'] = partial(draw_head_arrow, fill=True)
+            else:
+                assert False
+            self._draw_line(edge, **params)
+            return
+
         TEND = {
             'none': draw_tail_x,
             'shared': draw_tail_diamond,

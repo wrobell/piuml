@@ -208,7 +208,8 @@ def st_parse(stereotype):
 
 # elements
 ELEMENTS = ('actor', 'artifact', 'comment', 'class', 'component', 'device',
-        'interface', 'node', 'package', 'subsystem', 'usecase')
+    'interface', 'metaclass', 'node', 'package', 'profile', 'stereotype',
+    'subsystem', 'usecase')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
@@ -341,10 +342,13 @@ class piUMLParser(GenericParser):
         element ::= ELEMENT SPACE ID SPACE NAME
         """
         STEREOTYPES = {
-            'device': 'device',
-            'component': 'component',
             'artifact': 'artifact',
+            'metaclass': 'metaclass',
+            'component': 'component',
+            'device': 'device',
             'interface': 'interface',
+            'profile': 'profile',
+            'stereotype': 'stereotype',
             'subsystem': 'subsystem',
         }
         self._trim(args)
@@ -504,6 +508,10 @@ class piUMLParser(GenericParser):
                 stereotypes=stereotypes)
         if name:
             e.name = name
+
+        t = e.tail.element, e.head.element
+        if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
+            e.element = 'extension'
 
         # change default style for an association
         e.style.padding = Area(3, 18, 3, 18)

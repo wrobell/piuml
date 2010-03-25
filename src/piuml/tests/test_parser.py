@@ -412,6 +412,20 @@ c1 == "An association" c2
         self.assertEquals(0, len(assoc))
         self.assertEquals((None, None, None, 'unknown'), assoc.data['tail'])
         self.assertEquals((None, 'head', '0..n', 'unknown'), assoc.data['head'])
+
+
+    def test_profile_extension(self):
+        """Test profile extension
+        """
+        f = StringIO("""
+stereotype s "S"
+metaclass m "M"
+
+s == m
+""")
+        ast = load(f)
+        exts = [n for n in unwind(ast) if n.element == 'extension']
+        self.assertEquals(1, len(exts))
        
 
 # vim: sw=4:et:ai
