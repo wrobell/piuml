@@ -27,7 +27,7 @@ layout.
 """
 
 from piuml.parser import parse
-from piuml.graph import GVGraph
+from piuml.layout import GVGraph
 from piuml.renderer import CairoRenderer
 
 __version__ = '0.1.0'
