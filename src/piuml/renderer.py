@@ -249,12 +249,18 @@ def draw_tail_arrow(cr, fill=False):
 
 
 def draw_head_triangle(cr):
+    dash = cr.get_dash()
     cr.line_to(15, 0)
+    cr.stroke()
+
+    # draw the triangle
+    cr.set_dash((), 0)
     cr.move_to(0, 0)
     cr.line_to(15, -10)
     cr.line_to(15, 10)
     cr.close_path()
     cr.stroke()
+    cr.set_dash(*dash)
 
 
 def draw_tail_triangle(cr):
@@ -960,6 +966,13 @@ class CairoRenderer(GenericASTTraversal):
         if supplier.element == 'fdiface':
             params = { 'show_st': False }
 
+        if supplier.element in ('interface', 'component'):
+            params['show_st'] = False
+            if supplier is n.head:
+                params['draw_head'] = draw_head_triangle
+            else:
+                params['draw_tail'] = draw_tail_triangle
+
         self._draw_line(n, **params)
 
 
@@ -1057,7 +1070,7 @@ class CairoRenderer(GenericASTTraversal):
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
         text = []
-        if edge.stereotypes:
+        if show_st and edge.stereotypes:
             text.append(fmts(edge.stereotypes))
         if edge.name:
             text.append(name_fmt % edge.name)
