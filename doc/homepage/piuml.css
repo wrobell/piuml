@@ -1,0 +1,29 @@
+/* remove top border for body defined by typogridphy */
+body {
+    border-top: none;
+}
+
+/* redefine top border defined by typogridphy */
+.generic {
+	border-top: 0.2em solid #666;
+}
+
+div#header {
+    text-align: right;
+}
+
+div#header span {
+    font-size: 1.4em;
+}
+
+.piuml {
+    font-variant: small-caps;
+}
+
+div.generic h2 {
+    font-variant: small-caps;
+}
+
+div.nineforty h2 {
+    font-variant: normal;
+}
