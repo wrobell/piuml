@@ -1,0 +1,8 @@
+instance g ':GVGraph'
+instance cr ':CairoRenderer'
+instance ast 'ast :Node'
+    : type = 'diagram'
+    : element = 'diagram'
+
+g -> <<create>> ast
+cr -u> ast

@@ -627,8 +627,8 @@ def line_center(edges):
     return pos, angle
 
 
-def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1), outside=False,
-        align_f=text_pos_at_box):
+def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1),
+        outside=False, underline=False, align_f=text_pos_at_box):
 
     h, v = align
     set_font(cr, font)
@@ -651,6 +651,14 @@ def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1), outside=Fa
         cr.save()
         cr.move_to(x0, y - 2) # fixme: little hack as text appears bit below than expected, to be fixed
         cr.show_text(t)
+        if underline:
+            cr.save()
+            cr.set_line_width(0.8)
+            cr.move_to(x0, y + 1)
+            cr.line_to(x0 + size[0], y + 1)
+            cr.stroke()
+            cr.restore()
+            skip += 2
         cr.restore()
 
     return skip
@@ -810,6 +818,7 @@ class CairoRenderer(GenericASTTraversal):
         font = FONT_NAME
         align = (0, -1)
         outside = False
+        underline = False
 
         cr = self.cr
         cr.save()
@@ -832,6 +841,10 @@ class CairoRenderer(GenericASTTraversal):
         elif node.element == 'comment':
             font = FONT
             draw_note(cr, pos, size)
+        elif node.element == 'instance':
+            underline = True
+            cr.rectangle(x, y, width, height)
+            cr.stroke()
         else:
             cr.rectangle(x, y, width, height)
             cr.stroke()
@@ -844,6 +857,7 @@ class CairoRenderer(GenericASTTraversal):
         skip += draw_text(cr, node.style.size, node.style,
                 node.name,
                 font=font, align=align, outside=outside,
+                underline=underline,
                 top=skip)
         skip += pad.top
 

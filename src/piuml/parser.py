@@ -208,8 +208,8 @@ def st_parse(stereotype):
 
 # elements
 ELEMENTS = ('actor', 'artifact', 'comment', 'class', 'component', 'device',
-    'interface', 'metaclass', 'node', 'package', 'profile', 'stereotype',
-    'subsystem', 'usecase')
+    'interface', 'instance', 'metaclass', 'node', 'package', 'profile',
+    'stereotype', 'subsystem', 'usecase')
 
 RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
