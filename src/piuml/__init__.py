@@ -26,7 +26,34 @@ language is analyzed and diagram is rendered into PDF file using automatic
 layout.
 """
 
+from piuml.parser import parse
+from piuml.graph import GVGraph
+from piuml.renderer import CairoRenderer
+
 __version__ = '0.1.0'
+
+def generate(f, fout, filetype='pdf'):
+    """
+    Generate UML diagram into output file.
+
+    :Parameters:
+     f
+        File containing UML diagram description in piUML language.
+     fout
+        Output of file name.
+     filetype
+        Type of a file: pdf, svg or png.
+    """
+    graph = GVGraph()
+    renderer = CairoRenderer()
+    renderer.filetype = filetype
+    renderer.output = fout
+
+    ast = parse(f)
+    graph.create(ast)
+    renderer.dims(ast)
+    graph.layout(ast)
+    renderer.render(ast)
 
 
 # vim: sw=4:et:ai

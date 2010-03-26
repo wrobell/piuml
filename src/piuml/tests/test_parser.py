@@ -24,7 +24,7 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.parser import load, ParseError, UMLError, st_parse, unwind
+from piuml.parser import parse, ParseError, UMLError, st_parse, unwind
 
 
 class GroupingTestCase(unittest.TestCase):
@@ -39,7 +39,7 @@ component c1 "A"
 component c2 "B"
     class cls1 "B1"
 """)
-        ast = load(f)
+        ast = parse(f)
         ast.id = 'diagram'
         data = dict((n.id, n.parent.id) for n in unwind(ast) if n.parent)
         self.assertEquals('diagram', data['c1'])
@@ -64,7 +64,7 @@ component c2 "B"
 class cls9 "C"
 """)
 
-        ast = load(f)
+        ast = parse(f)
         ast.id = 'diagram'
 
         data = dict((n.id, n.parent.id) for n in unwind(ast) if n.parent)
@@ -95,7 +95,7 @@ component c2 "B"
     class cls1 "B1"
   class cls2 "B1"
 """)
-        self.assertRaises(ParseError, load, f)
+        self.assertRaises(ParseError, parse, f)
 
 
 
@@ -120,11 +120,11 @@ class StereotypesTestCase(unittest.TestCase):
         """Test stereotype parsing
         """
         f = StringIO('component a "A" <<test>>')
-        ast = load(f)
+        ast = parse(f)
         self.assertEquals(['component', 'test'], ast[0].stereotypes)
 
         f = StringIO('component a "A" <<t1, t2>>')
-        ast = load(f)
+        ast = parse(f)
         self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
 
 
@@ -137,7 +137,7 @@ class b 'B' <<bbb>>
 
 a -> <<test>> b
 """)
-        ast = load(f)
+        ast = parse(f)
         deps = [n for n in unwind(ast) if n.element == 'dependency']
         dep = deps[0]
         self.assertEquals(['test'], dep.stereotypes)
@@ -152,7 +152,7 @@ class b 'B' <<bbb>>
 
 a == 'a name' <<t1, t2>> b
 """)
-        ast = load(f)
+        ast = parse(f)
         assocs = [n for n in unwind(ast) if n.element == 'association']
         assoc = assocs[0]
         self.assertEquals('a name', assoc.name)
@@ -172,7 +172,7 @@ class c1 "A"
     : x: int
     : y: int
 """)
-        ast = load(f)
+        ast = parse(f)
         ast.id = 'diagram'
         data = dict((n.id, n) for n in unwind(ast))
         cls = data['c1']
@@ -192,7 +192,7 @@ c1 == c2
     : one [0..1]
     : two
 """)
-        ast = load(f)
+        ast = parse(f)
         ast.id = 'diagram'
         assocs = [n for n in unwind(ast) if n.element == 'association']
         self.assertEquals(1, len(assocs))
@@ -217,7 +217,7 @@ class c1 "Test1"
 class c2 "Test2"
 c1 -- cx
 """)
-        self.assertRaises(ParseError, load, f)
+        self.assertRaises(ParseError, parse, f)
 
 
 
@@ -233,14 +233,14 @@ comment c1 "Test comment 1"
 comment c2 "Test comment 2"
 c1 -- c2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
         f = StringIO("""
 class c1 "TestClass1"
 class c2 "TestClass2"
 c1 -- c2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_assembly(self):
@@ -251,7 +251,7 @@ component c "Component"
 class cls "Class"
 c o) "Iface" cls
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
         f = StringIO("""
 component c1 "C1"
@@ -260,7 +260,7 @@ component c3 "C3"
 class cls "Class"
 c1 c2 o) "A" c3 cls
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
 
@@ -278,7 +278,7 @@ package p2 "P2"
 p1 -m> p2
 p1 -i> p2
 """)
-        ast = load(f)
+        ast = parse(f)
         deps = [n for n in unwind(ast) if n.element == 'dependency']
         self.assertEquals(['merge'], deps[0].stereotypes)
         self.assertEquals(['import'], deps[1].stereotypes)
@@ -293,7 +293,7 @@ class p2 "P2"
 
 p1 -m> p2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_package_import_error(self):
@@ -305,7 +305,7 @@ class p2 "P2"
 
 p1 -i> p2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_usecase_include_extend(self):
@@ -318,7 +318,7 @@ usecase u2 "U2"
 u1 -i> u2
 u1 -e> u2
 """)
-        ast = load(f)
+        ast = parse(f)
         deps = [n for n in unwind(ast) if n.element == 'dependency']
         self.assertEquals(['include'], deps[0].stereotypes)
         self.assertEquals(['extend'], deps[1].stereotypes)
@@ -333,7 +333,7 @@ class u2 "U2"
 
 u1 -i> u2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_usecase_extend_error(self):
@@ -345,7 +345,7 @@ class u2 "U2"
 
 u1 -e> u2
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_association_dir(self):
@@ -360,7 +360,7 @@ c1 =>= c2
 c2 =<= c3
 c3 == c1
 """)
-        ast = load(f)
+        ast = parse(f)
         dirs = [n.data['direction'] for n in unwind(ast) \
             if n.element == 'association']
         self.assertEquals(['head', 'tail', None], dirs)
@@ -375,7 +375,7 @@ class c2 "C2"
 
 c1 == "An association" c2
 """)
-        ast = load(f)
+        ast = parse(f)
         names = [n.name for n in unwind(ast) if n.element == 'association']
         self.assertEquals(['An association'], names)
 
@@ -392,7 +392,7 @@ c1 =>= c2
     : b
     : c
 """)
-        self.assertRaises(UMLError, load, f)
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_association_head_only(self):
@@ -405,7 +405,7 @@ class c2 "C2"
 c1 == "An association" c2
     :: head [0..n]
 """)
-        ast = load(f)
+        ast = parse(f)
         assocs = [n for n in unwind(ast) if n.element == 'association']
         self.assertEquals(['An association'], [n.name for n in assocs])
         assoc = assocs[0]
@@ -423,7 +423,7 @@ metaclass m "M"
 
 s == m
 """)
-        ast = load(f)
+        ast = parse(f)
         exts = [n for n in unwind(ast) if n.element == 'extension']
         self.assertEquals(1, len(exts))
        

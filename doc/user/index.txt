@@ -1,0 +1,22 @@
+
+.. _part-user:
+
+User Manual
+===========
+
+.. _piuml_concept
+.. uml-diagram:: doc/diagrams/piuml
+    :align: center
+
+    piUML concept.
+
+.. toctree::
+   :maxdepth: 2
+
+   intro
+   dump
+   simulation
+   links
+
+* :ref:`genindex`
+* :ref:`search`

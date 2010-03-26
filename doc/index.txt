@@ -1,0 +1,20 @@
+piUML Documentation
+===================
+
+User Manual describes how to use piUML.
+
+.. _API Documentation: ../../api/index.html
+
+Hacking Guide is written for those interested in piUML internals and
+development.
+
+.. toctree::
+   :maxdepth: 1
+
+   user/index
+   hacking/index
+
+* :ref:`genindex`
+* :ref:`search`
+
+

@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-from piuml.parser import load
-from piuml.graph import GVGraph
-from piuml.renderer import CairoRenderer
+from piuml import generate
 
 import sys
 import os.path
@@ -30,19 +28,8 @@ if len(args) < 1:
     sys.exit(1)
 
 for fn in args:
-    fnout, ext = os.path.splitext(fn)
-
-    f = open(fn)
-    graph = GVGraph()
-    renderer = CairoRenderer()
-    renderer.filetype = options.filetype
-    renderer.output = fnout + '.' + options.filetype
-
-    ast = load(f)
-    graph.create(ast)
-    renderer.dims(ast)
-    graph.layout(ast)
-    renderer.render(ast)
-
-    f.close()
+    fout, ext = os.path.splitext(fn)
+    ft = options.filetype
+    with open(fn) as f:
+        generate(f, fout + '.' + ft, ft)
 

@@ -756,11 +756,11 @@ class piUMLParser(GenericParser):
 
 
 
-def load(f):
+def parse(f):
     """
     :Parameters:
      f
-        File to load diagram data from.
+        File to load diagram description from.
     """
     global lineno, filename
     lineno = 0
