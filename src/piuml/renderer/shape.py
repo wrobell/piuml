@@ -24,6 +24,15 @@ piUML renderer shapes.
 from math import pi
 
 def draw_box3d(cr, pos, size):
+    """
+    Draw 3D box.
+
+    :Parameters:
+     pos
+        Position of the box.
+     size
+        Width and height of the box.
+    """
     cr.save()
     d = 10
     x, y = pos
@@ -155,5 +164,77 @@ def draw_human(cr, pos, size):
     cr.line_to(x0 + arm * 2 * fx, y0 + (head + neck + body + arm) * fy)
     cr.stroke()
 
-# vim: sw=4:et:ai
 
+def draw_component(cr, pos, size):
+    """
+    Draw component shape.
+
+    :Parameters:
+     cr
+        Cairo context.
+     pos
+        Left, top position of the component.
+     size
+        Width and height of the component.
+    """
+    BAR_WIDTH = 10
+    BAR_HEIGHT =  5
+    BAR_PADDING =  5
+
+    ix, iy = pos
+
+    cr.save()
+    cr.set_line_width(0.8)
+    cr.rectangle(ix, iy, *size)
+    cr.stroke()
+
+    bx = ix - BAR_PADDING
+    bar_upper_y = iy + BAR_PADDING
+    bar_lower_y = iy + BAR_PADDING * 3
+
+    color = cr.get_source()
+    cr.rectangle(bx, bar_lower_y, BAR_WIDTH, BAR_HEIGHT)
+    cr.set_source_rgb(1,1,1) # white
+    cr.fill_preserve()
+    cr.set_source(color)
+    cr.stroke()
+
+    cr.rectangle(bx, bar_upper_y, BAR_WIDTH, BAR_HEIGHT)
+    cr.set_source_rgb(1,1,1) # white
+    cr.fill_preserve()
+    cr.set_source(color)
+    cr.stroke()
+    cr.restore()
+
+
+def draw_artifact(cr, pos, size):
+    """
+    Draw artifact shape.
+
+    :Parameters:
+     cr
+        Cairo context.
+     pos
+        Left, top position of the artifact.
+     size
+        Width and height of the artifact.
+    """
+    cr.save()
+    w, h = size
+    ix, iy = pos
+    ear = 5
+
+    cr.set_line_width(0.8)
+    cr.move_to(ix + w - ear, iy)
+    cr.line_to(ix + w - ear, iy + ear)
+    cr.line_to(ix + w, iy + ear)
+    cr.line_to(ix + w - ear, iy)
+    cr.line_to(ix, iy)
+    cr.line_to(ix, iy + h)
+    cr.line_to(ix + w, iy + h)
+    cr.line_to(ix + w, iy + ear)
+
+    cr.stroke()
+    cr.restore()
+
+# vim: sw=4:et:ai

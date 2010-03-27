@@ -265,6 +265,7 @@ class CairoRenderer(GenericASTTraversal):
         align = (0, -1)
         outside = False
         underline = False
+        stereotypes = node.stereotypes[:]
 
         cr = self.cr
         cr.save()
@@ -295,10 +296,23 @@ class CairoRenderer(GenericASTTraversal):
             cr.rectangle(x, y, width, height)
             cr.stroke()
 
+        # draw icons
+        if node.element in ('artifact', 'component'):
+            x0, y0 = pos
+            iw, ih = 15, 25
+            icon_pad = 10
+            x0 = x0 + width - iw - icon_pad
+            y0 = y0 + icon_pad
+            if node.element == 'artifact':
+                draw_artifact(cr, (x0, y0), (iw, ih))
+            else:
+                draw_component(cr, (x0, y0), (iw, ih))
+            stereotypes.remove(node.element)
+
         skip = 0
-        if node.stereotypes:
+        if stereotypes:
             skip += draw_text(cr, node.style.size, node.style,
-                    st_fmt(node.stereotypes),
+                    st_fmt(stereotypes),
                     align=align, outside=outside)
         skip += draw_text(cr, node.style.size, node.style,
                 node.name,
