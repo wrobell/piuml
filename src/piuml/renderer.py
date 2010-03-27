@@ -225,7 +225,7 @@ def draw_head_arrow(cr, fill=False):
     cr.line_to(15, 6)
     if fill:
         cr.close_path()
-        cr.fill()
+        cr.fill_preserve()
     cr.stroke()
     cr.set_dash(*dash)
 
@@ -235,17 +235,14 @@ def draw_tail_arrow(cr, fill=False):
     Draw a normal arrow to indicate association end navigability at
     association tail.
     """
-    dash = cr.get_dash()
-    #cr.set_dash((), 0)
     cr.move_to(15, -6)
     cr.line_to(0, 0)
     cr.line_to(15, 6)
     if fill:
         cr.close_path()
-        cr.fill()
+        cr.fill_preserve()
     cr.stroke()
     cr.move_to(0, 0)
-    #cr.set_dash(*dash)
 
 
 def draw_head_triangle(cr):
@@ -279,6 +276,7 @@ def draw_line(cr, edges, draw_tail=draw_tail_none, draw_head=draw_head_none, das
     h_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
 
     cr.save()
+    cr.set_line_join(cairo.LINE_JOIN_ROUND)
     draw_line_end(cr, edges[0], t_angle, draw_tail)
     if dash is not None:
         cr.set_dash(dash, 0)
