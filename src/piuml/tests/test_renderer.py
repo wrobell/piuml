@@ -21,7 +21,7 @@
 piUML rendering tests.
 """
 
-from piuml.renderer import st_fmt
+from piuml.renderer.util import st_fmt
 
 import unittest
 

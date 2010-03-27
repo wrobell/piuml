@@ -30,11 +30,12 @@ from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import Size, Pos, Style, Node, KEYWORDS
+from piuml.data import Size, Pos, Style, Node
 from piuml.parser import unwind
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
 from piuml.renderer.line import *
+from piuml.renderer.util import st_fmt
 
 class CairoBBContext(object):
     """
@@ -115,18 +116,6 @@ class CairoBBContext(object):
         bbox = x1 - 2, y1 - 2, x2 + 2, y2 + 2
         self._update_bbox(bbox)
         cr.show_text(txt)
-
-
-def st_fmt(stereotypes):
-    """
-    Format list of stereotypes.
-    """
-    fmt = u'\xab%s\xbb'
-    data = dict(zip(stereotypes, (st in KEYWORDS for st in stereotypes)))
-    keyword = ', '.join(st for st in stereotypes if data[st])
-    stereotype = ', '.join(st for st in stereotypes if not data[st])
-    result = keyword, stereotype
-    return ' '.join(fmt % r for r in result if r)
 
 
 class CairoDimensionCalculator(GenericASTTraversal):
