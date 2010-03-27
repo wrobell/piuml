@@ -1,8 +1,9 @@
 package pu 'piuml'
-package pp 'parser'
-package pr 'renderer'
-package pl 'layout'
+    package pp 'parser'
+    package pr 'renderer'
+    package pl 'layout'
+    package pd 'data'
 
-pu -i> pp
-pu -i> pl
-pu -i> pr
+pp -i> pd
+pr -i> pd
+pl -i> pd

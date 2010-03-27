@@ -26,7 +26,7 @@ from math import pi
 import cairo
 import unittest
 
-from piuml.parser import Style, Pos, Area, Size
+from piuml.data import Style, Pos, Area, Size
 from piuml.renderer import draw_text, text_pos_at_line
 
 surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 400, 300)
