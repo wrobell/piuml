@@ -1091,12 +1091,18 @@ class CairoRenderer(GenericASTTraversal):
         """
         Generate PDF, SVG or PNG file with UML diagram.
         """
+        # match size of vector and raster output on screen
+        DPI = 96.0
+        scale = 1.0
+        if self.filetype != 'png':
+            scale = 72.0 / DPI
+
         self.cr.restore()
 
         x1, y1, x2, y2 = self.cr.bbox
         x1, y1, x2, y2 = map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2)))
-        w = abs(x2 - x1)
-        h = abs(y2 - y1)
+        w = abs(x2 - x1) * scale
+        h = abs(y2 - y1) * scale
 
         if self.filetype == 'png':
             s = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
@@ -1106,6 +1112,7 @@ class CairoRenderer(GenericASTTraversal):
             s = cairo.PDFSurface(self.output, w, h)
 
         cr = cairo.Context(s)
+        cr.scale(scale, scale)
         cr.set_source_surface(self.surface, -x1, -y1)
         cr.paint()
         cr.show_page()
