@@ -31,7 +31,7 @@ from spark import GenericASTTraversal
 from math import atan2, ceil, floor, pi
 from functools import partial
 
-from piuml.data import Size, Pos, Style, Node
+from piuml.data import Size, Pos, Style, Node, KEYWORDS
 from piuml.parser import unwind
 
 # Default font.
@@ -689,11 +689,16 @@ def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1),
 
 
 
-def fmts(stereotypes):
+def st_fmt(stereotypes):
     """
     Format list of stereotypes.
     """
-    return u'\xab%s\xbb' % ', '.join(stereotypes)
+    fmt = u'\xab%s\xbb'
+    data = dict(zip(stereotypes, (st in KEYWORDS for st in stereotypes)))
+    keyword = ', '.join(st for st in stereotypes if data[st])
+    stereotype = ', '.join(st for st in stereotypes if not data[st])
+    result = keyword, stereotype
+    return ' '.join(fmt % r for r in result if r)
 
 
 class CairoDimensionCalculator(GenericASTTraversal):
@@ -727,7 +732,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
         sizes = [(80, 0)]
 
         if node.stereotypes:
-            sizes.append(text_size(cr, fmts(node.stereotypes), FONT))
+            sizes.append(text_size(cr, st_fmt(node.stereotypes), FONT))
         sizes.append(text_size(cr, node.name, FONT_NAME))
 
         compartments = []
@@ -744,7 +749,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
             cl += 1
         st_attrs = (f for f in node if f.element == 'stattributes')
         for f in st_attrs:
-            attrs = fmts([f.name]) + '\\node' + '\\node'.join(a.name for a in f)
+            attrs = st_fmt([f.name]) + '\\node' + '\\node'.join(a.name for a in f)
             w, h = text_size(cr, attrs, FONT)
             sizes.append(Size(w, h))
             cl += 1
@@ -773,7 +778,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
         cr = self.cr
         lens = [text_size(cr, edge.name, FONT)[0] + length]
         if edge.stereotypes:
-            lens.append(text_size(cr, fmts(edge.stereotypes), FONT)[0])
+            lens.append(text_size(cr, st_fmt(edge.stereotypes), FONT)[0])
         l = max(75, 2 * sum(lens))
         edge.style.size = Size(l, 0)
         return sum(lens)
@@ -876,7 +881,7 @@ class CairoRenderer(GenericASTTraversal):
         skip = 0
         if node.stereotypes:
             skip += draw_text(cr, node.style.size, node.style,
-                    fmts(node.stereotypes),
+                    st_fmt(node.stereotypes),
                     align=align, outside=outside)
         skip += draw_text(cr, node.style.size, node.style,
                 node.name,
@@ -889,7 +894,7 @@ class CairoRenderer(GenericASTTraversal):
         skip = self._compartment(node, node, lambda f: f.element == 'operation', skip)
         st_attrs = (f for f in node if f.element == 'stattributes')
         for f in st_attrs:
-            title = fmts([f.name]) + '\\c' 
+            title = st_fmt([f.name]) + '\\c' 
             skip = self._compartment(node, f, lambda f: f.element == 'attribute', skip, title)
 
         cr.stroke()
@@ -1088,7 +1093,7 @@ class CairoRenderer(GenericASTTraversal):
 
         text = []
         if show_st and edge.stereotypes:
-            text.append(fmts(edge.stereotypes))
+            text.append(st_fmt(edge.stereotypes))
         if edge.name:
             text.append(name_fmt % edge.name)
         if text:

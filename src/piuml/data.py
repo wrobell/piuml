@@ -25,6 +25,9 @@ ELEMENTS = ('actor', 'artifact', 'comment', 'class', 'component', 'device',
     'interface', 'instance', 'metaclass', 'node', 'package', 'profile',
     'stereotype', 'subsystem', 'usecase')
 
+KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
+        'profile', 'stereotype', 'subsystem')
+
 Area = namedtuple('Area', 'top right bottom left')
 Pos = namedtuple('Pos', 'x y')
 Size = namedtuple('Size', 'width height')

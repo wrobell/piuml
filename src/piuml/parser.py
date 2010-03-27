@@ -21,7 +21,7 @@ from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
 
-from piuml.data import Node, Edge, Area, ELEMENTS
+from piuml.data import Node, Edge, Area, ELEMENTS, KEYWORDS
 
 class ParseError(Exception):
     """
@@ -252,28 +252,18 @@ class piUMLParser(GenericParser):
         """
         element ::= ELEMENT SPACE ID SPACE NAME
         """
-        STEREOTYPES = {
-            'artifact': 'artifact',
-            'metaclass': 'metaclass',
-            'component': 'component',
-            'device': 'device',
-            'interface': 'interface',
-            'profile': 'profile',
-            'stereotype': 'stereotype',
-            'subsystem': 'subsystem',
-        }
         self._trim(args)
 
         element = args[0].value.strip()
         indent = args[0].value.split(element)[0]
         id = args[1].value
         name = args[2].value
-        stereotype = STEREOTYPES.get(element)
 
         n = Node('element', element, name=name)
         n.id = id
-        if stereotype:
-            n.stereotypes.append(stereotype)
+
+        if element in KEYWORDS:
+            n.stereotypes.insert(0, element)
 
         self.nodes[id] = n
         self._set_parent(indent, n)
