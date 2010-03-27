@@ -1065,7 +1065,6 @@ class CairoRenderer(GenericASTTraversal):
          name_fmt
             String format used to format name of an edge.
         """
-
         edges = edge.style.edges
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
