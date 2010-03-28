@@ -1,2 +1,2 @@
-piUML Internals Introduction
-============================
+Introduction
+============
