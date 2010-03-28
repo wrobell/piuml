@@ -73,7 +73,6 @@ class RETestCase(unittest.TestCase):
         self.assertTrue(r.search('<<t1,t2>>'))
         self.assertTrue(r.search('<<  t1,t2  >>'))
         self.assertTrue(r.search('<< t1 , t2 >>'))
-        self.assertFalse(r.search(': <<test>>'))
 
 
     def test_attribute(self):
@@ -129,7 +128,9 @@ class RETestCase(unittest.TestCase):
         """Test stereotype attributes token parsing
         """
         r = re.compile(RE_STATTRIBUTES)
-        self.assertTrue(r.search(' : <<test>>'))
-        self.assertFalse(r.search(' : <<t1, t2>>'))
+        self.assertTrue(r.search(' : <<test>>:'))
+        self.assertFalse(r.search(' : <<t1, t2>>   :'))
+        self.assertFalse(r.search(': <<test>>'))
+        self.assertFalse(r.search(' : <<test>>'))
 
 

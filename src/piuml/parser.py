@@ -126,10 +126,10 @@ RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
 RE_ID = r'(?!%s)\b[a-zA-Z_]\w*\b' % '|'.join(r'%s\b' % s for s in ELEMENTS)
 RE_ELEMENT = r'^[ ]*(%s)' % '|'.join(r'\b%s\b' % s for s in ELEMENTS)
 RE_COMMENT = r'\s*(?<!\\)\#.*'
-RE_STEREOTYPE = r'(?<!:[ ])<<[ ]*\w[\w ,]*>>'
+RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
-RE_STATTRIBUTES = r'^\.\s+:\s*<<\w+>>\s*$'
+RE_STATTRIBUTES = r'^\s+:\s*<<\w+>>\s*:$'
 
 RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
     ($
@@ -151,7 +151,7 @@ TOKENS = {
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
     'STATTRIBUTES': RE_STATTRIBUTES,
-    'SPACE': r'[ 	]+',
+    'SPACE': r'(?<=[^\s])[ 	]+',
 }
 
 
