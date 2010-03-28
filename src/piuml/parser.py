@@ -183,12 +183,16 @@ class piUMLScanner(GenericScanner):
         """
         Create tokens from string.
 
+        Trailing whitespace is removed from the string before tokenization.
+
         :Parameters:
          line
             String to scan.
         """
         self.rv = []
-        GenericScanner.tokenize(self, line)
+        line = line.rstrip()
+        if line:
+            GenericScanner.tokenize(self, line)
         return self.rv
 
 
@@ -222,6 +226,20 @@ class piUMLParser(GenericParser):
         # grouping with indentation is supported with stack structure
         self._istack = []
         self._istack.append((0, self.ast))
+
+
+    def parse(self, tokens):
+        """
+        Perform tokens interpretation.
+
+        If tokens list is empty, nothing is done.
+
+        :Parameters:
+         tokens
+            List of tokens to interpret.
+        """
+        if tokens:
+            GenericParser.parse(self, tokens)
 
 
     def error(self, token):
@@ -674,7 +692,6 @@ def parse(f):
     parser = piUMLParser()
 
     for line in f:
-        line = line.rstrip()
         lineno += 1
         if line:
             tokens = scanner.tokenize(line)
