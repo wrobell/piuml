@@ -17,6 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+piUML language parser.
+"""
+
 from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
