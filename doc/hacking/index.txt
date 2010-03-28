@@ -1,13 +1,13 @@
 
 .. _part-hacking:
 
-Extending Kenozooid
-===================
+Hacking Guide
+=============
 
 .. toctree::
    :maxdepth: 2
 
-   drvarch
+   intro
 
 * :ref:`genindex`
 * :ref:`search`
