@@ -1,5 +1,5 @@
-piUML Introduction
-==================
+Introduction
+============
 
 .. _piuml_concept
 .. uml-diagram:: doc/diagrams/piuml
