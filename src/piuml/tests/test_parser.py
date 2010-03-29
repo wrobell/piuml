@@ -181,6 +181,26 @@ class c1 "A"
         self.assertEquals('y: int', cls[1].name)
 
 
+    def test_st_attributes(self):
+        """Test adding stereotype attributes
+        """
+        f = StringIO("""
+class c1 "A"
+    : <<tt>> :
+        : x: int
+        : y: int
+""")
+        ast = parse(f)
+        ast.id = 'diagram'
+        data = dict((n.id, n) for n in unwind(ast))
+        cls = data['c1']
+        self.assertEquals(1, len(cls))
+        self.assertEquals(2, len(cls[0]))
+        self.assertEquals('tt', cls[0].name)
+        self.assertEquals('x: int', cls[0][0].name)
+        self.assertEquals('y: int', cls[0][1].name)
+
+
     def test_association_ends(self):
         """Test adding an association end
         """

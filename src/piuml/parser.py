@@ -652,7 +652,7 @@ class piUMLParser(GenericParser):
         """
         stattributes ::= STATTRIBUTES
         """
-        n = self._feature('stattributes', args[0].value[1:])
+        n = self._feature('stattributes', args[0].value[1:-1])
         n.name = st_parse(n.name)[0]
         return n
 
