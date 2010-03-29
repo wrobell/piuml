@@ -43,6 +43,7 @@ class Style(object):
         self.margin = Area(0, 0, 0, 0)
         self.padding = Area(5, 10, 5, 10)
         self.inner = Area(0, 0, 0, 0)
+        self.icon_size = Size(0, 0)
 
 
 class Node(list):
@@ -89,6 +90,14 @@ class Node(list):
         self.stereotypes = []
         self.data = data if data else {}
         self.style = Style()
+
+        # few exceptions for default style
+        if element == 'actor':
+            self.style.padding = Area(0, 0, 0, 0)
+        elif element == 'association':
+            self.style.padding = Area(3, 18, 3, 18)
+        elif element in ('artifact', 'component'):
+            self.style.icon_size = Size(15, 25)
 
 
     def is_packaging(self):

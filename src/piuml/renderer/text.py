@@ -244,8 +244,9 @@ def line_center(edges):
 
 
 
-def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1),
-        outside=False, underline=False, align_f=text_pos_at_box):
+def draw_text(cr, shape, style, txt, font=FONT, skip_top=0, skip_left=0,
+        align=(0, -1), outside=False, underline=False,
+        align_f=text_pos_at_box):
 
     h, v = align
     set_font(cr, font)
@@ -255,15 +256,16 @@ def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1),
     txts = re.split(r'\\[ncr]', txt)
     ends = re.findall(r'\\([ncr])', txt) + [TALIGN[h]]
 
-    skip = 0
+    tskip = 0
     for t, e in zip(txts, ends):
         h = ALIGN[e]
 
         size = text_size(cr, t, font)
         x0, y0 = align_f(size, shape, style, align=(h, v), outside=outside)
+        x0 += skip_left
 
-        skip += size[1] * LINE_STRETCH
-        y = y0 + top + skip
+        tskip += size[1] * LINE_STRETCH
+        y = y0 + skip_top + tskip
 
         cr.save()
         cr.move_to(x0, y - 2) # fixme: little hack as text appears bit below than expected, to be fixed
@@ -275,10 +277,10 @@ def draw_text(cr, shape, style, txt, font=FONT, top=0, align=(0, -1),
             cr.line_to(x0 + size[0], y + 1)
             cr.stroke()
             cr.restore()
-            skip += 2
+            tskip += 2
         cr.restore()
 
-    return skip
+    return tskip
 
 
 def text_size(cr, txt, font):
@@ -291,7 +293,7 @@ def text_size(cr, txt, font):
     cr.save()
     set_font(cr, font)
     txts = re.split(r'\\[cnr]', txt)
-    widths = [cr.text_extents(t)[0] + cr.text_extents(t)[-2] for t in txts] 
+    widths = [cr.text_extents(t)[-2] for t in txts] 
     height = cr.font_extents()[2] * len(txts)
     cr.restore()
     return max(widths), height

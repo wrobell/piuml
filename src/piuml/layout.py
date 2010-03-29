@@ -107,7 +107,9 @@ class GVGraph(GenericASTTraversal):
                 bottom = n.style.padding.bottom
                 # a hack for cluster label and node alignment
                 gv.setv(gn, 'fontsize', str((h - bottom)))
-                gv.setv(gn, 'label', 'A')
+                # hack to set min width of cluster
+                k = max(len(''.join(n.stereotypes)), len(n.name))
+                gv.setv(gn, 'label', int(k / 2.5) * 'm')
 
             else: # clusters
                 w, h = (str(p / 72.0) for p in n.style.size)

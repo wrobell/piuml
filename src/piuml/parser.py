@@ -25,7 +25,7 @@ from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
 
-from piuml.data import Node, Edge, Area, ELEMENTS, KEYWORDS
+from piuml.data import Node, Edge, ELEMENTS, KEYWORDS
 
 class ParseError(Exception):
     """
@@ -290,10 +290,6 @@ class piUMLParser(GenericParser):
         self.nodes[id] = n
         self._set_parent(indent, n)
 
-        if n.element == 'actor':
-            # change default style for an actor
-            n.style.padding = Area(0, 0, 0, 0)
-
         return n
 
 
@@ -435,9 +431,6 @@ class piUMLParser(GenericParser):
         t = e.tail.element, e.head.element
         if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
             e.element = 'extension'
-
-        # change default style for an association
-        e.style.padding = Area(3, 18, 3, 18)
 
         return e
 

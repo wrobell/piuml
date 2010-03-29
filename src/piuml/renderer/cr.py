@@ -30,7 +30,7 @@ from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import Size, Pos, Style, Node
+from piuml.data import Size, Pos, Style, Area, Node
 from piuml.parser import unwind
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
@@ -148,9 +148,19 @@ class CairoDimensionCalculator(GenericASTTraversal):
         pad = node.style.padding
         sizes = [(80, 0)]
 
+        # calculate name size, but include icon size if necessary
+        nw, nh = 0, 0 # name size including stereotype
         if node.stereotypes:
-            sizes.append(text_size(cr, st_fmt(node.stereotypes), FONT))
-        sizes.append(text_size(cr, node.name, FONT_NAME))
+            nw, nh = text_size(cr, st_fmt(node.stereotypes), FONT)
+        s = text_size(cr, node.name, FONT_NAME) # name size
+        nw = max(s[0], nw)
+        nh += s[1]
+        # include icon size
+        ics = node.style.icon_size
+        if ics != (0, 0):
+            nw += ics[0] + pad.right
+            nh = max(nh, ics[1])
+        sizes.append(Size(nw, nh))
 
         compartments = []
         attrs = '\\node'.join(f.name for f in node if f.element == 'attribute')
@@ -239,7 +249,7 @@ class CairoRenderer(GenericASTTraversal):
         self.preorder(ast)
 
 
-    def _compartment(self, parent, node, filter, skip, title=None):
+    def _compartment(self, parent, node, filter, skip_top, title=None):
         cr = self.cr
         pos = x, y = parent.style.pos
         size = width, height = parent.style.size
@@ -249,23 +259,30 @@ class CairoRenderer(GenericASTTraversal):
         if title:
             features = title + features
         if features:
-            skip += pad.top
-            cr.move_to(x, y + skip)
-            cr.line_to(x + width, y + skip)
-            skip += draw_text(cr, parent.style.size, parent.style, features, top=skip, align=(-1, -1))
-            skip += pad.top
-        return skip
+            skip_top += pad.top
+            cr.move_to(x, y + skip_top)
+            cr.line_to(x + width, y + skip_top)
+            skip_top += draw_text(cr, parent.style.size, parent.style,
+                    features, skip_top=skip_top, align=(-1, -1))
+            skip_top += pad.top
+        return skip_top
 
 
     def n_element(self, node):
-        pos = x, y = node.style.pos
-        size = width, height = node.style.size
-        pad = node.style.padding
+
+        style = node.style
+        pos = x, y = style.pos
+        size = width, height = style.size
+        pad = style.padding
+        iw, ih = style.icon_size
+
         font = FONT_NAME
         align = (0, -1)
         outside = False
         underline = False
         stereotypes = node.stereotypes[:]
+        lskip = 0
+        tskip = 0
 
         cr = self.cr
         cr.save()
@@ -288,7 +305,7 @@ class CairoRenderer(GenericASTTraversal):
         elif node.element == 'comment':
             font = FONT
             draw_note(cr, pos, size)
-        elif node.element == 'instance':
+        elif node.element in ('instance', 'artifact'):
             underline = True
             cr.rectangle(x, y, width, height)
             cr.stroke()
@@ -298,35 +315,35 @@ class CairoRenderer(GenericASTTraversal):
 
         # draw icons
         if node.element in ('artifact', 'component'):
-            x0, y0 = pos
-            iw, ih = 15, 25
-            icon_pad = 10
-            x0 = x0 + width - iw - icon_pad
-            y0 = y0 + icon_pad
+            x0 = x + width - iw - pad.top
+            y0 = y + pad.top
             if node.element == 'artifact':
                 draw_artifact(cr, (x0, y0), (iw, ih))
             else:
                 draw_component(cr, (x0, y0), (iw, ih))
-            stereotypes.remove(node.element)
+            lskip = -(iw + pad.top) / 2.0
 
-        skip = 0
         if stereotypes:
-            skip += draw_text(cr, node.style.size, node.style,
+            tskip += draw_text(cr, style.size, style,
                     st_fmt(stereotypes),
-                    align=align, outside=outside)
-        skip += draw_text(cr, node.style.size, node.style,
+                    align=align, outside=outside, skip_left=lskip,
+                    skip_top=tskip)
+
+        tskip += draw_text(cr, style.size, style,
                 node.name,
                 font=font, align=align, outside=outside,
                 underline=underline,
-                top=skip)
-        skip += pad.top
+                skip_top=tskip, skip_left=lskip)
 
-        skip = self._compartment(node, node, lambda f: f.element == 'attribute', skip)
-        skip = self._compartment(node, node, lambda f: f.element == 'operation', skip)
+        tskip = max(ih, tskip) # choose between name/stereotype skip and icon height
+        tskip += pad.top
+
+        tskip = self._compartment(node, node, lambda f: f.element == 'attribute', tskip)
+        tskip = self._compartment(node, node, lambda f: f.element == 'operation', tskip)
         st_attrs = (f for f in node if f.element == 'stattributes')
         for f in st_attrs:
             title = st_fmt([f.name]) + '\\c' 
-            skip = self._compartment(node, f, lambda f: f.element == 'attribute', skip, title)
+            tskip = self._compartment(node, f, lambda f: f.element == 'attribute', tskip, title)
 
         cr.stroke()
         cr.restore()
