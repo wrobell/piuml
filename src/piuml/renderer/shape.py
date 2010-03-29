@@ -177,15 +177,16 @@ def draw_component(cr, pos, size):
      size
         Width and height of the component.
     """
-    BAR_WIDTH = 10
-    BAR_HEIGHT =  5
-    BAR_PADDING =  5
+    w, h = size
+    BAR_WIDTH = 2.0 / 3.0 * w
+    BAR_HEIGHT =  h / 5.0
+    BAR_PADDING = h / 5.0
 
     ix, iy = pos
 
     cr.save()
     cr.set_line_width(0.8)
-    cr.rectangle(ix, iy, *size)
+    cr.rectangle(ix, iy, w, h)
     cr.stroke()
 
     bx = ix - BAR_PADDING

@@ -97,7 +97,7 @@ class Node(list):
         elif element == 'association':
             self.style.padding = Area(3, 18, 3, 18)
         elif element in ('artifact', 'component'):
-            self.style.icon_size = Size(15, 25)
+            self.style.icon_size = Size(10, 15)
 
 
     def is_packaging(self):
