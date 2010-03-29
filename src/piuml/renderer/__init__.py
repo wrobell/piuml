@@ -21,7 +21,7 @@
 piUML renderer.
 """
 
-from piuml.renderer.cr import CairoRenderer
+from piuml.renderer.cr import CairoRenderer as Renderer
 
 # vim: sw=4:et:ai
 

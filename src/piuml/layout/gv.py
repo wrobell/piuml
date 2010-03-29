@@ -18,7 +18,7 @@
 #
 
 from spark import GenericASTTraversal
-import gv
+gv = __import__('gv')
 
 from piuml.data import Pos, Size, Edge
 from piuml.parser import unwind

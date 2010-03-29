@@ -27,8 +27,8 @@ layout.
 """
 
 from piuml.parser import parse
-from piuml.layout import GVGraph
-from piuml.renderer import CairoRenderer
+from piuml.layout import Layout
+from piuml.renderer import Renderer
 
 __version__ = '0.1.0'
 
@@ -44,8 +44,8 @@ def generate(f, fout, filetype='pdf'):
      filetype
         Type of a file: pdf, svg or png.
     """
-    graph = GVGraph()
-    renderer = CairoRenderer()
+    graph = Layout()
+    renderer = Renderer()
     renderer.filetype = filetype
     renderer.output = fout
 
