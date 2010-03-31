@@ -20,30 +20,24 @@
 #from piuml.layout.gv import GVGraph as Layout
 
 from spark import GenericASTTraversal
-from piuml.parser import unwind
 from piuml.data import lca
 
 class PreLayout(GenericASTTraversal):
     def __init__(self):
         GenericASTTraversal.__init__(self, None)
         self.ast = None
-        self.nodes = None
 
     def create(self, ast):
         """
         Postprocess align information.
         """
         self.ast = ast
-
-        # build the index cache
-        self.nodes = dict(((k.id, k) for k in unwind(self.ast)))
-
         # postprocess align information to simplify layout constraints
         # assignment
-        align = (n for n in unwind(self.ast) if n.type == 'align')
+        align = (n for n in self.ast.unwind() if n.type == 'align')
         for n in align:             # defined alignment
             self._defined_align(n)
-        align = (n for n in unwind(self.ast) if n.is_packaging())
+        align = (n for n in self.ast.unwind() if n.is_packaging())
         for n in align:             # default alignment
             self._default_align(n)
 
@@ -72,7 +66,7 @@ class PreLayout(GenericASTTraversal):
         def span(ids):
             span = []
             for id in ids:
-                k = self.nodes[id]
+                k = self.ast.cache[id]
                 # k at least 2 levels lower
                 if k.parent.id != p.id:
                     pp = k.parent
@@ -153,7 +147,7 @@ class PreLayout(GenericASTTraversal):
 
             for f, data in zip(f, node.align):
                 for ids in data:
-                    nodes = [self.nodes[id] for id in ids]
+                    nodes = [self.ast.cache[id] for id in ids]
                     f(*nodes)
 
 
@@ -208,6 +202,7 @@ class PreLayout(GenericASTTraversal):
         """
 
 
-from piuml.layout.gsolver import ConstraintLayout as Layout
+#from piuml.layout.gsolver import ConstraintLayout as Layout
+from piuml.layout.mp import MLayout as Layout
 
 # vim: sw=4:et:ai

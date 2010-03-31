@@ -156,6 +156,13 @@ class Node(list):
         return len([n for n in self if n.element in ELEMENTS]) > 0
 
 
+    def unwind(self):
+        yield self
+        for i in self:
+            for j in i.unwind():
+                yield j
+
+
     def __str__(self):
         return self.element + ': ' + '[%s]' % ','.join(str(k) for k in self)
 
@@ -171,6 +178,19 @@ class NodeList(Node):
     def __init__(self, type, element):
         super(NodeList, self).__init__(type, element)
         self.data = []
+
+
+class AST(Node):
+    """
+    Root node of abstract syntax tree.
+    """
+    def __init__(self):
+        super(AST, self).__init__('diagram', 'diagram')
+        self.cache = {}
+        self.order = []
+
+    def reorder(self):
+        self.order = [k.id for k in self.unwind()]
 
 
 class Align(NodeList):
@@ -210,13 +230,6 @@ class Edge(Node):
         self.style.padding = Area(3, 10, 3, 10)
 
 
-def unwind(node):
-    yield node
-    for i in node:
-        for j in unwind(i):
-            yield j
-
-
 def lca(ast, *args):
     """
     Find lowest common ancestor for specified nodes.
@@ -233,10 +246,8 @@ def lca(ast, *args):
     while len(parents) > 0:
         p.intersection_update(parents.pop())
 
-    node_cache = dict(((k.id, k) for k in unwind(ast)))
-    node_index = [k.id for k in unwind(ast)]
-    data = sorted(p, key=node_index.index)
-    return node_cache[data[-1]]
+    data = sorted(p, key=ast.order.index)
+    return ast.cache[data[-1]]
 
 
 # vim: sw=4:et:ai

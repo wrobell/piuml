@@ -25,7 +25,7 @@ from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
 
-from piuml.data import Align, Node, Edge, ELEMENTS, KEYWORDS
+from piuml.data import Align, AST, Node, Edge, ELEMENTS, KEYWORDS
 
 class ParseError(Exception):
     """
@@ -97,13 +97,6 @@ class NodeCache(dict):
         else:
             return super(NodeCache, self).__getitem__(key)
 
-
-
-def unwind(node):
-    yield node
-    for i in node:
-        for j in unwind(i):
-            yield j
 
 
 def name_dequote(n):
@@ -225,8 +218,9 @@ class piUMLParser(GenericParser):
     """
     def __init__(self):
         GenericParser.__init__(self, 'expr')
-        self.ast = Node('diagram', 'diagram')
-        self.nodes = NodeCache()
+        ast = self.ast = AST()
+        ast.cache = NodeCache()
+        ast.cache[ast.id] = self.ast
 
         # grouping with indentation is supported with stack structure
         self._istack = []
@@ -289,7 +283,7 @@ class piUMLParser(GenericParser):
         if element in KEYWORDS:
             n.stereotypes.insert(0, element)
 
-        self.nodes[id] = n
+        self.ast.cache[id] = n
         self._set_parent(indent, n)
 
         return n
@@ -336,7 +330,7 @@ class piUMLParser(GenericParser):
         n.data['dependency'] = None
         n.data['assembly'] = None
         n.data['lines'] = []
-        self.nodes[n.id] = n
+        self.ast.cache[n.id] = n
 
         self._set_parent('', n)
         return n
@@ -375,12 +369,12 @@ class piUMLParser(GenericParser):
 
         self.ast.append(n)
         self._istack[-1] = (0, n)
-        self.nodes[id] = n
+        self.ast.cache[id] = n
         return n
 
 
     def _get_ends(self, args):
-        nodes = self.nodes
+        nodes = self.ast.cache
         head = nodes[args[0].value]
         tail = nodes[args[2].value]
         return head, tail
@@ -531,8 +525,8 @@ class piUMLParser(GenericParser):
             iface = args[1]
             id2 = args[2].value
 
-            n1 = self.nodes[id1]
-            n2 = self.nodes[id2]
+            n1 = self.ast.cache[id1]
+            n2 = self.ast.cache[id2]
 
             if n1.element != 'component':
                 raise UMLError(error_fmt % n1.id)
@@ -548,13 +542,13 @@ class piUMLParser(GenericParser):
             return n
         else:
             if args[0].type == 'ID':
-                n = self.nodes[args[0].value]
+                n = self.ast.cache[args[0].value]
                 assembly = args[1]
                 tail = n
                 iface = head = assembly.data['interface']
             else:
                 assembly = args[0]
-                n = self.nodes[args[1].value]
+                n = self.ast.cache[args[1].value]
                 iface = tail = assembly.data['interface']
                 head = n
 
@@ -578,11 +572,11 @@ class piUMLParser(GenericParser):
             id = args[0].value
             iface = args[1]
             tail = iface
-            head = self.nodes[id]
+            head = self.ast.cache[id]
         else:
             iface = args[0]
             id = args[1].value
-            tail = self.nodes[id]
+            tail = self.ast.cache[id]
             head = iface
 
         # truth matrix for dependency type
@@ -674,13 +668,13 @@ class piUMLParser(GenericParser):
         self._trim(args)
         if args[0].type == 'ALIGN':
             n = Align(args[0].value)
-            n.data.append(self.nodes[args[1].value])
-            n.data.append(self.nodes[args[2].value])
+            n.data.append(self.ast.cache[args[1].value])
+            n.data.append(self.ast.cache[args[2].value])
             self._set_parent('', n)
             return n
         else:
             n = args[0]
-            n.data.append(self.nodes[args[1].value])
+            n.data.append(self.ast.cache[args[1].value])
 
 
     def p_empty(self, args):
@@ -712,6 +706,7 @@ def parse(f):
         if line:
             tokens = scanner.tokenize(line)
             parser.parse(tokens)
+    parser.ast.reorder()
     return parser.ast
 
 

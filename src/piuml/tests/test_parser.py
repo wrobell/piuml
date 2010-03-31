@@ -24,9 +24,8 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.data import Node, lca
-from piuml.parser import parse, \
-    ParseError, UMLError, st_parse, unwind
+from piuml.data import AST, Node, lca
+from piuml.parser import parse, ParseError, UMLError, st_parse
 
 
 class GroupingTestCase(unittest.TestCase):
@@ -43,7 +42,7 @@ component c2 "B"
 """)
         ast = parse(f)
         ast.id = 'diagram'
-        data = dict((n.id, n.parent.id) for n in unwind(ast) if n.parent)
+        data = dict((n.id, n.parent.id) for n in ast.unwind() if n.parent)
         self.assertEquals('diagram', data['c1'])
         self.assertEquals('diagram', data['c2'])
         self.assertEquals('c2', data['cls1'])
@@ -69,7 +68,7 @@ class cls9 "C"
         ast = parse(f)
         ast.id = 'diagram'
 
-        data = dict((n.id, n.parent.id) for n in unwind(ast) if n.parent)
+        data = dict((n.id, n.parent.id) for n in ast.unwind() if n.parent)
 
         self.assertEquals('diagram', data['c1'])
         self.assertEquals('diagram', data['c2'])
@@ -140,7 +139,7 @@ class b 'B' <<bbb>>
 a -> <<test>> b
 """)
         ast = parse(f)
-        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.element == 'dependency']
         dep = deps[0]
         self.assertEquals(['test'], dep.stereotypes)
 
@@ -155,7 +154,7 @@ class b 'B' <<bbb>>
 a == 'a name' <<t1, t2>> b
 """)
         ast = parse(f)
-        assocs = [n for n in unwind(ast) if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.element == 'association']
         assoc = assocs[0]
         self.assertEquals('a name', assoc.name)
         self.assertEquals(['t1', 't2'], assoc.stereotypes)
@@ -176,7 +175,7 @@ class c1 "A"
 """)
         ast = parse(f)
         ast.id = 'diagram'
-        data = dict((n.id, n) for n in unwind(ast))
+        data = dict((n.id, n) for n in ast.unwind())
         cls = data['c1']
         self.assertEquals(2, len(cls))
         self.assertEquals('x: int', cls[0].name)
@@ -194,7 +193,7 @@ class c1 "A"
 """)
         ast = parse(f)
         ast.id = 'diagram'
-        data = dict((n.id, n) for n in unwind(ast))
+        data = dict((n.id, n) for n in ast.unwind())
         cls = data['c1']
         self.assertEquals(1, len(cls))
         self.assertEquals(2, len(cls[0]))
@@ -216,7 +215,7 @@ c1 == c2
 """)
         ast = parse(f)
         ast.id = 'diagram'
-        assocs = [n for n in unwind(ast) if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.element == 'association']
         self.assertEquals(1, len(assocs))
 
         assoc = assocs[0]
@@ -301,7 +300,7 @@ p1 -m> p2
 p1 -i> p2
 """)
         ast = parse(f)
-        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.element == 'dependency']
         self.assertEquals(['merge'], deps[0].stereotypes)
         self.assertEquals(['import'], deps[1].stereotypes)
 
@@ -341,7 +340,7 @@ u1 -i> u2
 u1 -e> u2
 """)
         ast = parse(f)
-        deps = [n for n in unwind(ast) if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.element == 'dependency']
         self.assertEquals(['include'], deps[0].stereotypes)
         self.assertEquals(['extend'], deps[1].stereotypes)
 
@@ -383,7 +382,7 @@ c2 =<= c3
 c3 == c1
 """)
         ast = parse(f)
-        dirs = [n.data['direction'] for n in unwind(ast) \
+        dirs = [n.data['direction'] for n in ast.unwind() \
             if n.element == 'association']
         self.assertEquals(['head', 'tail', None], dirs)
 
@@ -398,7 +397,7 @@ class c2 "C2"
 c1 == "An association" c2
 """)
         ast = parse(f)
-        names = [n.name for n in unwind(ast) if n.element == 'association']
+        names = [n.name for n in ast.unwind() if n.element == 'association']
         self.assertEquals(['An association'], names)
 
 
@@ -428,7 +427,7 @@ c1 == "An association" c2
     :: head [0..n]
 """)
         ast = parse(f)
-        assocs = [n for n in unwind(ast) if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.element == 'association']
         self.assertEquals(['An association'], [n.name for n in assocs])
         assoc = assocs[0]
         self.assertEquals(0, len(assoc))
@@ -446,17 +445,22 @@ metaclass m "M"
 s == m
 """)
         ast = parse(f)
-        exts = [n for n in unwind(ast) if n.element == 'extension']
+        exts = [n for n in ast.unwind() if n.element == 'extension']
         self.assertEquals(1, len(exts))
        
+
 
 class LCATestCase(unittest.TestCase):
     def test_simple(self):
         """Test LCA for simple case
         """
-        n1 = Node('a', 'a', id='n1')
+        n1 = AST()
+        n1.id = 'n1'
+        n1.cache['n1'] = n1
+
         n2 = Node('a', 'a', id='n2')
         n3 = Node('a', 'a', id='n3')
+        n1.reorder()
         n1.extend((n2, n3))
         n2.parent = n1
         n3.parent = n1

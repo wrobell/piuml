@@ -21,8 +21,50 @@
 MetaUML/Metapost based renderer.
 """
 
-class MRenderer():
-    pass
+from spark import GenericASTTraversal
+from piuml.data import ELEMENTS
+
+class MRenderer(GenericASTTraversal):
+    def __init__(self):
+        GenericASTTraversal.__init__(self, None)
+        self._lines = []
+        self.output = None
+        self.filetype = 'pdf'
+
+    def _add(self, data):
+        self._lines.append(data)
+
+    def dims(self, ast): pass
+
+    def render(self, ast):
+        self.preorder(ast)
+
+    def n_diagram(self, node):
+        self._add("""
+input TEX;
+input metauml;
+beginfig(1);
+""");
+
+
+    def n_diagram_exit(self, node):
+        ids = (n.id for n in node.unwind() if n.type == 'element')
+        self._add('drawObjects(%s);' % ', '.join(ids))
+        self._add("""
+endfig;
+end
+""");
+        f = open(self.output + '.mp', 'w')
+        for l in self._lines:
+            f.write(l)
+            f.write('\n')
+        f.close()
+
+    def n_element(self, node):
+        formats = dict(((e, e.capitalize() + '.{0}("{1}")()()') for e in ELEMENTS))
+        formats['artifact'] = formats['class']
+        formats['component'] = formats['component'][:-2]
+        self._add(formats[node.element].format(node.id, node.name) + ';')
 
 
 # vim: sw=4:et:ai
