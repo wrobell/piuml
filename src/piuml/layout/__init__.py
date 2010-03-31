@@ -127,6 +127,10 @@ class PreLayout(GenericASTTraversal):
             print node.id, 'vspan', vspan
 
 
+    def _c(self, c):
+        self.ast.constraints.append(c)
+
+
     def _constraint(self, node):
         """
         Constraint the node and its children using alignment information.

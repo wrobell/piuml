@@ -49,6 +49,8 @@ beginfig(1);
 
     def n_diagram_exit(self, node):
         ids = (n.id for n in node.unwind() if n.type == 'element')
+        for c in node.constraints:
+            self._add(c)
         self._add('drawObjects(%s);' % ', '.join(ids))
         self._add("""
 endfig;

@@ -50,10 +50,10 @@ class MLayout(PreLayout):
         pass
 
     def hspan(self, *nodes):
-        pass
+        self._c('leftToRight(50)(%s);' % ', '.join(n.id for n in nodes))
 
     def vspan(self, *nodes):
-        pass
+        self._c('topToBottom(50)(%s);' % ', '.join(n.id for n in nodes))
 
 # vim: sw=4:et:ai
 

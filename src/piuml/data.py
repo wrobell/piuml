@@ -183,11 +183,20 @@ class NodeList(Node):
 class AST(Node):
     """
     Root node of abstract syntax tree.
+
+    :Attributes:
+     cache
+        Cache of nodes by their id.
+     order
+        Order of nodes (LR then TB).
+     constraints
+        All alignment constraints.
     """
     def __init__(self):
         super(AST, self).__init__('diagram', 'diagram')
         self.cache = {}
         self.order = []
+        self.constraints = []
 
     def reorder(self):
         self.order = [k.id for k in self.unwind()]
