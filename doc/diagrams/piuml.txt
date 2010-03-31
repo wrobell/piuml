@@ -1,15 +1,24 @@
 # the idea of piUML
 
+artifact f 'model.txt' <<piuml, source>>
 component c 'piUML'
     component cp 'Parser'
     component cl 'Layout'
     component cr 'Renderer'
-
-artifact f 'model.txt' <<piuml, source>>
+#    component cr2 'Renderer 2'
+#    component cr3 'Renderer 3'
+#    component cr4 'Renderer 4'
 artifact m 'model.pdf' <<document>>
 
-f <u- cp
-cr -> <<create>> m
+#align=left: f c
+align=left: cp f
+#align=left: cr m
+#align=top: cr cl
+#align=left: cl cr2
+#align=left: cr cr3 cr4
 
-cp <- cl
-cl <- cr
+#f <u- cp
+#cr -> <<create>> m
+
+#cp <- cl
+#cl <- cr

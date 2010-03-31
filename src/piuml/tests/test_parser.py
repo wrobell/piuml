@@ -24,7 +24,9 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.parser import parse, ParseError, UMLError, st_parse, unwind
+from piuml.data import Node, lca
+from piuml.parser import parse, \
+    ParseError, UMLError, st_parse, unwind
 
 
 class GroupingTestCase(unittest.TestCase):
@@ -447,5 +449,20 @@ s == m
         exts = [n for n in unwind(ast) if n.element == 'extension']
         self.assertEquals(1, len(exts))
        
+
+class LCATestCase(unittest.TestCase):
+    def test_simple(self):
+        """Test LCA for simple case
+        """
+        n1 = Node('a', 'a', id='n1')
+        n2 = Node('a', 'a', id='n2')
+        n3 = Node('a', 'a', id='n3')
+        n1.extend((n2, n3))
+        n2.parent = n1
+        n3.parent = n1
+
+        p = lca(n1, n2, n3)
+        self.assertEquals('n1', p.id)
+
 
 # vim: sw=4:et:ai

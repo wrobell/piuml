@@ -25,7 +25,7 @@ from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
 
-from piuml.data import Node, Edge, ELEMENTS, KEYWORDS
+from piuml.data import Align, Node, Edge, ELEMENTS, KEYWORDS
 
 class ParseError(Exception):
     """
@@ -155,6 +155,7 @@ TOKENS = {
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
     'STATTRIBUTES': RE_STATTRIBUTES,
+    'ALIGN': r'^align=(top|right|bottom|left|middle|center)\s*:',
     'SPACE': r'(?<=[^\s])[ 	]+',
 }
 
@@ -265,6 +266,7 @@ class piUMLParser(GenericParser):
         expr ::= fdifacedep
         expr ::= assembly
         expr ::= comment
+        expr ::= align
         expr ::= empty
         """
         return args[0]
@@ -662,6 +664,23 @@ class piUMLParser(GenericParser):
         comment ::= COMMENT
         """
         return Node('comment', 'comment')
+
+
+    def p_align(self, args):
+        """
+        align ::= ALIGN SPACE ID SPACE ID
+        align ::= align SPACE ID
+        """
+        self._trim(args)
+        if args[0].type == 'ALIGN':
+            n = Align(args[0].value)
+            n.data.append(self.nodes[args[1].value])
+            n.data.append(self.nodes[args[2].value])
+            self._set_parent('', n)
+            return n
+        else:
+            n = args[0]
+            n.data.append(self.nodes[args[1].value])
 
 
     def p_empty(self, args):

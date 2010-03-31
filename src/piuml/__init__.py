@@ -49,10 +49,15 @@ def generate(f, fout, filetype='pdf'):
     renderer.filetype = filetype
     renderer.output = fout
 
+    import time
+    v = time.time()
     ast = parse(f)
+    print 'p', time.time() - v
     graph.create(ast)
     renderer.dims(ast)
+    v = time.time()
     graph.layout(ast)
+    print 'l', time.time() - v
     renderer.render(ast)
 
 

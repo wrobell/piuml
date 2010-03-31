@@ -13,3 +13,7 @@ w ==> wd
 
 m -e> wd
 doc -- c
+
+align=left: pu doc
+#align=top: doc c
+#align=top: w pu
