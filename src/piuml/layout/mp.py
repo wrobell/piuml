@@ -22,6 +22,8 @@ MetaUML/Metapost based layout.
 """
 
 from piuml.layout import PreLayout
+
+class MLayout(PreLayout):
     def size(self, node):
         ns = node.style
 
