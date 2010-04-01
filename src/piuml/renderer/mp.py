@@ -62,7 +62,10 @@ beginfig(1);
         self._add('drawObjects(%s);' % ', '.join(ids))
 
         for edge in node.unwind():
-            if edge.type in ('dependency', 'generalization'):
+            if edge.type == 'association':
+                t, h = edge.head.id, edge.tail.id
+                self._add('clink(association)(%s, %s);' % (t, h))
+            elif edge.type in ('dependency', 'generalization'):
                 t, h = edge.head.id, edge.tail.id
                 if edge.data['supplier'] is edge.head:
                     h, t = t, h
@@ -81,7 +84,6 @@ beginfig(1);
                     self._add('label.rt("%s", 0.5[%s.c,%s.c]);' % (st_fmt(st), t, h));
             elif edge.type == 'commentline':
                 t, h = edge.head.id, edge.tail.id
-                ends = (t, h) * 2
                 self._add('clink(dashedLink)(%s, %s);' % (t, h))
 
         self._add("""
