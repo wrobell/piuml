@@ -1,11 +1,17 @@
-instance g ':MLayout'
-instance cr ':MRenderer'
+# default piUML instance specification
+
+instance p ':Parser'
+instance l ':MLayout'
+instance r ':MRenderer'
 instance ast 'ast :Node'
     : type = 'diagram'
     : element = 'diagram'
 
-g -> <<create>> ast
-cr -u> ast
+p -> <<create>> ast
+l -> <<process>> ast
+r -u> ast
 
-align=top: g cr
-align=left: g ast
+align=top: p l r
+align=center: l ast
+
+# vim: sw=4:et:ai
