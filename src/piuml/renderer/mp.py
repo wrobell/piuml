@@ -24,6 +24,11 @@ MetaUML/Metapost based renderer.
 from spark import GenericASTTraversal
 from piuml.data import ELEMENTS
 
+
+def _ids(nodes, f=lambda n: True):
+    return (n.id for n in nodes if f(n))
+
+
 class MRenderer(GenericASTTraversal):
     def __init__(self):
         GenericASTTraversal.__init__(self, None)
@@ -48,9 +53,9 @@ beginfig(1);
 
 
     def n_diagram_exit(self, node):
-        ids = (n.id for n in node.unwind() if n.type == 'element')
         for c in node.constraints:
             self._add(c)
+        ids = _ids(node, lambda n: n.type == 'element')
         self._add('drawObjects(%s);' % ', '.join(ids))
         self._add("""
 endfig;
@@ -65,7 +70,9 @@ end
     def n_element(self, node):
         formats = dict(((e, e.capitalize() + '.{0}("{1}")()()') for e in ELEMENTS))
         formats['artifact'] = formats['class']
-        formats['component'] = formats['component'][:-2]
+        if node.element == 'component':
+            formats['component'] = formats['component'][:-3] \
+                + ','.join(_ids(node)) + ')'
         self._add(formats[node.element].format(node.id, node.name) + ';')
 
 
