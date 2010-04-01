@@ -26,8 +26,6 @@ from piuml.data import ELEMENTS
 from piuml.renderer.util import st_fmt
 
 
-PATH_FMT = '%s.c -- %s.c cutbefore bpath(%s) cutafter bpath(%s)'
-
 def _ids(nodes, f=lambda n: True):
     return (n.id for n in nodes if f(n))
 
@@ -52,11 +50,6 @@ class MRenderer(GenericASTTraversal):
         self._add("""
 input TEX;
 input metauml;
-
-% create bounding box path
-vardef bpath(text box) =
-    box.nw -- box.ne -- box.se -- box.sw -- cycle
-enddef;
 
 beginfig(1);
 """);
@@ -83,10 +76,13 @@ beginfig(1);
                     lt = 'realization'
                     st.remove('realization')
                     
-                fmt = 'link(%s)(' + PATH_FMT + ');'
-                self._add(fmt % ((lt,) + ends))
+                self._add('clink(%s)(%s, %s);' % (lt, t, h))
                 if st:
                     self._add('label.rt("%s", 0.5[%s.c,%s.c]);' % (st_fmt(st), t, h));
+            elif edge.type == 'commentline':
+                t, h = edge.head.id, edge.tail.id
+                ends = (t, h) * 2
+                self._add('clink(dashedLink)(%s, %s);' % (t, h))
 
         self._add("""
 endfig;
@@ -99,12 +95,22 @@ end
         f.close()
 
     def n_element(self, node):
-        formats = dict(((e, e.capitalize() + '.{0}("{1}")()()') for e in ELEMENTS))
+        formats = dict(((e, e.capitalize() + '.{0}({1})()()') for e in ELEMENTS))
         formats['artifact'] = formats['class']
         if node.element == 'component':
             formats['component'] = formats['component'][:-3] \
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        self._add(formats[node.element].format(node.id, node.name) + ';')
+        elif node.element == 'device':
+            formats['device'] = formats['component'][:-3] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'node':
+            formats['node'] = formats['component'][:-3] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'comment':
+            formats['comment'] = 'Note.{0}({1});';
+
+        name = ', '.join('"%s"' % s for s in node.name.split('\\n'))
+        self._add(formats[node.element].format(node.id, name) + ';')
 
     def n_ielement(self, node):
         pass
