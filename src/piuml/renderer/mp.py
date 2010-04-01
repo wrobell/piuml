@@ -26,6 +26,8 @@ from piuml.data import ELEMENTS
 from piuml.renderer.util import st_fmt
 
 
+PATH_FMT = '%s.c -- %s.c cutbefore bpath(%s) cutafter bpath(%s)'
+
 def _ids(nodes, f=lambda n: True):
     return (n.id for n in nodes if f(n))
 
@@ -44,6 +46,7 @@ class MRenderer(GenericASTTraversal):
 
     def render(self, ast):
         self.preorder(ast)
+
 
     def n_diagram(self, node):
         self._add("""
@@ -78,8 +81,8 @@ beginfig(1);
                     lt = 'realization'
                     st.remove('realization')
                     
-                self._add('link(%s)(%s.c -- %s.c cutbefore bpath(%s)' \
-                    ' cutafter bpath(%s));' % ((lt,) + ends))
+                fmt = 'link(%s)(' + PATH_FMT + ');'
+                self._add(fmt % ((lt,) + ends))
                 if st:
                     self._add('label.rt("%s", 0.5[%s.c,%s.c]);' % (st_fmt(st), t, h));
 

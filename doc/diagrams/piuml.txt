@@ -10,7 +10,7 @@ artifact m 'model.pdf' <<document>>
 f <u- cp
 cr -> <<create>> m
 
-cp <r- cl
+cp <- cl
 cl <- cr
 
 align=center: cp f
