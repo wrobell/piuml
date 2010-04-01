@@ -102,7 +102,10 @@ end
         if node.element == 'component':
             formats['component'] = formats['component'][:-3] \
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        if node.element == 'package':
+        elif node.element == 'instance':
+            formats['instance'] = formats['instance'][:-3] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'package':
             formats['package'] = formats['package'][:-3] \
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         elif node.element == 'device':

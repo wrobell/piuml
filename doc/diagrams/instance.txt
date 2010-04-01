@@ -1,8 +1,11 @@
-instance g ':GVGraph'
-instance cr ':CairoRenderer'
+instance g ':MLayout'
+instance cr ':MRenderer'
 instance ast 'ast :Node'
     : type = 'diagram'
     : element = 'diagram'
 
 g -> <<create>> ast
 cr -u> ast
+
+align=top: g cr
+align=left: g ast
