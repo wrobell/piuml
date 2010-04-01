@@ -494,7 +494,7 @@ class piUMLParser(GenericParser):
         self._trim(args)
         v = args[1].value
         n = self._line('generalization', *self._get_ends(args))
-        n.data['super'] = n.tail if v == '<=' else n.head
+        n.data['supplier'] = n.tail if v == '<=' else n.head
         return n
 
 

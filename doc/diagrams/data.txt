@@ -41,3 +41,7 @@ n =>=> 'has style' style
     : style [1]
 #n ==> n # parent
 #n ==> n # 0..* children
+
+align=center: n e
+
+# vim: sw=4:et:ai

@@ -69,7 +69,7 @@ beginfig(1);
         self._add('drawObjects(%s);' % ', '.join(ids))
 
         for edge in node.unwind():
-            if edge.type == 'dependency':
+            if edge.type in ('dependency', 'generalization'):
                 t, h = edge.head.id, edge.tail.id
                 if edge.data['supplier'] is edge.head:
                     h, t = t, h
@@ -77,7 +77,9 @@ beginfig(1);
 
                 st = edge.stereotypes[:]
                 lt = 'dependency'
-                if 'realization' in st:
+                if edge.type == 'generalization':
+                    lt = 'inheritance'
+                elif 'realization' in st:
                     lt = 'realization'
                     st.remove('realization')
                     
