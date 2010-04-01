@@ -8,6 +8,8 @@ Hacking Guide
    :maxdepth: 2
 
    intro
+   motiv
+   ack
 
 * :ref:`genindex`
 * :ref:`search`
