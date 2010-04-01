@@ -54,7 +54,7 @@ class MLayout(PreLayout):
         for k1, k2 in zip(nodes[:-1], nodes[1:]):
             w = k1.style.margin.right + k2.style.margin.left
             c = self.ast.data['edges'].get((k1.id, k2.id), 0)
-            self._c('%s.left - %s.right = %s;' % (k1.id, k2.id, max(w, c)))
+            self._c('%s.left - %s.right = %s;' % (k2.id, k1.id, max(w, c)))
 
     def vspan(self, *nodes):
         nodes = list(nodes)
