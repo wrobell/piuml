@@ -77,12 +77,12 @@ class PreLayout(GenericASTTraversal):
                     span.append(id)
             return span
 
-        if 'top' in align.element:
-            p.align.top.append(ids[:])
-            p.align.hspan.append(span(ids[:]))
-        elif 'left' in align.element:
-            p.align.left.append(ids[:])
-            p.align.vspan.append(span(ids[:]))
+        dist = span(ids[:])
+        getattr(p.align, align.element).append(ids[:])
+        if align.element in ('top', 'middle', 'bottom'):
+            p.align.hspan.append(dist)
+        else: # left, center, right
+            p.align.vspan.append(dist)
 
 
     def _default_align(self, node):

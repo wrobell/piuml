@@ -127,6 +127,7 @@ RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
 RE_STATTRIBUTES = r'^\s+:\s*<<\w+>>\s*:$'
+RE_ALIGN = r'^align=(top|right|bottom|left|middle|center)\s*:'
 
 RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
     ($
@@ -148,7 +149,7 @@ TOKENS = {
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
     'STATTRIBUTES': RE_STATTRIBUTES,
-    'ALIGN': r'^align=(top|right|bottom|left|middle|center)\s*:',
+    'ALIGN': RE_ALIGN,
     'SPACE': r'(?<=[^\s])[ 	]+',
 }
 
@@ -667,7 +668,8 @@ class piUMLParser(GenericParser):
         """
         self._trim(args)
         if args[0].type == 'ALIGN':
-            n = Align(args[0].value)
+            align = re.match(RE_ALIGN, args[0].value).group(1)
+            n = Align(align)
             n.data.append(self.ast.cache[args[1].value])
             n.data.append(self.ast.cache[args[2].value])
             self._set_parent('', n)
