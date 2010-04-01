@@ -673,10 +673,10 @@ class piUMLParser(GenericParser):
             n.data.append(self.ast.cache[args[1].value])
             n.data.append(self.ast.cache[args[2].value])
             self._set_parent('', n)
-            return n
         else:
             n = args[0]
             n.data.append(self.ast.cache[args[1].value])
+        return n
 
 
     def p_empty(self, args):
