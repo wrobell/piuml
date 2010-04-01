@@ -99,7 +99,13 @@ end
     def n_element(self, node):
         formats = dict(((e, e.capitalize() + '.{0}({1})()()') for e in ELEMENTS))
         formats['artifact'] = formats['class']
-        if node.element == 'component':
+        if node.element == 'actor':
+            formats['actor'] = formats['actor'][:-5] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'usecase':
+            formats['usecase'] = formats['usecase'][:-5] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'component':
             formats['component'] = formats['component'][:-3] \
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         elif node.element == 'instance':
@@ -113,6 +119,9 @@ end
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         elif node.element == 'node':
             formats['node'] = formats['component'][:-3] \
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
+        elif node.element == 'subsystem':
+            formats['subsystem'] = formats['component'][:-3] \
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         elif node.element == 'comment':
             formats['comment'] = 'Note.{0}({1});';

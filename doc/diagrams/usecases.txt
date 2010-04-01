@@ -1,3 +1,5 @@
+# piUML use cases
+
 actor w 'Writer'
 
 subsystem pu 'piUML'
@@ -8,12 +10,14 @@ subsystem doc 'Documentation'
 
 comment c 'For example\n\n- Sphinx\n- Epydoc\n- TeX\n'
 
-w ==> m
-w ==> wd
+#w ==> m
+#w ==> wd
 
 m -e> wd
 doc -- c
 
-align=left: pu doc
-#align=top: doc c
-#align=top: w pu
+align=center: pu doc
+align=middle: doc c
+align=middle: w pu
+
+# vim: sw=4:et:ai
