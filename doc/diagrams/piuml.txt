@@ -12,7 +12,7 @@ artifact m 'model.pdf' <<document>>
 
 #align=left: f c
 align=left: cp f
-#align=left: cr m
+align=left: cr m
 #align=top: cr cl
 #align=left: cl cr2
 #align=left: cr cr3 cr4

@@ -32,28 +32,36 @@ class MLayout(PreLayout):
         ps = parent.style
 
     def top(self, *nodes):
-        pass
+        self._c('same.top(%s);' % ', '.join(n.id for n in nodes))
 
     def bottom(self, *nodes):
-        pass
+        self._c('same.bottom(%s);' % ', '.join(n.id for n in nodes))
 
     def left(self, *nodes):
-        pass
+        self._c('same.left(%s);' % ', '.join(n.id for n in nodes))
 
     def right(self, *nodes):
-        pass
+        self._c('same.right(%s);' % ', '.join(n.id for n in nodes))
 
     def center(self, *nodes):
-        pass
+        self._c('same.midx(%s);' % ', '.join(n.id for n in nodes))
 
     def middle(self, *nodes):
-        pass
+        self._c('same.midy(%s);' % ', '.join(n.id for n in nodes))
 
     def hspan(self, *nodes):
-        self._c('leftToRight(50)(%s);' % ', '.join(n.id for n in nodes))
+        nodes = list(nodes)
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            r = k1.style.margin.right
+            l = k2.style.margin.left
+            self._c('%s.right + %s = - %s + %s.left;' % (k1.id, r, l, k2.id))
 
     def vspan(self, *nodes):
-        self._c('topToBottom(50)(%s);' % ', '.join(n.id for n in nodes))
+        nodes = list(nodes)
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            b = k1.style.margin.bottom
+            t = k2.style.margin.top
+            self._c('%s.bottom - %s = %s + %s.top;' % (k1.id, b, t, k2.id))
 
 # vim: sw=4:et:ai
 
