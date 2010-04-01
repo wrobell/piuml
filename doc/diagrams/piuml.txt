@@ -5,20 +5,15 @@ component c 'piUML'
     component cp 'Parser'
     component cl 'Layout'
     component cr 'Renderer'
-#    component cr2 'Renderer 2'
-#    component cr3 'Renderer 3'
-#    component cr4 'Renderer 4'
 artifact m 'model.pdf' <<document>>
-
-#align=left: f c
-align=center: cp f
-align=center: cr m
-#align=top: cr cl
-#align=left: cl cr2
-#align=left: cr cr3 cr4
 
 f <u- cp
 cr -> <<create>> m
 
-cp <- cl
+cp <r- cl
 cl <- cr
+
+align=center: cp f
+align=center: cr m
+
+# vim: sw=4:et:ai

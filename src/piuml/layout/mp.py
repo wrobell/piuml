@@ -52,16 +52,21 @@ class MLayout(PreLayout):
     def hspan(self, *nodes):
         nodes = list(nodes)
         for k1, k2 in zip(nodes[:-1], nodes[1:]):
-            r = k1.style.margin.right
-            l = k2.style.margin.left
-            self._c('%s.right + %s = - %s + %s.left;' % (k1.id, r, l, k2.id))
+            w = k1.style.margin.right + k2.style.margin.left
+            c = self.ast.data['edges'].get((k1.id, k2.id), 0)
+            self._c('%s.left - %s.right = %s;' % (k1.id, k2.id, max(w, c)))
 
     def vspan(self, *nodes):
         nodes = list(nodes)
         for k1, k2 in zip(nodes[:-1], nodes[1:]):
-            b = k1.style.margin.bottom
-            t = k2.style.margin.top
-            self._c('%s.bottom - %s = %s + %s.top;' % (k1.id, b, t, k2.id))
+            w = k1.style.margin.bottom + k2.style.margin.top
+            c = self.ast.data['edges'].get((k1.id, k2.id), 0)
+            self._c('%s.bottom - %s.top = %s;' % (k1.id, k2.id, max(w, c)))
+
+    def n_dependency(self, edge):
+        t, h = edge.tail, edge.head
+        self.ast.data['edges'][t.id, h.id] = 50
+        self.ast.data['edges'][h.id, t.id] = 50
 
 # vim: sw=4:et:ai
 

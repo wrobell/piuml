@@ -23,6 +23,7 @@ MetaUML/Metapost based renderer.
 
 from spark import GenericASTTraversal
 from piuml.data import ELEMENTS
+from piuml.renderer.util import st_fmt
 
 
 def _ids(nodes, f=lambda n: True):
@@ -70,8 +71,17 @@ beginfig(1);
                 if edge.data['supplier'] is edge.head:
                     h, t = t, h
                 ends = (t, h) * 2
-                self._add('link(dependency)(%s.c -- %s.c cutbefore bpath(%s) cutafter bpath(%s));' % ends)
-                #self._add('draw %s.c .. %s.c cutafter %s.n;' % ends)
+
+                st = edge.stereotypes[:]
+                lt = 'dependency'
+                if 'realization' in st:
+                    lt = 'realization'
+                    st.remove('realization')
+                    
+                self._add('link(%s)(%s.c -- %s.c cutbefore bpath(%s)' \
+                    ' cutafter bpath(%s));' % ((lt,) + ends))
+                if st:
+                    self._add('label.rt("%s", 0.5[%s.c,%s.c]);' % (st_fmt(st), t, h));
 
         self._add("""
 endfig;
@@ -91,19 +101,8 @@ end
                 + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         self._add(formats[node.element].format(node.id, node.name) + ';')
 
-
-#    def n_dependency(self, edge):
-#        """
-#        Draw dependency between edge tail and head.
-#        """
-#        ends = (edge.tail.id, edge.head.id)
-#        self._add('draw (%s.nw) -- (%s.nw);' % ends)
-
-
     def n_ielement(self, node):
         pass
 
 
 # vim: sw=4:et:ai
-
-

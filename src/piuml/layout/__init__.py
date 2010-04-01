@@ -32,6 +32,7 @@ class PreLayout(GenericASTTraversal):
         Postprocess align information.
         """
         self.ast = ast
+        self.ast.data['edges'] = {}
         # postprocess align information to simplify layout constraints
         # assignment
         align = (n for n in self.ast.unwind() if n.type == 'align')
