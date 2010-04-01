@@ -72,8 +72,13 @@ end
         formats['artifact'] = formats['class']
         if node.element == 'component':
             formats['component'] = formats['component'][:-3] \
-                + ','.join(_ids(node)) + ')'
+                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
         self._add(formats[node.element].format(node.id, node.name) + ';')
+
+
+    def n_ielement(self, node):
+        pass
+        #self._add('Class.{0}("{1}")()();'.format(node.id, node.name))
 
 
 # vim: sw=4:et:ai
