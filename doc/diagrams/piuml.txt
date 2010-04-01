@@ -17,8 +17,8 @@ align=center: cr m
 #align=left: cl cr2
 #align=left: cr cr3 cr4
 
-#f <u- cp
-#cr -> <<create>> m
+f <u- cp
+cr -> <<create>> m
 
-#cp <- cl
-#cl <- cr
+cp <- cl
+cl <- cr

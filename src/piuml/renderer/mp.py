@@ -48,6 +48,12 @@ class MRenderer(GenericASTTraversal):
         self._add("""
 input TEX;
 input metauml;
+
+% create bounding box path
+vardef bpath(text box) =
+    box.nw -- box.ne -- box.se -- box.sw -- cycle
+enddef;
+
 beginfig(1);
 """);
 
@@ -57,6 +63,16 @@ beginfig(1);
             self._add(c)
         ids = _ids(node, lambda n: n.type == 'element')
         self._add('drawObjects(%s);' % ', '.join(ids))
+
+        for edge in node.unwind():
+            if edge.type == 'dependency':
+                t, h = edge.head.id, edge.tail.id
+                if edge.data['supplier'] is edge.head:
+                    h, t = t, h
+                ends = (t, h) * 2
+                self._add('link(dependency)(%s.c -- %s.c cutbefore bpath(%s) cutafter bpath(%s));' % ends)
+                #self._add('draw %s.c .. %s.c cutafter %s.n;' % ends)
+
         self._add("""
 endfig;
 end
@@ -76,9 +92,16 @@ end
         self._add(formats[node.element].format(node.id, node.name) + ';')
 
 
+#    def n_dependency(self, edge):
+#        """
+#        Draw dependency between edge tail and head.
+#        """
+#        ends = (edge.tail.id, edge.head.id)
+#        self._add('draw (%s.nw) -- (%s.nw);' % ends)
+
+
     def n_ielement(self, node):
         pass
-        #self._add('Class.{0}("{1}")()();'.format(node.id, node.name))
 
 
 # vim: sw=4:et:ai
