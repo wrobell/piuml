@@ -7,3 +7,7 @@ package pu 'piuml'
 pp -i> pd
 pr -i> pd
 pl -i> pd
+
+align=center: pp pr pl
+
+# vim: sw=4:et:ai
