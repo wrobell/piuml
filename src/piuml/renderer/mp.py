@@ -103,8 +103,8 @@ boxit.{id}();
 
         # calculate initial size of element
         self._def("""
-{id}Width := xpart {id}NameSize;
-{id}Height := ypart {id}NameSize;
+{id}Width := max(xpart {id}NameSize, 80);
+{id}Height := max(ypart {id}NameSize, 40);
 """.format(id=id))
 
         # calculate size of each compartment
@@ -221,12 +221,15 @@ boxit.{id}Comp{cid}(btex {comp} etex);
         import string
         ids = string.ascii_uppercase
         for cid, sta in zip(ids[cl:], st_attrs):
-            print cid, sta
             attrs = [f.name for f in sta]
             self._compartment(node, cid, attrs, title=st_fmt([sta.name]))
             cl += 1
-        print ids[:cl]
         self._post_border(node, ids[:cl])
+
+        if node.element == 'package':
+            self._draw("""
+draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
+""".format(id=id2mp(node.id)))
 
     def n_ielement(self, node):
         pass
