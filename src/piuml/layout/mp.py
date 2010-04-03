@@ -21,6 +21,11 @@
 MetaUML/Metapost based layout.
 """
 
+def id2mp(id):
+    id = id.replace('a', 'aa').replace('1', 'a')
+    id = id.replace('b', 'bb').replace('2', 'b')
+    return id
+
 from piuml.layout import PreLayout
 
 class MLayout(PreLayout):
@@ -32,36 +37,58 @@ class MLayout(PreLayout):
         ps = parent.style
 
     def top(self, *nodes):
-        self._c('same.top(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('ypart %s.n = ypart %s.n;' % (id1, id2));
 
     def bottom(self, *nodes):
-        self._c('same.bottom(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('ypart %s.s = ypart %s.s;' % (id1, id2));
 
     def left(self, *nodes):
-        self._c('same.left(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('xpart %s.w = xpart %s.w;' % (id1, id2));
 
     def right(self, *nodes):
-        self._c('same.right(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('xpart %s.e = xpart %s.e;' % (id1, id2));
 
     def center(self, *nodes):
-        self._c('same.midx(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('xpart %s.c = xpart %s.c;' % (id1, id2));
 
     def middle(self, *nodes):
-        self._c('same.midy(%s);' % ', '.join(n.id for n in nodes))
+        for k1, k2 in zip(nodes[:-1], nodes[1:]):
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('ypart %s.c = ypart %s.c;' % (id1, id2));
 
     def hspan(self, *nodes):
         nodes = list(nodes)
         for k1, k2 in zip(nodes[:-1], nodes[1:]):
             w = k1.style.margin.right + k2.style.margin.left
             c = self.ast.data['edges'].get((k1.id, k2.id), 0)
-            self._c('%s.left - %s.right = %s;' % (k2.id, k1.id, max(w, c)))
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('xpart %s.w - xpart %s.e = %s;' % (id2, id1, max(w, c)))
 
     def vspan(self, *nodes):
         nodes = list(nodes)
         for k1, k2 in zip(nodes[:-1], nodes[1:]):
             w = k1.style.margin.bottom + k2.style.margin.top
             c = self.ast.data['edges'].get((k1.id, k2.id), 0)
-            self._c('%s.bottom - %s.top = %s;' % (k1.id, k2.id, max(w, c)))
+            id1 = id2mp(k1.id)
+            id2 = id2mp(k2.id)
+            self._c('ypart %s.s - ypart %s.n = %s;' % (id1, id2, max(w, c)))
 
     def n_dependency(self, edge):
         t, h = edge.tail, edge.head

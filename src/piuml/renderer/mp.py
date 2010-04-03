@@ -25,6 +25,10 @@ from spark import GenericASTTraversal
 from piuml.data import ELEMENTS
 from piuml.renderer.util import st_fmt
 
+def id2mp(id):
+    id = id.replace('a', 'aa').replace('1', 'a')
+    id = id.replace('b', 'bb').replace('2', 'b')
+    return id
 
 def _ids(nodes, f=lambda n: True):
     return (n.id for n in nodes if f(n))
@@ -33,12 +37,16 @@ def _ids(nodes, f=lambda n: True):
 class MRenderer(GenericASTTraversal):
     def __init__(self):
         GenericASTTraversal.__init__(self, None)
-        self._lines = []
+        self._defs = []
+        self._draws = []
         self.output = None
         self.filetype = 'pdf'
 
-    def _add(self, data):
-        self._lines.append(data)
+    def _def(self, data):
+        self._defs.append(data)
+
+    def _draw(self, data):
+        self._draws.append(data)
 
     def dims(self, ast): pass
 
@@ -47,87 +55,178 @@ class MRenderer(GenericASTTraversal):
 
 
     def n_diagram(self, node):
-        self._add("""
-input TEX;
-input metauml;
+        self._def("""
+input boxes;
+
+prologues:=3;
+
+vardef size(expr t) =
+    save tempPic;
+    picture tempPic;
+    tempPic := image(draw t);
+    urcorner tempPic
+enddef;
 
 beginfig(1);
+
+% boxes padding is calculated by us
+defaultdx:=0;
+defaultdy:=0;
+
 """);
 
 
     def n_diagram_exit(self, node):
         for c in node.constraints:
-            self._add(c)
-        ids = _ids(node, lambda n: n.type == 'element')
-        self._add('drawObjects(%s);' % ', '.join(ids))
-
-        for edge in node.unwind():
-            if edge.type == 'association':
-                t, h = edge.head.id, edge.tail.id
-                self._add('clink(association)(%s, %s);' % (t, h))
-            elif edge.type in ('dependency', 'generalization'):
-                t, h = edge.head.id, edge.tail.id
-                if edge.data['supplier'] is edge.head:
-                    h, t = t, h
-                ends = (t, h) * 2
-
-                st = edge.stereotypes[:]
-                lt = 'dependency'
-                if edge.type == 'generalization':
-                    lt = 'inheritance'
-                elif 'realization' in st:
-                    lt = 'realization'
-                    st.remove('realization')
-                    
-                self._add('clink(%s)(%s, %s);' % (lt, t, h))
-                if st:
-                    self._add('label.rt("%s", 0.5[%s.c,%s.c]);' % (st_fmt(st), t, h));
-            elif edge.type == 'commentline':
-                t, h = edge.head.id, edge.tail.id
-                self._add('clink(dashedLink)(%s, %s);' % (t, h))
-
-        self._add("""
+            self._def(c)
+        self._draw("""
 endfig;
 end
 """);
-        f = open(self.output + '.mp', 'w')
-        for l in self._lines:
+
+        #f = open(self.output + '.mp', 'w')
+        f = open('cl.mp', 'w')
+        for l in self._defs + self._draws:
             f.write(l)
             f.write('\n')
         f.close()
 
-    def n_element(self, node):
-        formats = dict(((e, e.capitalize() + '.{0}({1})()()') for e in ELEMENTS))
-        formats['artifact'] = formats['class']
-        if node.element == 'actor':
-            formats['actor'] = formats['actor'][:-5] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'usecase':
-            formats['usecase'] = formats['usecase'][:-5] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'component':
-            formats['component'] = formats['component'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'instance':
-            formats['instance'] = formats['instance'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'package':
-            formats['package'] = formats['package'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'device':
-            formats['device'] = formats['component'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'node':
-            formats['node'] = formats['component'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'subsystem':
-            formats['subsystem'] = formats['component'][:-3] \
-                + ','.join(_ids(node, lambda n: n.type == 'element')) + ')'
-        elif node.element == 'comment':
-            formats['comment'] = 'Note.{0}({1});';
+    def _pre_border(self, node):
+        id = id2mp(node.id)
+        self._def("""
+% UML {type}: "{name}"
+boxit.{id}();
+""".format(id=id, name=node.name, type=node.element))
 
-        name = ', '.join('"%s"' % s for s in node.name.split('\\n'))
-        self._add(formats[node.element].format(node.id, name) + ';')
+    def _post_border(self, node, comp):
+        id = id2mp(node.id)
+
+        # calculate initial size of element
+        self._def("""
+{id}Width := xpart {id}NameSize;
+{id}Height := ypart {id}NameSize;
+""".format(id=id))
+
+        # calculate size of each compartment
+        # and position it within the element
+        if len(comp) > 0:
+            p = comp[0]
+            self._def("""
+% position of first compartment
+xpart {id}Comp{cid}.nw = xpart {id}.w;
+ypart {id}Comp{cid}.nw = ypart {id}Name.sw;
+
+% increase total size of element
+{id}Width := max({id}Width, xpart {id}CompSize{cid});
+{id}Height := {id}Height + ypart {id}CompSize{cid};
+    """.format(id=id, cid=p))
+
+            for cid in comp[1:]:
+                self._def("""
+% increase total size of element
+{id}Width := max({id}Width, xpart {id}CompSize{cid});
+{id}Height := {id}Height + ypart {id}CompSize{cid};
+
+% position of compartment
+xpart {id}Comp{cid}.nw = xpart {id}Comp{pcid}.nw;
+ypart {id}Comp{cid}.nw = ypart {id}Comp{pcid}.sw;
+    """.format(id=id, pcid=p, cid=cid))
+                p = cid
+
+        # set size of the element
+        self._def("""
+{id}.se = {id}.nw + ({id}Width, -{id}Height);
+""".format(id=id))
+
+        # draw name
+        self._draw("""
+drawunboxed({id}Name);
+""".format(id=id))
+
+        # draw compartments
+        for cid in comp:
+            self._draw("""
+drawunboxed({id}Comp{cid});
+""".format(id=id, cid=cid))
+
+        # draw element border
+        self._draw("""
+drawboxed({id});
+""".format(id=id))
+
+        # draw compartment separator
+        for cid in comp:
+            self._draw("""
+draw (xpart {id}.w, ypart {id}Comp{cid}.n) -- (xpart {id}.e, ypart {id}Comp{cid}.n);
+""".format(id=id, cid=cid))
+
+    def _name(self, node):
+        id = id2mp(node.id)
+        style = node.style
+        pad = style.padding
+        name = '\\bf ' + node.name
+        if node.stereotypes:
+            st = st_fmt(node.stereotypes)
+            name = '\\vbox{\\hbox{' + st + '}\\hbox{' + name + '}}'
+
+        self._def("""
+pair {id}NameSize;
+{id}NameSize := size(btex {name} etex) + ({padw}, {padh});
+boxit.{id}Name(btex {name} etex);
+{id}Name.sw = {id}Name.ne - {id}NameSize;
+{id}Name.n = {id}.n;
+""".format(id=id, name=name, type=node.element,
+        padw=pad.left + pad.right,
+        padh=pad.top + pad.bottom))
+
+    def _compartment(self, node, cid, comp, title=''):
+        """
+        :Parameters:
+         cid
+          Compartment id.
+         comp
+          List of compartment items.
+        """
+        id = id2mp(node.id)
+        style = node.style
+        pad = style.padding
+        comp_s = '\\vbox{' \
+                + ('\\hbox{%s}' % title if title else '') \
+                + ''.join('\\hbox{%s}' % s for s in comp) \
+                + '}'
+        self._def("""
+pair {id}CompSize{cid};
+{id}CompSize{cid} := size(btex {comp} etex) + ({padw}, {padh});
+boxit.{id}Comp{cid}(btex {comp} etex);
+{id}Comp{cid}.sw = {id}Comp{cid}.ne - {id}CompSize{cid};
+""".format(id=id, cid=cid, comp=comp_s,
+        padw=pad.left + pad.right,
+        padh=pad.top + pad.bottom))
+
+
+    def n_element(self, node):
+        attrs = [f.name for f in node if f.element == 'attribute']
+        opers = [f.name for f in node if f.element == 'operation']
+        st_attrs = [f for f in node if f.element == 'stattributes']
+        cl = 0
+
+        self._pre_border(node)
+        self._name(node);
+        if attrs:
+            self._compartment(node, 'A', attrs)
+            cl += 1
+        if opers:
+            self._compartment(node, 'B', opers)
+            cl += 1
+        import string
+        ids = string.ascii_uppercase
+        for cid, sta in zip(ids[cl:], st_attrs):
+            print cid, sta
+            attrs = [f.name for f in sta]
+            self._compartment(node, cid, attrs, title=st_fmt([sta.name]))
+            cl += 1
+        print ids[:cl]
+        self._post_border(node, ids[:cl])
 
     def n_ielement(self, node):
         pass
