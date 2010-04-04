@@ -267,8 +267,14 @@ draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
     -- cycle;
 """.format(p=p, w=icon_w, h=icon_h))
 
-        elif node.element == 'arifact':
-            pass
+        elif node.element == 'artifact':
+            id = id2mp(node.id)
+            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
+            self._draw("""
+draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
+    -- {p} - (0, {h}) -- {p} - ({w}, {h}) -- cycle;
+draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
+""".format(p=p, w=icon_w, h=icon_h))
 
     def n_ielement(self, node):
         pass
