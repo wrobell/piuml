@@ -230,6 +230,11 @@ boxit.{id}Comp{cid}(btex {comp} etex);
             self._draw("""
 draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
 """.format(id=id2mp(node.id)))
+        elif node.element in ('node', 'device'):
+            self._draw("""
+draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
+draw {id}.ne --  {id}.ne + (10, 10);
+""".format(id=id2mp(node.id)))
 
     def n_ielement(self, node):
         pass
