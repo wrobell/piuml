@@ -226,7 +226,7 @@ boxit.{id}Comp{cid}(btex {comp} etex);
             cl += 1
         self._post_border(node, ids[:cl])
 
-        if node.element == 'package':
+        if node.element in ('package', 'profile'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
 """.format(id=id2mp(node.id)))
