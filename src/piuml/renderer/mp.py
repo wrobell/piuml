@@ -160,11 +160,13 @@ drawboxed({id});
 draw (xpart {id}.w, ypart {id}Comp{cid}.n) -- (xpart {id}.e, ypart {id}Comp{cid}.n);
 """.format(id=id, cid=cid))
 
-    def _name(self, node):
+    def _name(self, node, underline=False):
         id = id2mp(node.id)
         style = node.style
         pad = style.padding
         name = '\\bf ' + node.name
+        if underline:
+            name = '\\underbar{' + name + '}'
         if node.stereotypes:
             st = st_fmt(node.stereotypes)
             name = '\\vbox{\\hbox{' + st + '}\\hbox{' + name + '}}'
@@ -211,7 +213,8 @@ boxit.{id}Comp{cid}(btex {comp} etex);
         cl = 0
 
         self._pre_border(node)
-        self._name(node);
+        underline = node.element == 'instance'
+        self._name(node, underline=underline);
         if attrs:
             self._compartment(node, 'A', attrs)
             cl += 1
