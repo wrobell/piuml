@@ -160,7 +160,7 @@ drawboxed({id});
 draw (xpart {id}.w, ypart {id}Comp{cid}.n) -- (xpart {id}.e, ypart {id}Comp{cid}.n);
 """.format(id=id, cid=cid))
 
-    def _name(self, node, underline=False):
+    def _name(self, node, underline=False, extend=0):
         id = id2mp(node.id)
         style = node.style
         pad = style.padding
@@ -173,13 +173,14 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n) -- (xpart {id}.e, ypart {id}Comp{cid}
 
         self._def("""
 pair {id}NameSize;
-{id}NameSize := size(btex {name} etex) + ({padw}, {padh});
+{id}NameSize := size(btex {name} etex) + ({padw}, {padh}) + ({extend} * 2, 0);
 boxit.{id}Name(btex {name} etex);
 {id}Name.sw = {id}Name.ne - {id}NameSize;
 {id}Name.n = {id}.n;
 """.format(id=id, name=name, type=node.element,
         padw=pad.left + pad.right,
-        padh=pad.top + pad.bottom))
+        padh=pad.top + pad.bottom,
+        extend=extend))
 
     def _compartment(self, node, cid, comp, title=''):
         """
@@ -212,9 +213,16 @@ boxit.{id}Comp{cid}(btex {comp} etex);
         st_attrs = [f for f in node if f.element == 'stattributes']
         cl = 0
 
-        self._pre_border(node)
         underline = node.element == 'instance'
-        self._name(node, underline=underline);
+        boxshape = node.element not in ('usecase',)
+        style = node.style
+        pad = style.padding
+        ipad = 5
+        icon_w = style.icon_size.width
+        icon_h = style.icon_size.height
+
+        self._pre_border(node)
+        self._name(node, underline=underline, extend=icon_w + 2 * ipad);
         if attrs:
             self._compartment(node, 'A', attrs)
             cl += 1
@@ -229,15 +237,38 @@ boxit.{id}Comp{cid}(btex {comp} etex);
             cl += 1
         self._post_border(node, ids[:cl])
 
+        # custom shapes
         if node.element in ('package', 'profile'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
 """.format(id=id2mp(node.id)))
+
         elif node.element in ('node', 'device'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
 draw {id}.ne --  {id}.ne + (10, 10);
 """.format(id=id2mp(node.id)))
+
+        # icons
+        if node.element == 'component':
+            id = id2mp(node.id)
+            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
+            self._draw("""
+draw {p} - ({w}, {h} / 5) 
+    -- {p} - ({w}, 0) -- {p} -- {p} - (0, {h}) -- {p} - ({w}, {h})
+    -- {p} - ({w}, 4 * {h} / 5);
+draw {p} - ({w}, 3 * {h} / 5) -- {p} - ({w}, 2 * {h} / 5);
+% bars
+draw {p} - ({w} + {w} / 3, {h} / 5) -- {p} - ({w} - {w} / 3, {h} / 5)
+    -- {p} - ({w} - {w} / 3, 2 * {h} / 5) -- {p} - ({w} + {w} / 3, 2 * {h} / 5)
+    -- cycle;
+draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
+    -- {p} - ({w} - {w} / 3, 4 * {h} / 5) -- {p} - ({w} + {w} / 3, 4 * {h} / 5)
+    -- cycle;
+""".format(p=p, w=icon_w, h=icon_h))
+
+        elif node.element == 'arifact':
+            pass
 
     def n_ielement(self, node):
         pass
