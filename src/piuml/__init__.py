@@ -54,7 +54,7 @@ def generate(f, fout, filetype='pdf'):
     ast = parse(f)
     print 'p', time.time() - v
     graph.create(ast)
-    renderer.dims(ast)
+    renderer.constraint(ast)
     v = time.time()
     graph.layout(ast)
     print 'l', time.time() - v

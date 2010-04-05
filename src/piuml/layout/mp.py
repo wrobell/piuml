@@ -24,6 +24,7 @@ MetaUML/Metapost based layout.
 def id2mp(id):
     id = id.replace('a', 'aa').replace('1', 'a')
     id = id.replace('b', 'bb').replace('2', 'b')
+    id = id.replace('c', 'cc').replace('3', 'c')
     return id
 
 from piuml.layout import PreLayout

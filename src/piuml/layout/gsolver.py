@@ -137,6 +137,9 @@ class ConstraintLayout(PreLayout):
             self.add_lt(k1s.p2.y, k2s.pos.y, d)
         self._apply(f, nodes)
 
+    middle = top
+    center = left
+
     def _apply(self, f, node):
         for k1, k2 in zip(node[:-1], node[1:]):
             f(k1.style, k2.style)

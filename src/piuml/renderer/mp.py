@@ -22,12 +22,69 @@ MetaUML/Metapost based renderer.
 """
 
 from spark import GenericASTTraversal
-from piuml.data import ELEMENTS
+from piuml.data import ELEMENTS, Size
 from piuml.renderer.util import st_fmt
+
+
+##
+## cmd
+##
+import subprocess
+import os
+import os.path
+import shutil
+
+
+class CmdError(RuntimeError):
+    def __init__(self, output):
+        self.output = output
+
+def cmd(*args, **kw):
+    tmpdir = kw.get('tmpdir', '.')
+    p = subprocess.Popen(args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True,
+            cwd=tmpdir)
+    out, err = p.communicate()
+    if p.returncode != 0:
+        raise CmdError(out + '\n' + err)
+    return p.returncode
+
+
+def save(fnout, data):
+    fn = 'aa.mp'
+    fbase, _ = os.path.splitext(fn)
+    fnout = fbase + '.pdf'
+    tmpdir = os.tempnam('.', 'piuml')
+    tmpdir = 'tmp'
+    shutil.rmtree(tmpdir, ignore_errors=True)
+    os.makedirs(tmpdir)
+
+    f = open(tmpdir + '/' + fn, 'w')
+    for l in data:
+        f.write(l)
+    f.close()
+
+    try:
+        cmd('mpost', '-interaction', 'batchmode', fn, tmpdir=tmpdir)
+        cmd('epstopdf', tmpdir + '/' + fbase + '.1', '-o', fnout)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+##
+## end of cmd
+##
+
+
+
+
+
 
 def id2mp(id):
     id = id.replace('a', 'aa').replace('1', 'a')
     id = id.replace('b', 'bb').replace('2', 'b')
+    id = id.replace('c', 'cc').replace('3', 'c')
     return id
 
 def _ids(nodes, f=lambda n: True):
@@ -48,7 +105,55 @@ class MRenderer(GenericASTTraversal):
     def _draw(self, data):
         self._draws.append(data)
 
-    def dims(self, ast): pass
+    def constraint(self, ast):
+        with open('sizesT.mp', 'w') as f:
+            f.write("""
+vardef size(text id)(expr t) =
+    save wh;
+    pair wh;
+    wh := urcorner image(draw t);
+    write id & "," & decimal xpart wh & "," & decimal ypart wh to "sizesT.csv";
+enddef;
+beginfig(1);
+""")
+            pad_counts = {}
+            for k in ast.unwind():
+                if k.type != 'element':
+                    continue
+                text = self._name_s(k)
+                data = self._compartments_s(k)
+                if data:
+                    text = '\\hbox{' + text + '}'
+                    for d in data:
+                        text += '\\hbox{' + d + '}'
+                    text = '\\vbox{' + text + '}'
+                pad_counts[k.id] = 1 + len(data)
+                f.write('size("{id}")(btex {text} etex);\n'.format(id=k.id,
+                    text=text))
+
+            f.write('endfig;\nend')
+        cmd('mpost', '-interaction', 'batchmode', 'sizesT.mp', tmpdir='.')
+        import csv
+
+        f = csv.reader(open('sizesT.csv'))
+        data = {}
+        for l in f:
+            id = l[0]
+            w1, h1 = float(l[1]), float(l[2])
+
+            style = ast.cache[id].style
+            pad = style.padding
+            w2, h2 = style.size
+            dh = pad_counts[id] * pad.top + pad.bottom
+
+            print id, w1, h1, w2, h2
+            style.size = Size(max(w1 + pad.left + pad.right, w2), max(h1 + dh, h2))
+#try:
+#    save('aa.pdf', data)
+#except CmdError, e:
+#    print e.output
+
+            
 
     def render(self, ast):
         self.preorder(ast)
@@ -59,13 +164,6 @@ class MRenderer(GenericASTTraversal):
 input boxes;
 
 prologues:=3;
-
-vardef size(expr t) =
-    save tempPic;
-    picture tempPic;
-    tempPic := image(draw t);
-    urcorner tempPic
-enddef;
 
 beginfig(1);
 
@@ -93,19 +191,24 @@ end
 
     def _pre_border(self, node):
         id = id2mp(node.id)
+        style = node.style
         self._def("""
 % UML {type}: "{name}"
 boxit.{id}();
-""".format(id=id, name=node.name, type=node.element))
+{id}.ne = ({x}, {y});
+{id}.ne = {id}.sw + ({w}, {h});
+""".format(id=id, name=node.name, type=node.element,
+    x=float(style.pos.x), y=float(style.pos.y),
+    w=style.size.width, h=style.size.height))
 
     def _post_border(self, node, comp):
         id = id2mp(node.id)
+        style = node.style
+        pad = style.padding
 
-        # calculate initial size of element
         self._def("""
-{id}Width := max(xpart {id}NameSize, 80);
-{id}Height := max(ypart {id}NameSize, 40);
-""".format(id=id))
+{id}Name.n = {id}.n - (0, {pad.top});
+""".format(id=id, pad=pad))
 
         # calculate size of each compartment
         # and position it within the element
@@ -113,30 +216,17 @@ boxit.{id}();
             p = comp[0]
             self._def("""
 % position of first compartment
-xpart {id}Comp{cid}.nw = xpart {id}.w;
-ypart {id}Comp{cid}.nw = ypart {id}Name.sw;
-
-% increase total size of element
-{id}Width := max({id}Width, xpart {id}CompSize{cid});
-{id}Height := {id}Height + ypart {id}CompSize{cid};
-    """.format(id=id, cid=p))
+xpart {id}Comp{cid}.w = xpart {id}.w + {pad.left};
+ypart {id}Comp{cid}.n = ypart {id}Name.s - ({pad.bottom} + {pad.top});
+    """.format(id=id, cid=p, pad=pad))
 
             for cid in comp[1:]:
                 self._def("""
-% increase total size of element
-{id}Width := max({id}Width, xpart {id}CompSize{cid});
-{id}Height := {id}Height + ypart {id}CompSize{cid};
-
 % position of compartment
-xpart {id}Comp{cid}.nw = xpart {id}Comp{pcid}.nw;
-ypart {id}Comp{cid}.nw = ypart {id}Comp{pcid}.sw;
-    """.format(id=id, pcid=p, cid=cid))
+xpart {id}Comp{cid}.w = xpart {id}Comp{pcid}.w;
+ypart {id}Comp{cid}.n = ypart {id}Comp{pcid}.s - ({pad.bottom} + {pad.top});
+    """.format(id=id, pcid=p, cid=cid, pad=pad))
                 p = cid
-
-        # set size of the element
-        self._def("""
-{id}.se = {id}.nw + ({id}Width, -{id}Height);
-""".format(id=id))
 
         # draw name
         self._draw("""
@@ -157,62 +247,74 @@ drawboxed({id});
         # draw compartment separator
         for cid in comp:
             self._draw("""
-draw (xpart {id}.w, ypart {id}Comp{cid}.n) -- (xpart {id}.e, ypart {id}Comp{cid}.n);
-""".format(id=id, cid=cid))
+draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
+    -- (xpart {id}.e, ypart {id}Comp{cid}.n + {pad.top});
+""".format(id=id, cid=cid, pad=pad))
 
-    def _name(self, node, underline=False, extend=0):
-        id = id2mp(node.id)
-        style = node.style
-        pad = style.padding
+
+    def _name_s(self, node, underline=False):
         name = '\\bf ' + node.name
         if underline:
             name = '\\underbar{' + name + '}'
         if node.stereotypes:
             st = st_fmt(node.stereotypes)
-            name = '\\vbox{\\hbox{' + st + '}\\hbox{' + name + '}}'
+            name = '\\hbox{ ' + st + '}\\hbox{' + name + '}'
+        return name
 
-        self._def("""
-pair {id}NameSize;
-{id}NameSize := size(btex {name} etex) + ({padw}, {padh}) + ({extend} * 2, 0);
-boxit.{id}Name(btex {name} etex);
-{id}Name.sw = {id}Name.ne - {id}NameSize;
-{id}Name.n = {id}.n;
-""".format(id=id, name=name, type=node.element,
-        padw=pad.left + pad.right,
-        padh=pad.top + pad.bottom,
-        extend=extend))
 
-    def _compartment(self, node, cid, comp, title=''):
+
+    def _name(self, node, underline=False):
+        id = id2mp(node.id)
+        name = self._name_s(node, underline)
+        self._def('boxit.{id}Name(btex {name} etex);'.format(id=id, name=name))
+
+
+    def _comp_s(self, comp, title=''):
+        return '\\vbox{' \
+                + ('\\hbox{%s}' % title if title else '') \
+                + ''.join('\\hbox{%s}' % s for s in comp) \
+                + '}'
+
+
+    def _compartments_s(self, node):
+        attrs = [f.name for f in node if f.element == 'attribute']
+        opers = [f.name for f in node if f.element == 'operation']
+        st_attrs = [f for f in node if f.element == 'stattributes']
+
+        data = []
+        if attrs:
+            data.append(self._comp_s(attrs))
+        if opers:
+            data.append(self._comp_s(opers))
+        for sta in st_attrs:
+            attrs = [f.name for f in sta]
+            data.append(self._comp_s(attrs, title=st_fmt([sta.name])))
+        return data
+
+
+    def _compartment(self, node, cid, comp):
         """
         :Parameters:
          cid
           Compartment id.
          comp
-          List of compartment items.
+          Compartment string.
         """
         id = id2mp(node.id)
         style = node.style
         pad = style.padding
-        comp_s = '\\vbox{' \
-                + ('\\hbox{%s}' % title if title else '') \
-                + ''.join('\\hbox{%s}' % s for s in comp) \
-                + '}'
-        self._def("""
-pair {id}CompSize{cid};
-{id}CompSize{cid} := size(btex {comp} etex) + ({padw}, {padh});
-boxit.{id}Comp{cid}(btex {comp} etex);
-{id}Comp{cid}.sw = {id}Comp{cid}.ne - {id}CompSize{cid};
-""".format(id=id, cid=cid, comp=comp_s,
-        padw=pad.left + pad.right,
-        padh=pad.top + pad.bottom))
+        self._def('boxit.{id}Comp{cid}(btex {comp} etex);'.format(id=id,
+            cid=cid,
+            comp=comp))
+
+
+    def _area(self, node):
+        """
+        Packaged elements.
+        """
 
 
     def n_element(self, node):
-        attrs = [f.name for f in node if f.element == 'attribute']
-        opers = [f.name for f in node if f.element == 'operation']
-        st_attrs = [f for f in node if f.element == 'stattributes']
-        cl = 0
-
         underline = node.element == 'instance'
         boxshape = node.element not in ('usecase',)
         style = node.style
@@ -222,20 +324,17 @@ boxit.{id}Comp{cid}(btex {comp} etex);
         icon_h = style.icon_size.height
 
         self._pre_border(node)
-        self._name(node, underline=underline, extend=icon_w + 2 * ipad);
-        if attrs:
-            self._compartment(node, 'A', attrs)
-            cl += 1
-        if opers:
-            self._compartment(node, 'B', opers)
-            cl += 1
+        self._name(node, underline=underline);
+#
+#       # packaging area
+#       self._area(node)
+#
         import string
-        ids = string.ascii_uppercase
-        for cid, sta in zip(ids[cl:], st_attrs):
-            attrs = [f.name for f in sta]
-            self._compartment(node, cid, attrs, title=st_fmt([sta.name]))
-            cl += 1
-        self._post_border(node, ids[:cl])
+        data = self._compartments_s(node)
+        ids = string.ascii_uppercase[:len(data)]
+        for cid, comp in zip(ids, data):
+            self._compartment(node, cid, comp)
+        self._post_border(node, ids)
 
         # custom shapes
         if node.element in ('package', 'profile'):
