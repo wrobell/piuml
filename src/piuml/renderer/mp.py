@@ -264,7 +264,7 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
             name = '\\underbar{' + name + '}'
         if node.stereotypes:
             st = st_fmt(node.stereotypes)
-            name = '\\hbox{ ' + st + '}\\hbox{' + name + '}'
+            name = '\\vbox{\\hbox{ ' + st + '}\\hbox{' + name + '}}'
         return name
 
 
