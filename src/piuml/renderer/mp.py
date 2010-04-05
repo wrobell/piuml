@@ -201,14 +201,17 @@ boxit.{id}();
     x=float(style.pos.x), y=float(style.pos.y),
     w=style.size.width, h=style.size.height))
 
-    def _post_border(self, node, comp):
+
+    def _post_border(self, node, comp, border=True):
         id = id2mp(node.id)
         style = node.style
         pad = style.padding
 
-        self._def("""
-{id}Name.n = {id}.n - (0, {pad.top});
-""".format(id=id, pad=pad))
+        if node.element == 'usecase':
+            self._def('{id}Name.c = {id}.c;'.format(id=id))
+        else:
+            self._def('{id}Name.n = {id}.n - (0, {pad.top});'.format(id=id,
+                pad=pad))
 
         # calculate size of each compartment
         # and position it within the element
@@ -240,9 +243,10 @@ drawunboxed({id}Comp{cid});
 """.format(id=id, cid=cid))
 
         # draw element border
+        shape = 'drawboxed' if border else 'drawunboxed'
         self._draw("""
-drawboxed({id});
-""".format(id=id))
+{shape}({id});
+""".format(id=id, shape=shape))
 
         # draw compartment separator
         for cid in comp:
@@ -315,8 +319,9 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
 
 
     def n_element(self, node):
+        id = id2mp(node.id)
         underline = node.element == 'instance'
-        boxshape = node.element not in ('usecase',)
+        border = node.element not in ('usecase', 'actor')
         style = node.style
         pad = style.padding
         ipad = 5
@@ -334,23 +339,22 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         ids = string.ascii_uppercase[:len(data)]
         for cid, comp in zip(ids, data):
             self._compartment(node, cid, comp)
-        self._post_border(node, ids)
+        self._post_border(node, ids, border=border)
 
         # custom shapes
         if node.element in ('package', 'profile'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
-""".format(id=id2mp(node.id)))
+""".format(id=id))
 
         elif node.element in ('node', 'device'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
 draw {id}.ne --  {id}.ne + (10, 10);
-""".format(id=id2mp(node.id)))
+""".format(id=id))
 
         # icons
         if node.element == 'component':
-            id = id2mp(node.id)
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
 draw {p} - ({w}, {h} / 5) 
@@ -367,13 +371,18 @@ draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
 """.format(p=p, w=icon_w, h=icon_h))
 
         elif node.element == 'artifact':
-            id = id2mp(node.id)
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
 draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
     -- {p} - (0, {h}) -- {p} - ({w}, {h}) -- cycle;
 draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
 """.format(p=p, w=icon_w, h=icon_h))
+        elif node.element == 'usecase':
+            self._draw("""
+draw fullcircle
+    xscaled (xpart {id}.w - xpart {id}.e)
+    yscaled (ypart {id}.s - ypart {id}.n) shifted {id}.c;
+""".format(id=id));
 
     def n_ielement(self, node):
         pass
