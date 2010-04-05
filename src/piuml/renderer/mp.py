@@ -209,6 +209,8 @@ boxit.{id}();
 
         if node.element == 'usecase':
             self._def('{id}Name.c = {id}.c;'.format(id=id))
+        elif node.element == 'actor':
+            self._def('{id}Name.n - ({pad.top}, 0) = {id}.s;'.format(id=id, pad=pad))
         else:
             self._def('{id}Name.n = {id}.n - (0, {pad.top});'.format(id=id,
                 pad=pad))
@@ -382,6 +384,18 @@ draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
 draw fullcircle
     xscaled (xpart {id}.w - xpart {id}.e)
     yscaled (ypart {id}.s - ypart {id}.n) shifted {id}.c;
+""".format(id=id));
+        elif node.element == 'actor':
+            self._draw("""
+% head
+draw {id}.n .. {id}.n + (10, -10) .. {id}.n + (0, -20)
+    .. {id}.n + (-10, -10) ..  cycle;
+% body
+draw {id}.n + (0, -20) -- {id}.n + (0, -40);
+% arms
+draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
+% legs
+draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
 """.format(id=id));
 
     def n_ielement(self, node):

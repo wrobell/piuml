@@ -144,6 +144,7 @@ class Node(list):
         # few exceptions for default style
         if element == 'actor':
             self.style.padding = Area(0, 0, 0, 0)
+            self.style.size = Size(40, 60)
         elif element == 'association':
             self.style.padding = Area(3, 18, 3, 18)
         elif element in ('artifact', 'component'):
