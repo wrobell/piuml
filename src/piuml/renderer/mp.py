@@ -165,6 +165,26 @@ input boxes;
 
 prologues:=3;
 
+vardef drawArrow(text a)(text b)(expr closed) =
+  numeric alfa;
+  alfa = angle(xpart(a - b), ypart(a - b));
+
+  pair w[];
+  w[1] := (15, 6);
+  w[1] := w[1] rotated (alfa) shifted b;
+  w[2] := (-15, 6);
+  w[2] := w[2] rotated (180 + alfa) shifted b;
+
+  if closed:
+      path p;
+      p := w[1] -- b -- w[2] -- cycle;
+      unfill p;
+      draw p;
+  else:
+      draw w[1] -- b -- w[2];
+  fi
+enddef;
+
 beginfig(1);
 
 % boxes padding is calculated by us
@@ -398,8 +418,47 @@ draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
 draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
 """.format(id=id));
 
+
     def n_ielement(self, node):
         pass
+
+
+    def n_dependency(self, node):
+        t = id2mp(node.tail.id)
+        h = id2mp(node.head.id)
+        dashed = node.element != 'generalization'
+        closed = node.element == 'generalization' 
+
+        st = ''
+        if node.stereotypes:
+            stl = node.stereotypes[:]
+            if 'realization' in node.stereotypes:
+                stl.remove('realization')
+                closed = True
+            st = st_fmt(stl)
+
+        p1 = 'point 0 of tempPath'
+        p2 = 'point length tempPath of tempPath'
+        if node.tail is node.data['supplier']:
+            p2, p1 = p1, p2
+        arrow = '(' + p1 + ')(' + p2 + ')'
+        path = """
+path tempPath;
+tempPath := {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h};
+"""
+        path += 'draw tempPath'
+        if dashed:
+            path += ' dashed evenly scaled 1.2'
+        path += ';\n'
+
+        closed = 'true' if closed else 'false'
+        self._draw((path + 'drawArrow{arrow}({closed});').format(t=t, h=h,
+            arrow=arrow, closed=closed))
+
+        if st:
+            self._draw('label.top(btex {st} etex, 0.5[{p1},{p2}]);'.format(st=st, p1=p1, p2=p2))
+
+    n_generalization = n_dependency
 
 
 # vim: sw=4:et:ai
