@@ -254,7 +254,7 @@ end
         f.close()
 
 
-    def _element(self, node, comps, border=True, underline=False):
+    def _element(self, node, comps, border=True, underline=False, bold=True):
         """
         Draw name and compartments of an element.
 
@@ -270,7 +270,7 @@ end
         style = node.style
         pad = style.padding
 
-        name = self._name_s(node, underline)
+        name = self._name_s(node, underline, bold)
         # define the element's box and its name
         self._def("""
 % UML {type}: "{nc}"
@@ -345,8 +345,10 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         """.format(id=id, cid=c.id, pad=pad))
 
 
-    def _name_s(self, node, underline=False):
-        name = '\\bf ' + node.name
+    def _name_s(self, node, underline=False, bold=True):
+        name = node.name
+        if bold:
+            name = '\\bf ' + name
         if underline:
             name = '\\underbar{' + name + '}'
         if node.stereotypes:
@@ -392,7 +394,8 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
     def n_element(self, node):
         id = id2mp(node.id)
         underline = node.element == 'instance'
-        border = node.element not in ('usecase', 'actor')
+        border = node.element not in ('usecase', 'actor', 'comment')
+        bold = node.element != 'comment'
         style = node.style
         pad = style.padding
         ipad = 5
@@ -403,7 +406,7 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         comps = self._compartments(node)
 
         # draw element and its compartments
-        self._element(node, comps, border=border, underline=underline)
+        self._element(node, comps, border=border, underline=underline, bold=bold)
 
         # custom shapes
         if node.element in ('package', 'profile'):
@@ -458,7 +461,14 @@ draw {id}.n + (0, -20) -- {id}.n + (0, -40);
 draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
 % legs
 draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
-""".format(id=id));
+            """.format(id=id));
+
+        elif node.element == 'comment':
+            self._draw("""
+draw {id}.nw -- {id}.ne - (15, 0) -- {id}.ne - (0, 15)
+    -- {id}.se -- {id}.sw -- cycle;
+draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
+            """.format(id=id))
 
 
     def n_ielement(self, node):
@@ -501,6 +511,18 @@ tempPath := {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h};
             self._draw('label.top(btex {st} etex, 0.5[{p1},{p2}]);'.format(st=st, p1=p1, p2=p2))
 
     n_generalization = n_dependency
+
+
+    def n_commentline(self, line):
+        """
+        Draw comment line.
+        """
+        t = id2mp(line.tail.id)
+        h = id2mp(line.head.id)
+        self._draw("""
+draw {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h}
+    dashed evenly scaled 1.2;
+        """.format(t=t, h=h))
 
 
 # vim: sw=4:et:ai
