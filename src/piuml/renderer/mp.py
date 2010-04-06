@@ -23,8 +23,13 @@ MetaUML/Metapost based renderer.
 
 from spark import GenericASTTraversal
 from piuml.data import ELEMENTS, Size
-from piuml.renderer.util import st_fmt
+from piuml.renderer.util import st_fmt as _st_fmt
 
+def st_fmt(stereotypes):
+    s = _st_fmt(stereotypes)
+    s = s.replace('<<', '$\\ll$')
+    s = s.replace('>>', '$\\gg$')
+    return s
 
 ##
 ## cmd
@@ -283,8 +288,9 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         if underline:
             name = '\\underbar{' + name + '}'
         if node.stereotypes:
+            fmt = '\\vbox{\\halign{\\hfil \\quad # \\hfil \\cr %s \\cr %s \\cr}}'
             st = st_fmt(node.stereotypes)
-            name = '\\vbox{\\hbox{ ' + st + '}\\hbox{' + name + '}}'
+            name = fmt % (st, name)
         return name
 
 
