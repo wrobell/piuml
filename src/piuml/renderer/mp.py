@@ -24,6 +24,12 @@ MetaUML/Metapost based renderer.
 from spark import GenericASTTraversal
 from piuml.data import ELEMENTS, Size
 from piuml.renderer.util import st_fmt as _st_fmt
+from collections import namedtuple
+import string
+
+# compartment has an id, the title (i.e. stereotype) and data, which is
+# compartment's content
+Compartment = namedtuple('Compartment', 'id title data')
 
 def st_fmt(stereotypes):
     s = _st_fmt(stereotypes)
@@ -114,9 +120,14 @@ class MRenderer(GenericASTTraversal):
         with open('sizesT.mp', 'w') as f:
             f.write("""
 vardef size(text id)(expr t) =
-    save wh;
-    pair wh;
-    wh := urcorner image(draw t);
+    save ll, ur, p;
+    pair ll, ur, wh;
+    picture p;
+    truecorners := 1;
+    p := image(draw t);
+    ll := llcorner p;
+    ur := urcorner p;
+    wh := (xpart ur - xpart ll, ypart ur - ypart ll);
     write id & "," & decimal xpart wh & "," & decimal ypart wh to "sizesT.csv";
 enddef;
 beginfig(1);
@@ -126,18 +137,19 @@ beginfig(1);
                 if k.type != 'element':
                     continue
                 text = self._name_s(k)
-                data = self._compartments_s(k)
-                if data:
+                comps = self._compartments(k)
+                if comps:
                     text = '\\hbox{' + text + '}'
-                    for d in data:
-                        text += '\\hbox{' + d + '}'
+                    for c in comps:
+                        text += '\\hbox{' + c.data + '}'
                     text = '\\vbox{' + text + '}'
-                pad_counts[k.id] = 1 + len(data)
+                pad_counts[k.id] = 1 + len(comps)
                 f.write('size("{id}")(btex {text} etex);\n'.format(id=k.id,
                     text=text))
 
             f.write('endfig;\nend')
-        cmd('mpost', '-interaction', 'batchmode', 'sizesT.mp', tmpdir='.')
+        #cmd('mpost', '-interaction', 'batchmode', 'sizesT.mp', tmpdir='.')
+        cmd('mptopdf', 'sizesT.mp', tmpdir='.')
         import csv
 
         f = csv.reader(open('sizesT.csv'))
@@ -149,7 +161,7 @@ beginfig(1);
             style = ast.cache[id].style
             pad = style.padding
             w2, h2 = style.size
-            dh = pad_counts[id] * pad.top + pad.bottom
+            dh = pad_counts[id] * (pad.top + pad.bottom)
 
             print id, w1, h1, w2, h2
             style.size = Size(max(w1 + pad.left + pad.right, w2), max(h1 + dh, h2))
@@ -214,73 +226,96 @@ end
             f.write('\n')
         f.close()
 
-    def _pre_border(self, node):
-        id = id2mp(node.id)
-        style = node.style
-        self._def("""
-% UML {type}: "{name}"
-boxit.{id}();
-{id}.sw = ({x}, {y});
-{id}.ne = {id}.sw + ({w}, {h});
-""".format(id=id, name=node.name, type=node.element,
-    x=float(style.ll.x), y=float(style.ll.y),
-    w=style.size.width, h=style.size.height))
 
+    def _element(self, node, comps, border=True, underline=False):
+        """
+        Draw name and compartments of an element.
 
-    def _post_border(self, node, comp, border=True):
+        :Parameters:
+         node
+            Node of element to draw.
+         comps
+            List of compartments.
+         border
+            Draw border around element if true.
+        """
         id = id2mp(node.id)
         style = node.style
         pad = style.padding
 
+        name = self._name_s(node, underline)
+        # define the element's box and its name
+        self._def("""
+% UML {type}: "{nc}"
+boxit.{id}();
+{id}.sw = ({x}, {y});
+{id}.ne = {id}.sw + ({w}, {h});
+boxit.{id}Name(btex {name} etex);
+
+        """.format(id=id, nc=node.name, type=node.element,
+            name=name,
+            x=float(style.ll.x), y=float(style.ll.y),
+            w=style.size.width, h=style.size.height))
+
         if node.element == 'usecase':
             self._def('{id}Name.c = {id}.c;'.format(id=id))
         elif node.element == 'actor':
-            self._def('{id}Name.n - ({pad.top}, 0) = {id}.s;'.format(id=id, pad=pad))
+            self._def('{id}Name.n + (0, {pad.bottom}) = {id}.s;'.format(id=id, pad=pad))
         else:
-            self._def('{id}Name.n = {id}.n - (0, {pad.top});'.format(id=id,
+            self._def('{id}Name.n + (0, {pad.top}) = {id}.n;'.format(id=id,
                 pad=pad))
 
-        # calculate size of each compartment
-        # and position it within the element
-        if len(comp) > 0:
-            p = comp[0]
-            self._def("""
-% position of first compartment
-xpart {id}Comp{cid}.w = xpart {id}.w + {pad.left};
-ypart {id}Comp{cid}.n = ypart {id}Name.s - ({pad.bottom} + {pad.top});
-    """.format(id=id, cid=p, pad=pad))
+        # define compartments
+        for c in comps:
+            self._def('boxit.{id}Comp{cid}(btex {comp} etex);'.format(id=id,
+                cid=c.id,
+                comp=c.data))
 
-            for cid in comp[1:]:
+        # calculate size of each compartment
+        # position each compartment within the element
+        # it is done from bottom to top
+        if len(comps) > 0:
+            p = comps[-1].id
+            self._def("""
+% position of last compartment
+xpart {id}Comp{cid}.w = xpart {id}.w + {pad.left};
+ypart {id}Comp{cid}.s = ypart {id}.s + {pad.bottom};
+            """.format(id=id, cid=p, pad=pad))
+
+            for c in reversed(comps[:-1]):
                 self._def("""
-% position of compartment
+% position of compartment {cid}
 xpart {id}Comp{cid}.w = xpart {id}Comp{pcid}.w;
-ypart {id}Comp{cid}.n = ypart {id}Comp{pcid}.s - ({pad.bottom} + {pad.top});
-    """.format(id=id, pcid=p, cid=cid, pad=pad))
-                p = cid
+ypart {id}Comp{pcid}.n + {pad.top} = ypart {id}Comp{cid}.s - {pad.bottom};
+                """.format(id=id, pcid=p, cid=c.id, pad=pad))
+
+                p = c.id # note this assignment
+
 
         # draw name
         self._draw("""
 drawunboxed({id}Name);
-""".format(id=id))
+        """.format(id=id))
 
-        # draw compartments
-        for cid in comp:
+        # draw compartments in reversed order to solve metapost linear
+        # equations properly
+        for c in reversed(comps):
             self._draw("""
 drawunboxed({id}Comp{cid});
-""".format(id=id, cid=cid))
+            """.format(id=id, cid=c.id))
 
         # draw element border
         shape = 'drawboxed' if border else 'drawunboxed'
         self._draw("""
 {shape}({id});
-""".format(id=id, shape=shape))
+        """.format(id=id, shape=shape))
 
         # draw compartment separator
-        for cid in comp:
+        for c in comps:
             self._draw("""
 draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
     -- (xpart {id}.e, ypart {id}Comp{cid}.n + {pad.top});
-""".format(id=id, cid=cid, pad=pad))
+        """.format(id=id, cid=c.id, pad=pad))
 
 
     def _name_s(self, node, underline=False):
@@ -294,13 +329,6 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         return name
 
 
-
-    def _name(self, node, underline=False):
-        id = id2mp(node.id)
-        name = self._name_s(node, underline)
-        self._def('boxit.{id}Name(btex {name} etex);'.format(id=id, name=name))
-
-
     def _comp_s(self, comp, title=''):
         return '\\vbox{' \
                 + ('\\hbox{%s}' % title if title else '') \
@@ -308,42 +336,30 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
                 + '}'
 
 
-    def _compartments_s(self, node):
+    def _compartments(self, node):
+        """
+        Create list of compartments for specified element.
+
+        :Parameters:
+         node
+            Element's node.
+        """
         attrs = [f.name for f in node if f.element == 'attribute']
         opers = [f.name for f in node if f.element == 'operation']
         st_attrs = [f for f in node if f.element == 'stattributes']
 
+        cids = (c for c in string.uppercase)
         data = []
         if attrs:
-            data.append(self._comp_s(attrs))
+            data.append(Compartment(cids.next(), '', self._comp_s(attrs)))
         if opers:
-            data.append(self._comp_s(opers))
+            data.append(Compartment(cids.next(), '', self._comp_s(opers)))
         for sta in st_attrs:
             attrs = [f.name for f in sta]
-            data.append(self._comp_s(attrs, title=st_fmt([sta.name])))
+            title = st_fmt([sta.name])
+            c = Compartment(cids.next(), title, self._comp_s(attrs, title=title))
+            data.append(c)
         return data
-
-
-    def _compartment(self, node, cid, comp):
-        """
-        :Parameters:
-         cid
-          Compartment id.
-         comp
-          Compartment string.
-        """
-        id = id2mp(node.id)
-        style = node.style
-        pad = style.padding
-        self._def('boxit.{id}Comp{cid}(btex {comp} etex);'.format(id=id,
-            cid=cid,
-            comp=comp))
-
-
-    def _area(self, node):
-        """
-        Packaged elements.
-        """
 
 
     def n_element(self, node):
@@ -356,18 +372,11 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         icon_w = style.icon_size.width
         icon_h = style.icon_size.height
 
-        self._pre_border(node)
-        self._name(node, underline=underline);
-#
-#       # packaging area
-#       self._area(node)
-#
-        import string
-        data = self._compartments_s(node)
-        ids = string.ascii_uppercase[:len(data)]
-        for cid, comp in zip(ids, data):
-            self._compartment(node, cid, comp)
-        self._post_border(node, ids, border=border)
+        # compartments
+        comps = self._compartments(node)
+
+        # draw element and its compartments
+        self._element(node, comps, border=border, underline=underline)
 
         # custom shapes
         if node.element in ('package', 'profile'):
