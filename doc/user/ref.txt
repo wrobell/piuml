@@ -54,9 +54,9 @@ Errors
 ------
 There are two types of errors
 
-    piUML
+    parser erros
         piUML language errors, which indicate problems in the source code.
-    UML
+    UML errors
         UML semantics errors.
 
 Parsing Errors
