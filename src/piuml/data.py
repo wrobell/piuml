@@ -33,10 +33,17 @@ from collections import namedtuple, MutableSequence
 from uuid import uuid4 as uuid
 from gaphas import solver
 
-# UML elements
-ELEMENTS = ('actor', 'artifact', 'comment', 'class', 'component', 'device',
-    'interface', 'instance', 'metaclass', 'node', 'package', 'profile',
-    'stereotype', 'subsystem', 'usecase')
+
+# packaging element
+PELEMENTS = ('artifact', 'class', 'component', 'device', 'node',
+        'instance', 'package', 'profile', 'subsystem')
+
+# non-packaging elements
+NELEMENTS = ('actor', 'comment', 'interface', 'metaclass', 'stereotype',
+        'usecase')
+
+# all UML elements
+ELEMENTS = PELEMENTS + NELEMENTS
 
 KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
