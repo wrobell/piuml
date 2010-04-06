@@ -368,7 +368,7 @@ class piUMLParser(GenericParser):
 
         n.stereotypes.extend(stereotypes)
 
-        self.ast.insert(0, n)
+        self.ast.append(n)
         self._istack[-1] = (0, n)
         self.ast.cache[id] = n
         return n
