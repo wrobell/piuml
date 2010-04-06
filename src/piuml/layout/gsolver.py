@@ -84,61 +84,61 @@ class ConstraintLayout(PreLayout):
 
     def size(self, node):
         ns = node.style
-        self.add_lt(ns.pos.x, ns.p2.x, ns.size.width)
-        self.add_lt(ns.pos.y, ns.p2.y, ns.size.height)
+        self.add_lt(ns.ll.x, ns.ur.x, ns.size.width)
+        self.add_lt(ns.ll.y, ns.ur.y, ns.size.height)
+
 
     def within(self, parent, node):
         ns = node.style
         ps = parent.style
-        self.add_lt(ps.pos.x, ns.pos.x, ps.padding.left)
-        self.add_lt(ns.p2.x, ps.p2.x, ps.padding.right)
-        self.add_lt(ps.pos.y, ns.pos.y, ps.size.height)
-        self.add_lt(ns.p2.y, ps.p2.y, ps.padding.bottom)
+        self.add_lt(ps.ll.x, ns.ll.x, ps.padding.left)
+        self.add_lt(ns.ur.x, ps.ur.x, ps.padding.right)
+        self.add_lt(ps.ll.y, ns.ll.y, ps.size.height)
+        self.add_lt(ns.ur.y, ps.ur.y, ps.padding.bottom)
 
     def top(self, *nodes):
         def f(k1s, k2s):
-            self.add_eq(k1s.pos.y, k2s.pos.y)
+            self.add_eq(k1s.ur.y, k2s.ur.y)
         self._apply(f, nodes)
 
     def bottom(self, *nodes):
         def f(k1s, k2s):
-            self.add_eq(k1s.p2.y, k2s.p2.y)
+            self.add_eq(k1s.ll.y, k2s.ll.y)
         self._apply(f, nodes)
 
     def left(self, *nodes):
         def f(k1s, k2s):
-            self.add_eq(k1s.pos.x, k2s.pos.x)
+            self.add_eq(k1s.ll.x, k2s.ll.x)
         self._apply(f, nodes)
 
     def right(self, *nodes):
         def f(k1s, k2s):
-            self.add_eq(k1s.p2.x, k2s.p2.x)
+            self.add_eq(k1s.ur.x, k2s.ur.x)
         self._apply(f, nodes)
 
     def center(self, *nodes):
         def f(k1s, k2s):
-            self.add_cl((k1s.pos.x, k1s.p2.x), (k2s.pos.x, k2s.p2.x))
+            self.add_cl((k1s.ll.x, k1s.ur.x), (k2s.ll.x, k2s.ur.x))
         self._apply(f, nodes)
 
     def middle(self, *nodes):
         def f(k1s, k2s):
-            self.add_cl((k1s.pos.y, k1s.p2.y), (k2s.pos.y, k2s.p2.y))
+            self.add_cl((k1s.ll.y, k1s.ur.y), (k2s.ll.y, k2s.ur.y))
         self._apply(f, nodes)
 
     def hspan(self, *nodes):
         def f(k1s, k2s):
             d = k1s.margin.right + k2s.margin.left
-            self.add_lt(k1s.p2.x, k2s.pos.x, d)
+            self.add_lt(k1s.ur.x, k2s.ll.x, d)
         self._apply(f, nodes)
 
     def vspan(self, *nodes):
         def f(k1s, k2s):
             d = k1s.margin.bottom + k2s.margin.top
-            self.add_lt(k1s.p2.y, k2s.pos.y, d)
+            # span from top to bottom
+            self.add_lt(k1s.ll.y, k2s.ur.y, d)
         self._apply(f, nodes)
 
-    middle = top
-    center = left
 
     def _apply(self, f, node):
         for k1, k2 in zip(node[:-1], node[1:]):
@@ -149,11 +149,11 @@ class ConstraintLayout(PreLayout):
         ts = edge.tail.style
         hs = edge.head.style
         p1, p2 = edge.style.edges
-#        self.add_lt(p1.x, p2.x, 100)
-        self.add_eq(ts.p2.x, p1.x)
-        self.add_c(ts.pos.y, ts.p2.y, p1.y)
-        self.add_eq(hs.pos.x, p2.x)
-        self.add_c(hs.pos.y, hs.p2.y, p2.y)
+#        self.add_lt(p1.x, ur.x, 100)
+        self.add_eq(ts.ur.x, p1.x)
+        self.add_c(ts.ll.y, ts.ur.y, p1.y)
+        self.add_eq(hs.ll.x, p2.x)
+        self.add_c(hs.ll.y, hs.ur.y, p2.y)
 
     n_commentline = n_connector = n_generalization = n_association \
         = n_dependency

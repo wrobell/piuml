@@ -17,6 +17,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Coordination System
+===================
+Cartesian coordinate system is assumed. This means that coordinates grow
+from left to right and from bottom to top, which is aligned with standard
+geometry, Metapost, Postcript, etc. but is different with screen oriented
+systems.
+
+Above needs to be considered carefully in case of vertical alignment, which
+is done from top to bottom.
+"""
+
 from collections import namedtuple, MutableSequence
 from uuid import uuid4 as uuid
 from gaphas import solver
@@ -66,32 +78,53 @@ class Pos(object):
 
     __repr__ = __str__
 
+
 class Style(object):
     """
-    Node style information.
+    Base style class for boxes and lines.
+    """
+
+
+class BoxStyle(Style):
+    """
+    Box style information.
+
+    Rectangle of the box is defined by lower-left and upper-right corners.
+    Thanks to this:
+    
+        BoxStyle.size = BoxStyle.ur - BoxStyle.ll
+
+    :Attributes:
+     ll
+      Lower left corner.
+     ur
+      Upper right corner.
+     head
+      Head height.
     """
     def __init__(self):
-        self.pos = Pos(0, 0)
-        self.p2 = Pos(0, 0)
+        self.ll = Pos(0, 0)
+        self.ur = Pos(0, 0)
+        self.head = 0
         self.edges = (Pos(0, 0), Pos(0, 0))
         self.margin = Area(10, 10, 10, 10)
         self.padding = Area(5, 10, 5, 10)
-        self.inner = Area(0, 0, 0, 0)
         self.icon_size = Size(0, 0)
         self._set_size((80, 40))
 
 
     def _get_size(self):
-        return Size(self.p2.x - self.pos.x, self.p2.y - self.pos.y)
+        return Size(self.ur.x - self.ll.x, self.ur.y - self.ll.y)
 
     def _set_size(self, size):
         w, h = size
-        self.p2.x = self.pos.x + w
-        self.p2.y = self.pos.y + h
+        self.ur.x = self.ll.x + w
+        self.ur.y = self.ll.y + h
 
     size = property(_get_size, _set_size)
 
 
+# todo: rename to BoxNode and create LineNode
 class Node(list):
     """
     Parsed piUML language data.
@@ -138,7 +171,7 @@ class Node(list):
         self.name = name
         self.stereotypes = []
         self.data = data if data else {}
-        self.style = Style()
+        self.style = BoxStyle()
         self.align = AlignConstraints([], [], [], [], [], [], [], [])
 
         # few exceptions for default style

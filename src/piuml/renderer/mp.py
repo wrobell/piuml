@@ -220,10 +220,10 @@ end
         self._def("""
 % UML {type}: "{name}"
 boxit.{id}();
-{id}.ne = ({x}, {y});
+{id}.sw = ({x}, {y});
 {id}.ne = {id}.sw + ({w}, {h});
 """.format(id=id, name=node.name, type=node.element,
-    x=float(style.pos.x), y=float(style.pos.y),
+    x=float(style.ll.x), y=float(style.ll.y),
     w=style.size.width, h=style.size.height))
 
 
