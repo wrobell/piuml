@@ -69,9 +69,6 @@ class ConstraintLayout(PreLayout):
     def add_eq(self, *args):
         self.solver.add_constraint(ct.EqualsConstraint(*args))
 
-    def add_c(self, *args):
-        self.solver.add_constraint(ct.CenterConstraint(*args))
-
     def add_cl(self, *args):
         self.solver.add_constraint(CenterLinesConstraint(*args))
 
@@ -91,10 +88,11 @@ class ConstraintLayout(PreLayout):
     def within(self, parent, node):
         ns = node.style
         ps = parent.style
-        self.add_lt(ps.ll.x, ns.ll.x, ps.padding.left)
+        self.add_lt(ns.ur.y, ps.ur.y, ps.padding.top) # + ps.head
         self.add_lt(ns.ur.x, ps.ur.x, ps.padding.right)
-        self.add_lt(ps.ll.y, ns.ll.y, ps.size.height)
-        self.add_lt(ns.ur.y, ps.ur.y, ps.padding.bottom)
+        self.add_lt(ps.ll.x, ns.ll.x, ps.padding.left)
+        self.add_lt(ps.ll.y, ns.ll.y, ps.padding.bottom)
+
 
     def top(self, *nodes):
         def f(k1, k2):
