@@ -19,7 +19,7 @@ parser.add_option('--type', '-T',
         type='string',
         dest='filetype',
         default='pdf',
-        help='Type of output file: pdf (default), svg or png')
+        help='Type of output file: pdf (default), svg or mp (Metapost)')
 
 options, args = parser.parse_args()
 

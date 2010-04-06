@@ -42,22 +42,17 @@ def generate(f, fout, filetype='pdf'):
      fout
         Output of file name.
      filetype
-        Type of a file: pdf, svg or png.
+        Type of a file: pdf, svg or mp.
     """
     graph = Layout()
     renderer = Renderer()
     renderer.filetype = filetype
     renderer.output = fout
 
-    import time
-    v = time.time()
     ast = parse(f)
-    print 'p', time.time() - v
     graph.create(ast)
     renderer.constraint(ast)
-    v = time.time()
     graph.layout(ast)
-    print 'l', time.time() - v
     renderer.render(ast)
 
 

@@ -22,10 +22,18 @@ MetaUML/Metapost based renderer.
 """
 
 from spark import GenericASTTraversal
+
+from collections import namedtuple
+import csv
+import string
+import os
+import os.path
+import shutil
+
+from piuml.cmd import cmd
 from piuml.data import ELEMENTS, Size
 from piuml.renderer.util import st_fmt as _st_fmt
-from collections import namedtuple
-import string
+
 
 # compartment has an id, the title (i.e. stereotype) and data, which is
 # compartment's content
@@ -37,60 +45,6 @@ def st_fmt(stereotypes):
     s = s.replace('>>', '$\\gg$')
     return s
 
-##
-## cmd
-##
-import subprocess
-import os
-import os.path
-import shutil
-
-
-class CmdError(RuntimeError):
-    def __init__(self, output):
-        self.output = output
-
-def cmd(*args, **kw):
-    tmpdir = kw.get('tmpdir', '.')
-    p = subprocess.Popen(args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            close_fds=True,
-            cwd=tmpdir)
-    out, err = p.communicate()
-    if p.returncode != 0:
-        raise CmdError(out + '\n' + err)
-    return p.returncode
-
-
-def save(fnout, data):
-    fn = 'aa.mp'
-    fbase, _ = os.path.splitext(fn)
-    fnout = fbase + '.pdf'
-    tmpdir = os.tempnam('.', 'piuml')
-    tmpdir = 'tmp'
-    shutil.rmtree(tmpdir, ignore_errors=True)
-    os.makedirs(tmpdir)
-
-    f = open(tmpdir + '/' + fn, 'w')
-    for l in data:
-        f.write(l)
-    f.close()
-
-    try:
-        cmd('mpost', '-interaction', 'batchmode', fn, tmpdir=tmpdir)
-        cmd('epstopdf', tmpdir + '/' + fbase + '.1', '-o', fnout)
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-##
-## end of cmd
-##
-
-
-
-
-
 
 def id2mp(id):
     id = id.replace('a', 'aa').replace('1', 'a')
@@ -98,8 +52,40 @@ def id2mp(id):
     id = id.replace('c', 'cc').replace('3', 'c')
     return id
 
+
 def _ids(nodes, f=lambda n: True):
     return (n.id for n in nodes if f(n))
+
+
+def save(fout, data):
+    """
+    Process Metapost program and save it to specified file.
+
+    :Parameters:
+     fout
+        Target file name.
+     data
+        Metapost program (list of strings).
+          
+    """
+    fn = 'diagram.mp'
+    fbase, _ = os.path.splitext(fn)
+    tmpdir = os.tempnam('.', 'piuml')
+    shutil.rmtree(tmpdir, ignore_errors=True)
+    os.makedirs(tmpdir)
+
+    with open(tmpdir + '/' + fn, 'w') as f:
+        for l in data:
+            f.write(l)
+
+    try:
+        cmd('mptopdf', fn, cwd=tmpdir)
+        #cmd('mpost', '-interaction', 'batchmode', fn, tmpdir=tmpdir)
+        #cmd('epstopdf', tmpdir + '/' + fbase + '.1', '-o', fout)
+        print tmpdir + '/' + fbase + '-1.pdf', fout
+        shutil.move(tmpdir + '/' + fbase + '-1.pdf', fout)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 class MRenderer(GenericASTTraversal):
@@ -157,8 +143,7 @@ beginfig(1);
 
             f.write('endfig;\nend')
         #cmd('mpost', '-interaction', 'batchmode', 'sizesT.mp', tmpdir='.')
-        cmd('mptopdf', 'sizesT.mp', tmpdir='.')
-        import csv
+        cmd('mptopdf', 'sizesT.mp', cwd='.')
 
         f = csv.reader(open('sizesT.csv'))
         data = {}
@@ -192,12 +177,6 @@ beginfig(1);
             else:
                 assert False
 
-#try:
-#    save('aa.pdf', data)
-#except CmdError, e:
-#    print e.output
-
-            
 
     def render(self, ast):
         self.preorder(ast)
@@ -246,12 +225,17 @@ endfig;
 end
 """);
 
-        #f = open(self.output + '.mp', 'w')
-        f = open('cl.mp', 'w')
-        for l in self._defs + self._draws:
-            f.write(l)
-            f.write('\n')
-        f.close()
+        def w(fout):
+            with open(fout, 'w') as f:
+                for l in self._defs + self._draws:
+                    f.write(l)
+                    f.write('\n')
+
+
+        if self.filetype == 'mp':
+            w(self.output)
+        else:
+            save(self.output, self._defs + self._draws)
 
 
     def _element(self, node, comps, border=True, underline=False, bold=True):
