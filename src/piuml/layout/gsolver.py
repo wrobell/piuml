@@ -97,65 +97,62 @@ class ConstraintLayout(PreLayout):
         self.add_lt(ns.ur.y, ps.ur.y, ps.padding.bottom)
 
     def top(self, *nodes):
-        def f(k1s, k2s):
-            self.add_eq(k1s.ur.y, k2s.ur.y)
+        def f(k1, k2):
+            self.add_eq(k1.style.ur.y, k2.style.ur.y)
         self._apply(f, nodes)
 
     def bottom(self, *nodes):
-        def f(k1s, k2s):
-            self.add_eq(k1s.ll.y, k2s.ll.y)
+        def f(k1, k2):
+            self.add_eq(k1.style.ll.y, k2.style.ll.y)
         self._apply(f, nodes)
 
     def left(self, *nodes):
-        def f(k1s, k2s):
-            self.add_eq(k1s.ll.x, k2s.ll.x)
+        def f(k1, k2):
+            self.add_eq(k1.style.ll.x, k2.style.ll.x)
         self._apply(f, nodes)
 
     def right(self, *nodes):
-        def f(k1s, k2s):
-            self.add_eq(k1s.ur.x, k2s.ur.x)
+        def f(k1, k2):
+            self.add_eq(k1.style.ur.x, k2.style.ur.x)
         self._apply(f, nodes)
 
     def center(self, *nodes):
-        def f(k1s, k2s):
-            self.add_cl((k1s.ll.x, k1s.ur.x), (k2s.ll.x, k2s.ur.x))
+        def f(k1, k2):
+            self.add_cl((k1.style.ll.x, k1.style.ur.x), (k2.style.ll.x, k2.style.ur.x))
         self._apply(f, nodes)
 
     def middle(self, *nodes):
-        def f(k1s, k2s):
-            self.add_cl((k1s.ll.y, k1s.ur.y), (k2s.ll.y, k2s.ur.y))
+        def f(k1, k2):
+            self.add_cl((k1.style.ll.y, k1.style.ur.y), (k2.style.ll.y, k2.style.ur.y))
         self._apply(f, nodes)
 
     def hspan(self, *nodes):
-        def f(k1s, k2s):
-            d = k1s.margin.right + k2s.margin.left
-            self.add_lt(k1s.ur.x, k2s.ll.x, d)
+        def f(k1, k2):
+            m = k1.style.margin.right + k2.style.margin.left
+            l = self.ast.data['edges'].get((k1.id, k2.id), 0)
+            self.add_lt(k1.style.ur.x, k2.style.ll.x, max(l, m))
         self._apply(f, nodes)
 
+
     def vspan(self, *nodes):
-        def f(k1s, k2s):
-            d = k1s.margin.bottom + k2s.margin.top
+        def f(k1, k2):
+            m = k1.style.margin.bottom + k2.style.margin.top
+            l = self.ast.data['edges'].get((k1.id, k2.id), 0)
             # span from top to bottom
-            self.add_lt(k1s.ll.y, k2s.ur.y, d)
+            self.add_lt(k1.style.ll.y, k2.style.ur.y, max(l, m))
         self._apply(f, nodes)
 
 
     def _apply(self, f, node):
         for k1, k2 in zip(node[:-1], node[1:]):
-            f(k1.style, k2.style)
+            f(k1, k2)
 
 
     def n_dependency(self, edge):
-        ts = edge.tail.style
-        hs = edge.head.style
-        p1, p2 = edge.style.edges
-#        self.add_lt(p1.x, ur.x, 100)
-        self.add_eq(ts.ur.x, p1.x)
-        self.add_c(ts.ll.y, ts.ur.y, p1.y)
-        self.add_eq(hs.ll.x, p2.x)
-        self.add_c(hs.ll.y, hs.ur.y, p2.y)
+        t, h = edge.tail, edge.head
+        self.ast.data['edges'][t.id, h.id] = 100
+        self.ast.data['edges'][h.id, t.id] = 100
 
-    n_commentline = n_connector = n_generalization = n_association \
-        = n_dependency
+    n_generalization = n_dependency
 
 # vim: sw=4:et:ai
