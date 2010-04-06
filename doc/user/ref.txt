@@ -4,6 +4,66 @@ piUML Language Reference
 UML Elements
 ------------
 
+Elements:
+
+==========  ===========  ===============  ===================
+ Keyword     Packaging     Compartments       Description
+==========  ===========  ===============  ===================
+actor           No          No            Actor icon (human shape)
+artifact        Yes         Yes       
+comment         No          No        
+class           Yes         Yes       
+component       Yes         Yes       
+device          Yes         Yes       
+interface       No          Yes       
+instance        Yes         Yes       
+metaclass       No          Yes       
+node            Yes         Yes       
+package         Yes         Yes       
+profile         Yes         Yes       
+stereotype      No          Yes       
+subsystem       Yes         Yes       
+usecase         No          No        
+==========  ===========  ===============  ===================
+
+
+Relations
+---------
+
+Association
+~~~~~~~~~~~
+
+Comment Line
+~~~~~~~~~~~~
+
+Component Assembly
+~~~~~~~~~~~~~~~~~~
+
+Dependency
+~~~~~~~~~~
+- <<urime>>
+- o) (o
+
+Generalization
+~~~~~~~~~~~~~~
+
 Layout
 ------
+
+Errors
+------
+There are two types of errors
+
+    piUML
+        piUML language errors, which indicate problems in the source code.
+    UML
+        UML semantics errors.
+
+Parsing Errors
+~~~~~~~~~~~~~~
+- string problem
+- non-existing id
+
+UML Errors
+~~~~~~~~~~
 
