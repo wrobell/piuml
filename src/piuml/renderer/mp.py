@@ -132,20 +132,28 @@ vardef size(text id)(expr t) =
 enddef;
 beginfig(1);
 """)
-            pad_counts = {}
+            ccounts = {}
             for k in ast.unwind():
                 if k.type != 'element':
                     continue
-                text = self._name_s(k)
+
+                fmt = 'size("{id},{type}")(btex {text} etex);\n'
+                # calculate size of name...
+                name = self._name_s(k)
+                f.write(fmt.format(id=k.id, type='name', text=name))
+
+                # ... and compartments
                 comps = self._compartments(k)
+                ctext = ''
                 if comps:
-                    text = '\\hbox{' + text + '}'
+                    ctext = ''
                     for c in comps:
-                        text += '\\hbox{' + c.data + '}'
-                    text = '\\vbox{' + text + '}'
-                pad_counts[k.id] = 1 + len(comps)
-                f.write('size("{id}")(btex {text} etex);\n'.format(id=k.id,
-                    text=text))
+                        ctext += '\\hbox{' + c.data + '}'
+                    ctext = '\\vbox{' + ctext + '}'
+                f.write(fmt.format(id=k.id, type='compartment', text=ctext))
+
+                # how many times padding is used?
+                ccounts[k.id] = 1 + len(comps)
 
             f.write('endfig;\nend')
         #cmd('mpost', '-interaction', 'batchmode', 'sizesT.mp', tmpdir='.')
@@ -154,17 +162,36 @@ beginfig(1);
 
         f = csv.reader(open('sizesT.csv'))
         data = {}
+        width, height = 0, 0
         for l in f:
             id = l[0]
-            w1, h1 = float(l[1]), float(l[2])
+            t = l[1]
+            w, h = float(l[2]), float(l[3])
 
-            style = ast.cache[id].style
-            pad = style.padding
-            w2, h2 = style.size
-            dh = pad_counts[id] * (pad.top + pad.bottom)
+            if t == 'name':
+                width, height = w, h
 
-            print id, w1, h1, w2, h2
-            style.size = Size(max(w1 + pad.left + pad.right, w2), max(h1 + dh, h2))
+            elif t == 'compartment':
+                style = ast.cache[id].style
+                pad = style.padding
+                default_w, default_h = style.size
+                head = height
+
+                # reset compartments size if there is none
+                if ccounts[id] == 1:
+                    w, h = 0, 0
+
+                # include head size
+                w += width + pad.left + pad.right
+                h += height + ccounts[id] * (pad.top + pad.bottom)
+                w, h = max(w, default_w), max(h, default_h)
+
+                # define minimal sizes
+                style.size = Size(w, h)
+                style.head = head
+            else:
+                assert False
+
 #try:
 #    save('aa.pdf', data)
 #except CmdError, e:

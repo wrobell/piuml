@@ -88,10 +88,17 @@ class ConstraintLayout(PreLayout):
     def within(self, parent, node):
         ns = node.style
         ps = parent.style
-        self.add_lt(ns.ur.y, ps.ur.y, ps.padding.top) # + ps.head
-        self.add_lt(ns.ur.x, ps.ur.x, ps.padding.right)
-        self.add_lt(ps.ll.x, ns.ll.x, ps.padding.left)
-        self.add_lt(ps.ll.y, ns.ll.y, ps.padding.bottom)
+        pad = ps.padding
+        self.add_lt(ns.ur.y, ps.ur.y, pad.top + ps.head + pad.top)
+        self.add_lt(ns.ur.x, ps.ur.x, pad.right)
+        self.add_lt(ps.ll.x, ns.ll.x, pad.left)
+
+        # calculate height of compartments as packaged element is between
+        # head and compartments
+        #h = ps.size.height - (ps.head + pad.top + pad.bottom)
+        #h = ps.size.height - ps.head
+        h = pad.bottom
+        self.add_lt(ps.ll.y, ns.ll.y, pad.bottom + h)
 
 
     def top(self, *nodes):
