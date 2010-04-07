@@ -54,10 +54,37 @@ align=left: c2 c1 # note reorder
         self.assertEquals([['c2', 'c1']], ast.align.vspan)
 
 
+    def test_orphaned(self):
+        """Test orphaned (in alignment) elements
+        """
+        l = PreLayout()
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+class c3 "C3"
+
+align=left: c1 c3
+""")
+        ast = parse(f)
+        l.create(ast)
+        self.assertEquals([['c1', 'c3']], ast.align.left)
+        self.assertEquals([['c1', 'c3']], ast.align.vspan)
+
+        # orphaned element alignment
+        self.assertEquals([['c1', 'c2']], ast.align.hspan)
+        self.assertEquals([['c1', 'c2']], ast.align.middle)
+
+
     def test_deep_align(self):
         """Test align with packaged elements
         """
         l = PreLayout()
+        # diagram:
+        # -- c --
+        # |c1 c2| c4 c5
+        # -------
+        #     c3
+        #
         f = StringIO("""
 class c "C"
     class c1 "C1"
@@ -70,14 +97,12 @@ align=left: c2 c3
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals([['c4', 'c5']], ast.align.middle)
-        self.assertEquals([['c2', 'c3']], ast.align.left)
+        self.assertEquals([['c', 'c4', 'c5']], ast.align.middle)
+        self.assertEquals([['c', 'c4', 'c5']], ast.align.hspan)
 
         # c2 is replaced with c - lca
-        self.assertEquals([['c4', 'c5']], ast.align.hspan)
         self.assertEquals([['c', 'c3']], ast.align.vspan)
-
-        #self.assertEquals([['c', 'c3']], ast.align.vspan)
+        self.assertEquals([['c2', 'c3']], ast.align.left)
 
 
 # vim: sw=4:et:ai

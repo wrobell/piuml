@@ -110,14 +110,20 @@ class PreLayout(GenericASTTraversal):
         if len(lost) == 1 and len(middle) == 0 and len(center) > 0:
             center[0].extend(lost)
             vspan[0].extend(lost)
-        elif len(lost) > 1 and len(middle) > 0:
+        elif len(lost) > 0 and len(middle) > 0:
             middle[0].extend(lost)
             hspan[0].extend(lost)
-        elif len(lost) > 1:
+        elif len(lost) > 0 and len(vspan) > 0:
+            middle.append([vspan[0][0]])
+            hspan.append([vspan[0][0]])
+            middle[0].extend(lost)
+            hspan[0].extend(lost)
+        else:
             middle.append(lost)
             hspan.append(lost)
 
         if __debug__:
+            print node.id, 'lost', lost
             print node.id, 'top', top
             print node.id, 'right', right
             print node.id, 'bottom', bottom
