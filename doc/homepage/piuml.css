@@ -13,7 +13,7 @@ div#header {
 }
 
 div#header span {
-    font-size: 1.4em;
+    font-size: large;
 }
 
 .piuml {
@@ -24,6 +24,13 @@ div.generic h2 {
     font-variant: small-caps;
 }
 
-div.nineforty h2 {
-    font-variant: normal;
+/* title section */
+div.title h2 {
+    font-size: x-large;
 }
+
+div.title blockquote {
+    font-size: large;
+    font-style: italic;
+}
+
