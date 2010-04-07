@@ -188,24 +188,68 @@ input boxes;
 
 prologues:=3;
 
+vardef rotateArrow(text a)(text b) =
+enddef;
+
 vardef drawArrow(text a)(text b)(expr closed) =
-  numeric alfa;
-  alfa = angle(xpart(a - b), ypart(a - b));
+    numeric alfa;
+    alfa = angle(xpart(a - b), ypart(a - b));
+    
+    pair w[];
+    w[1] := (15, 6);
+    w[1] := w[1] rotated (alfa) shifted b;
+    w[2] := (-15, 6);
+    w[2] := w[2] rotated (180 + alfa) shifted b;
+    
+    if closed:
+        path p;
+        p := w[1] -- b -- w[2] -- cycle;
+        unfill p;
+        draw p;
+    else:
+        draw w[1] -- b -- w[2];
+    fi
+enddef;
 
-  pair w[];
-  w[1] := (15, 6);
-  w[1] := w[1] rotated (alfa) shifted b;
-  w[2] := (-15, 6);
-  w[2] := w[2] rotated (180 + alfa) shifted b;
+vardef drawDiamond(text a)(text b)(expr filled) =
+    numeric alfa;
+    alfa = angle(xpart(a - b), ypart(a - b));
 
-  if closed:
-      path p;
-      p := w[1] -- b -- w[2] -- cycle;
-      unfill p;
-      draw p;
-  else:
-      draw w[1] -- b -- w[2];
-  fi
+    pair w[];
+    w[1] := (10, 5);
+    w[1] := w[1] rotated (alfa) shifted b;
+    w[2] := (-10, 5);
+    w[2] := w[2] rotated (180 + alfa) shifted b;
+    w[3] := (-20, 0);
+    w[3] := w[3] rotated (180 + alfa) shifted b;
+
+    path p;
+    p := w[1] -- b -- w[2] -- w[3] -- cycle;
+    if filled:
+        fill p;
+    else:
+        unfill p;
+    fi
+    draw p;
+enddef;
+
+vardef drawX(text a)(text b) =
+    numeric alfa;
+    alfa = angle(xpart(a - b), ypart(a - b));
+
+    pair w[];
+    w[1] := (8, -3);
+    w[1] := w[1] rotated alfa shifted b;
+    w[2] := (2, 3);
+    w[2] := w[2] rotated alfa shifted b;
+
+    w[3] := (8, 3);
+    w[3] := w[3] rotated alfa shifted b;
+    w[4] := (2, -3);
+    w[4] := w[4] rotated alfa shifted b;
+
+    draw w[1] -- w[2];
+    draw w[3] -- w[4];
 enddef;
 
 beginfig(1);
@@ -459,6 +503,26 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         pass
 
 
+    def n_association(self, edge):
+        """
+        Draw association UML line.
+
+        :Parameters:
+         edge
+            piUML edge instance.
+        """
+        END = {
+            'none': 'x',
+            'shared': 'diamond',
+            'composite': 'blackdiamond',
+            'navigable': 'arrow',
+            'unknown': None,
+        }
+        ta = END[edge.data['tail'][-1]]
+        ha = END[edge.data['head'][-1]]
+        self._edge(edge, tail_arrow=ta, head_arrow=ha)
+
+
     def n_dependency(self, edge):
         """
         Draw dependency, generalization and realization UML lines.
@@ -492,7 +556,11 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         self._edge(edge, dashed=True)
 
 
-    def _edge(self, edge, tail_arrow=None, head_arrow=None, dashed=False, label=''):
+    def _edge(self, edge,
+            tail_arrow=None,
+            head_arrow=None,
+            dashed=False,
+            label=''):
         """
         Draw a line for specified edge.
 
@@ -511,15 +579,22 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
 
         tp = 'point 0 of tempPath'
         hp = 'point length tempPath of tempPath'
-        arrow = '(' + tp + ')(' + hp + ')'
-
         arrows = {
-            'triangle': 'drawArrow{arrow}(true);' .format(arrow=arrow),
-            'arrow': 'drawArrow{arrow}(false);' .format(arrow=arrow),
+            'triangle': 'drawArrow{arrow}(true);',
+            'arrow': 'drawArrow{arrow}(false);',
+            'diamond': 'drawDiamond{arrow}(false);',
+            'blackdiamond': 'drawDiamond{arrow}(true);',
+            'x': 'drawX{arrow};',
         }
+        assert tail_arrow is None or tail_arrow in arrows
+        assert head_arrow is None or head_arrow in arrows
 
         ta = arrows.get(tail_arrow)
+        if ta:
+            ta = ta.format(arrow='(' + tp + ')(' + hp + ')')
         ha = arrows.get(head_arrow)
+        if ha:
+            ha = ha.format(arrow='(' + hp + ')(' + tp + ')')
 
         path = """
 path tempPath;
