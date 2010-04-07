@@ -201,7 +201,7 @@ prologues:=3;
 vardef rotateArrow(text a)(text b) =
 enddef;
 
-vardef drawArrow(text a)(text b)(expr closed) =
+vardef drawArrow(text a)(text b)(expr closed)(expr filled) =
     numeric alfa;
     alfa = angle(xpart(a - b), ypart(a - b));
     
@@ -214,7 +214,11 @@ vardef drawArrow(text a)(text b)(expr closed) =
     if closed:
         path p;
         p := w[1] -- b -- w[2] -- cycle;
-        unfill p;
+        if filled:
+            fill p;
+        else:
+            unfill p;
+        fi
         draw p;
     else:
         draw w[1] -- b -- w[2];
@@ -525,12 +529,29 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
 
     def n_association(self, edge):
         """
-        Draw association UML line.
+        Draw association and extension UML lines.
 
         :Parameters:
          edge
             piUML edge instance.
         """
+        if edge.element == 'extension':
+            ha = None
+            ta = None
+            if edge.tail.element == 'metaclass':
+                ta = 'blacktriangle'
+            elif edge.head.element == 'metaclass':
+                ha = 'blacktriangle'
+            else:
+                assert False
+
+            # draw extension...
+            self._edge(edge, tail_arrow=ta, head_arrow=ha)
+
+            # todo: ... and return, with extension typed by an association we
+            # will deal in the future
+            return
+
         END = {
             'none': 'x',
             'shared': 'diamond',
@@ -608,8 +629,9 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         tp = 'point length tempPath of tempPath'
         hp = 'point 0 of tempPath'
         arrows = {
-            'triangle': 'drawArrow{arrow}(true);',
-            'arrow': 'drawArrow{arrow}(false);',
+            'arrow': 'drawArrow{arrow}(false)(false);',
+            'triangle': 'drawArrow{arrow}(true)(false);',
+            'blacktriangle': 'drawArrow{arrow}(true)(true);',
             'diamond': 'drawDiamond{arrow}(false);',
             'blackdiamond': 'drawDiamond{arrow}(true);',
             'x': 'drawX{arrow};',
