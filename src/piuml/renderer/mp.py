@@ -314,6 +314,123 @@ end
             save(self.output, self._defs + self._draws)
 
 
+    def n_element(self, node):
+        """
+        Draw an element.
+
+        :Parameters:
+         node
+            piUML language node instance.
+        """
+        id = id2mp(node.id)
+        underline = node.element == 'instance'
+        border = node.element not in ('usecase', 'actor', 'comment')
+        bold = node.element != 'comment'
+        style = node.style
+        pad = style.padding
+        ipad = 5
+        icon_w = style.icon_size.width
+        icon_h = style.icon_size.height
+
+        # compartments
+        comps = self._compartments(node)
+
+        # draw element and its compartments
+        self._element(node, comps, border=border, underline=underline, bold=bold)
+
+        # custom shapes
+        if node.element in ('package', 'profile'):
+            self._draw("""
+draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
+""".format(id=id))
+
+        elif node.element in ('node', 'device'):
+            self._draw("""
+draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
+draw {id}.ne --  {id}.ne + (10, 10);
+""".format(id=id))
+
+        # icons
+        if node.element == 'component':
+            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
+            self._draw("""
+pickup iconpen;
+draw {p} - ({w}, {h} / 5) 
+    -- {p} - ({w}, 0) -- {p} -- {p} - (0, {h}) -- {p} - ({w}, {h})
+    -- {p} - ({w}, 4 * {h} / 5);
+draw {p} - ({w}, 3 * {h} / 5) -- {p} - ({w}, 2 * {h} / 5);
+% bars
+draw {p} - ({w} + {w} / 3, {h} / 5) -- {p} - ({w} - {w} / 3, {h} / 5)
+    -- {p} - ({w} - {w} / 3, 2 * {h} / 5) -- {p} - ({w} + {w} / 3, 2 * {h} / 5)
+    -- cycle;
+draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
+    -- {p} - ({w} - {w} / 3, 4 * {h} / 5) -- {p} - ({w} + {w} / 3, 4 * {h} / 5)
+    -- cycle;
+pickup defaultpen;
+""".format(p=p, w=icon_w, h=icon_h))
+
+        elif node.element == 'artifact':
+            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
+            self._draw("""
+pickup iconpen;
+draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
+    -- {p} - (0, {h}) -- {p} - ({w}, {h}) -- cycle;
+draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
+pickup defaultpen;
+""".format(p=p, w=icon_w, h=icon_h))
+        elif node.element == 'usecase':
+            self._draw("""
+draw fullcircle
+    xscaled (xpart {id}.w - xpart {id}.e)
+    yscaled (ypart {id}.s - ypart {id}.n) shifted {id}.c;
+""".format(id=id));
+        elif node.element == 'actor':
+            self._draw("""
+% head
+draw {id}.n .. {id}.n + (10, -10) .. {id}.n + (0, -20)
+    .. {id}.n + (-10, -10) ..  cycle;
+% body
+draw {id}.n + (0, -20) -- {id}.n + (0, -40);
+% arms
+draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
+% legs
+draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
+            """.format(id=id));
+
+        elif node.element == 'comment':
+            self._draw("""
+draw {id}.nw -- {id}.ne - (15, 0) -- {id}.ne - (0, 15)
+    -- {id}.se -- {id}.sw -- cycle;
+draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
+            """.format(id=id))
+
+
+    def n_ielement(self, node):
+        pass
+
+
+    def n_edge(self, edge):
+        """
+        Draw an edge.
+
+        :Parameters:
+         edge
+            piUML edge instance.
+        """
+        F = {
+            'association': self._association,
+            'commentline': self._commentline,
+            'dependency': self._dependency,
+            'generalization': self._dependency,
+        }
+        f = F.get(edge.element)
+        if not f:
+            print 'WARN: no rendering for edge', edge.element
+            return
+
+        f(edge)
+
+
     def _element(self, node, comps, border=True, underline=False, bold=True):
         """
         Draw name and compartments of an element.
@@ -449,116 +566,6 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
             c = Compartment(cids.next(), title, self._comp_s(attrs, title=title))
             data.append(c)
         return data
-
-
-    def n_element(self, node):
-        id = id2mp(node.id)
-        underline = node.element == 'instance'
-        border = node.element not in ('usecase', 'actor', 'comment')
-        bold = node.element != 'comment'
-        style = node.style
-        pad = style.padding
-        ipad = 5
-        icon_w = style.icon_size.width
-        icon_h = style.icon_size.height
-
-        # compartments
-        comps = self._compartments(node)
-
-        # draw element and its compartments
-        self._element(node, comps, border=border, underline=underline, bold=bold)
-
-        # custom shapes
-        if node.element in ('package', 'profile'):
-            self._draw("""
-draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
-""".format(id=id))
-
-        elif node.element in ('node', 'device'):
-            self._draw("""
-draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
-draw {id}.ne --  {id}.ne + (10, 10);
-""".format(id=id))
-
-        # icons
-        if node.element == 'component':
-            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
-            self._draw("""
-pickup iconpen;
-draw {p} - ({w}, {h} / 5) 
-    -- {p} - ({w}, 0) -- {p} -- {p} - (0, {h}) -- {p} - ({w}, {h})
-    -- {p} - ({w}, 4 * {h} / 5);
-draw {p} - ({w}, 3 * {h} / 5) -- {p} - ({w}, 2 * {h} / 5);
-% bars
-draw {p} - ({w} + {w} / 3, {h} / 5) -- {p} - ({w} - {w} / 3, {h} / 5)
-    -- {p} - ({w} - {w} / 3, 2 * {h} / 5) -- {p} - ({w} + {w} / 3, 2 * {h} / 5)
-    -- cycle;
-draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
-    -- {p} - ({w} - {w} / 3, 4 * {h} / 5) -- {p} - ({w} + {w} / 3, 4 * {h} / 5)
-    -- cycle;
-pickup defaultpen;
-""".format(p=p, w=icon_w, h=icon_h))
-
-        elif node.element == 'artifact':
-            p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
-            self._draw("""
-pickup iconpen;
-draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
-    -- {p} - (0, {h}) -- {p} - ({w}, {h}) -- cycle;
-draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
-pickup defaultpen;
-""".format(p=p, w=icon_w, h=icon_h))
-        elif node.element == 'usecase':
-            self._draw("""
-draw fullcircle
-    xscaled (xpart {id}.w - xpart {id}.e)
-    yscaled (ypart {id}.s - ypart {id}.n) shifted {id}.c;
-""".format(id=id));
-        elif node.element == 'actor':
-            self._draw("""
-% head
-draw {id}.n .. {id}.n + (10, -10) .. {id}.n + (0, -20)
-    .. {id}.n + (-10, -10) ..  cycle;
-% body
-draw {id}.n + (0, -20) -- {id}.n + (0, -40);
-% arms
-draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
-% legs
-draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
-            """.format(id=id));
-
-        elif node.element == 'comment':
-            self._draw("""
-draw {id}.nw -- {id}.ne - (15, 0) -- {id}.ne - (0, 15)
-    -- {id}.se -- {id}.sw -- cycle;
-draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
-            """.format(id=id))
-
-
-    def n_ielement(self, node):
-        pass
-
-
-    def n_edge(self, edge):
-        """
-        Draw an edge.
-
-        :Parameters:
-         edge
-            piUML edge instance.
-        """
-        F = {
-            'association': self._association,
-            'commentline': self._commentline,
-            'dependency': self._dependency,
-            'generalization': self._dependency,
-        }
-        f = F.get(edge.element)
-        if not f:
-            print 'WARN: no rendering for edge', edge.element
-            return
-
-        f(edge)
 
 
     def _association(self, edge):
