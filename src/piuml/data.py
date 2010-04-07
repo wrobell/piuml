@@ -189,9 +189,6 @@ class Node(list):
             self.style.padding = Area(3, 18, 3, 18)
         elif element in ('artifact', 'component'):
             self.style.icon_size = Size(10, 15)
-            w, h = self.style.size
-            ipad = 5
-            self.style.size = Size(w + 30 + 2 * ipad, h)
 
 
     def is_packaging(self):

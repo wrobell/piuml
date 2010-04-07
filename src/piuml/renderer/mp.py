@@ -154,7 +154,14 @@ beginfig(1);
             w, h = float(l[2]), float(l[3])
 
             if t == 'name':
+                style = ast.cache[id].style
                 width, height = w, h
+
+                # include icon size
+                iw = style.icon_size.width
+                ipad = 5
+                if iw:
+                    width += 2 * iw + 2 * ipad
 
             elif t == 'compartment':
                 style = ast.cache[id].style
@@ -252,14 +259,18 @@ vardef drawX(text a)(text b) =
     draw w[3] -- w[4];
 enddef;
 
+
 beginfig(1);
 
 % boxes padding is calculated by us
 defaultdx:=0;
 defaultdy:=0;
 
-pickup pencircle scaled 1pt;
+pen defaultpen, iconpen;
+defaultpen := pencircle scaled 1pt;
+iconpen := pencircle scaled 0.5pt;
 
+pickup defaultpen;
 """);
 
 
@@ -454,6 +465,7 @@ draw {id}.ne --  {id}.ne + (10, 10);
         if node.element == 'component':
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
+pickup iconpen;
 draw {p} - ({w}, {h} / 5) 
     -- {p} - ({w}, 0) -- {p} -- {p} - (0, {h}) -- {p} - ({w}, {h})
     -- {p} - ({w}, 4 * {h} / 5);
@@ -465,14 +477,17 @@ draw {p} - ({w} + {w} / 3, {h} / 5) -- {p} - ({w} - {w} / 3, {h} / 5)
 draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
     -- {p} - ({w} - {w} / 3, 4 * {h} / 5) -- {p} - ({w} + {w} / 3, 4 * {h} / 5)
     -- cycle;
+pickup defaultpen;
 """.format(p=p, w=icon_w, h=icon_h))
 
         elif node.element == 'artifact':
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
+pickup iconpen;
 draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
     -- {p} - (0, {h}) -- {p} - ({w}, {h}) -- cycle;
 draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
+pickup defaultpen;
 """.format(p=p, w=icon_w, h=icon_h))
         elif node.element == 'usecase':
             self._draw("""
