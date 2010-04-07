@@ -17,22 +17,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-#from piuml.layout.gv import GVGraph as Layout
+from piuml.data import lca, Node, Edge, AST
 
-from spark import GenericASTTraversal
-from piuml.data import lca
-
-class PreLayout(GenericASTTraversal):
+class PreLayout(object):
+    """
+    :Attributes:
+     ast
+        piUML source parsed tree.
+     edges
+        Cache of edges with tail and head nodes as key.
+    """
     def __init__(self):
-        GenericASTTraversal.__init__(self, None)
+        super(PreLayout, self).__init__()
         self.ast = None
+        self.edges = {}
+
 
     def create(self, ast):
         """
         Postprocess align information.
         """
         self.ast = ast
-        self.ast.data['edges'] = {}
+
         # postprocess align information to simplify layout constraints
         # assignment
         align = (n for n in self.ast.unwind() if n.type == 'align')
@@ -47,13 +53,16 @@ class PreLayout(GenericASTTraversal):
         """
         Create layout constraints.
         """
-        self.postorder(ast)
-
-    def n_diagram(self, node):
-        self._constraint(node)
-
-    def n_element(self, node):
-        self._constraint(node)
+        F = {
+            AST: self._node,
+            Node: self._node,
+            Edge: self._edge,
+        }
+        # process in reversed order to constraint edges first
+        for n in reversed(list(ast.unwind())):
+            f = F.get(n.__class__)
+            if f:
+                f(n)
 
 
     def _defined_align(self, align):
@@ -138,9 +147,9 @@ class PreLayout(GenericASTTraversal):
         self.ast.constraints.append(c)
 
 
-    def _constraint(self, node):
+    def _node(self, node):
         """
-        Constraint the node and its children using alignment information.
+        Constraint node and its children using alignment information.
 
         :Parameters:
          node
@@ -160,6 +169,20 @@ class PreLayout(GenericASTTraversal):
                 for ids in data:
                     nodes = [self.ast.cache[id] for id in ids]
                     f(*nodes)
+
+
+    def _edge(self, edge):
+        """
+        Store edge minimal length in edge cache.
+
+        :Parameters:
+         edge
+            Edge to constraint.
+        """
+        t, h = edge.tail, edge.head
+        # fixme: there can be multiple edges
+        self.edges[t.id, h.id] = 100
+        self.edges[h.id, t.id] = 100
 
 
     def size(self, node):

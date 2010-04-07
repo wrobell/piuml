@@ -134,7 +134,7 @@ class ConstraintLayout(PreLayout):
     def hspan(self, *nodes):
         def f(k1, k2):
             m = k1.style.margin.right + k2.style.margin.left
-            l = self.ast.data['edges'].get((k1.id, k2.id), 0)
+            l = self.edges.get((k1.id, k2.id), 0)
             self.add_lt(k1.style.ur.x, k2.style.ll.x, max(l, m))
         self._apply(f, nodes)
 
@@ -142,7 +142,7 @@ class ConstraintLayout(PreLayout):
     def vspan(self, *nodes):
         def f(k1, k2):
             m = k1.style.margin.bottom + k2.style.margin.top
-            l = self.ast.data['edges'].get((k1.id, k2.id), 0)
+            l = self.edges.get((k1.id, k2.id), 0)
             # span from top to bottom
             self.add_lt(k2.style.ur.y, k1.style.ll.y, max(l, m))
         self._apply(f, nodes)
@@ -151,13 +151,5 @@ class ConstraintLayout(PreLayout):
     def _apply(self, f, node):
         for k1, k2 in zip(node[:-1], node[1:]):
             f(k1, k2)
-
-
-    def n_dependency(self, edge):
-        t, h = edge.tail, edge.head
-        self.ast.data['edges'][t.id, h.id] = 100
-        self.ast.data['edges'][h.id, t.id] = 100
-
-    n_generalization = n_dependency
 
 # vim: sw=4:et:ai
