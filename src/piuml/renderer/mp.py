@@ -53,6 +53,17 @@ def id2mp(id):
     return id
 
 
+def qstr(text):
+    """
+    Quote string to render it with TeX.
+    """
+    t = ['\\hbox{%s}' % s for s in text.split('\\n')]
+    if len(t) > 1:
+        return '\\vbox{' + ''.join(t) + '}'
+    else:
+        return t[0]
+
+
 def _ids(nodes, f=lambda n: True):
     return (n.id for n in nodes if f(n))
 
@@ -394,7 +405,7 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
 
 
     def _name_s(self, node, underline=False, bold=True):
-        name = node.name
+        name = qstr(node.name)
         if bold:
             name = '\\bf ' + name
         if underline:
