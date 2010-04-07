@@ -192,6 +192,9 @@ beginfig(1);
     def n_diagram(self, node):
         self._def("""
 input boxes;
+input TEX;
+
+verbatimtex \input amssym etex
 
 prologues:=3;
 
@@ -537,7 +540,15 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         }
         ta = END[edge.data['tail'][-1]]
         ha = END[edge.data['head'][-1]]
-        self._edge(edge, tail_arrow=ta, head_arrow=ha)
+
+        name = edge.name
+        dir = edge.data['direction']
+        if dir is edge.tail:
+            name = name + '\\;$\\blacktriangleright$'
+        elif dir is edge.head:
+            name = '$\\blacktriangleleft$\\;' + name
+
+        self._edge(edge, tail_arrow=ta, head_arrow=ha, label=name)
 
 
     def n_dependency(self, edge):

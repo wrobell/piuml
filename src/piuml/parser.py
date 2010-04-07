@@ -409,19 +409,17 @@ class piUMLParser(GenericParser):
             '>': 'navigable',
             '=': 'unknown',
         }
+        t, h = self._get_ends(args)
         v = args[1].value
         data = {
             'name': name,
             'tail': (None, None, None, AEND[v[0]]),
             'head': (None, None, None, AEND[v[-1]]),
-            'direction': 'head' if '=>=' in v \
-                    else 'tail' if '=<=' in v \
+            'direction': h if '=>=' in v \
+                    else t if '=<=' in v \
                     else None,
         }
-        e = self._line('association',
-                *self._get_ends(args),
-                data=data,
-                stereotypes=stereotypes)
+        e = self._line('association', t, h, data=data, stereotypes=stereotypes)
         if name:
             e.name = name
 
