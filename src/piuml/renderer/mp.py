@@ -594,8 +594,8 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         t = id2mp(edge.tail.id)
         h = id2mp(edge.head.id)
 
-        tp = 'point 0 of tempPath'
-        hp = 'point length tempPath of tempPath'
+        tp = 'point length tempPath of tempPath'
+        hp = 'point 0 of tempPath'
         arrows = {
             'triangle': 'drawArrow{arrow}(true);',
             'arrow': 'drawArrow{arrow}(false);',
