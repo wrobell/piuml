@@ -459,25 +459,68 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         pass
 
 
-    def n_dependency(self, node):
-        t = id2mp(node.tail.id)
-        h = id2mp(node.head.id)
-        dashed = node.element != 'generalization'
-        closed = node.element == 'generalization' 
+    def n_dependency(self, edge):
+        """
+        Draw dependency, generalization and realization UML lines.
+
+        :Parameters:
+         edge
+            piUML edge instance.
+        """
+        dashed = edge.element != 'generalization'
+        ta = None
+        ha = 'triangle' if edge.element == 'generalization' else 'arrow'
 
         st = ''
-        if node.stereotypes:
-            stl = node.stereotypes[:]
-            if 'realization' in node.stereotypes:
+        if edge.stereotypes:
+            stl = edge.stereotypes[:]
+            if 'realization' in edge.stereotypes:
                 stl.remove('realization')
-                closed = True
+                ha = 'triangle'
             st = st_fmt(stl)
 
-        p1 = 'point 0 of tempPath'
-        p2 = 'point length tempPath of tempPath'
-        if node.tail is node.data['supplier']:
-            p2, p1 = p1, p2
-        arrow = '(' + p1 + ')(' + p2 + ')'
+        if edge.tail is edge.data['supplier']:
+            ta, ha = ha, ta
+        self._edge(edge, tail_arrow=ta, head_arrow=ha, dashed=dashed, label=st)
+
+    n_generalization = n_dependency
+
+    def n_commentline(self, edge):
+        """
+        Draw comment line.
+        """
+        self._edge(edge, dashed=True)
+
+
+    def _edge(self, edge, tail_arrow=None, head_arrow=None, dashed=False, label=''):
+        """
+        Draw a line for specified edge.
+
+        :Parameters:
+         edge
+            piUML edge instance.
+         tail_arrow
+            Type of arrow to be drawn at edge's tail end.
+         head_arrow
+            Type of arrow to be drawn at edge's head end.
+         dashed
+            Draw dashed line if true.
+        """
+        t = id2mp(edge.tail.id)
+        h = id2mp(edge.head.id)
+
+        tp = 'point 0 of tempPath'
+        hp = 'point length tempPath of tempPath'
+        arrow = '(' + tp + ')(' + hp + ')'
+
+        arrows = {
+            'triangle': 'drawArrow{arrow}(true);' .format(arrow=arrow),
+            'arrow': 'drawArrow{arrow}(false);' .format(arrow=arrow),
+        }
+
+        ta = arrows.get(tail_arrow)
+        ha = arrows.get(head_arrow)
+
         path = """
 path tempPath;
 tempPath := {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h};
@@ -487,26 +530,15 @@ tempPath := {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h};
             path += ' dashed evenly scaled 1.2'
         path += ';\n'
 
-        closed = 'true' if closed else 'false'
-        self._draw((path + 'drawArrow{arrow}({closed});').format(t=t, h=h,
-            arrow=arrow, closed=closed))
+        self._draw(path.format(t=t, h=h))
+        if ta:
+            self._draw(ta)
+        if ha:
+            self._draw(ha)
 
-        if st:
-            self._draw('label.top(btex {st} etex, 0.5[{p1},{p2}]);'.format(st=st, p1=p1, p2=p2))
-
-    n_generalization = n_dependency
-
-
-    def n_commentline(self, line):
-        """
-        Draw comment line.
-        """
-        t = id2mp(line.tail.id)
-        h = id2mp(line.head.id)
-        self._draw("""
-draw {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h}
-    dashed evenly scaled 1.2;
-        """.format(t=t, h=h))
+        if label:
+            self._draw('label.top(btex {label} etex, 0.5[{tp},{hp}]);'
+                    .format(label=label, tp=tp, hp=hp))
 
 
 # vim: sw=4:et:ai
