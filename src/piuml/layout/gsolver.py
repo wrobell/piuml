@@ -144,7 +144,7 @@ class ConstraintLayout(PreLayout):
             m = k1.style.margin.bottom + k2.style.margin.top
             l = self.ast.data['edges'].get((k1.id, k2.id), 0)
             # span from top to bottom
-            self.add_lt(k1.style.ll.y, k2.style.ur.y, max(l, m))
+            self.add_lt(k2.style.ur.y, k1.style.ll.y, max(l, m))
         self._apply(f, nodes)
 
 
