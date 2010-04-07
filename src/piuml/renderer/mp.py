@@ -258,6 +258,8 @@ beginfig(1);
 defaultdx:=0;
 defaultdy:=0;
 
+pickup pencircle scaled 1pt;
+
 """);
 
 
