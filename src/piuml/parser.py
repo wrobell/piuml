@@ -357,14 +357,14 @@ class piUMLParser(GenericParser):
                 del args[t - i -1]
 
 
-    def _line(self, element, tail, head, stereotypes=None, data=None):
+    def _edge(self, element, tail, head, stereotypes=None, data=None):
 
         if data is None:
             data = {}
         if stereotypes is None:
             stereotypes = ()
 
-        n = Edge(element, element, tail, head, data=data)
+        n = Edge('edge', element, tail, head, data=data)
 
         n.stereotypes.extend(stereotypes)
 
@@ -419,7 +419,7 @@ class piUMLParser(GenericParser):
                     else t if '=<=' in v \
                     else None,
         }
-        e = self._line('association', t, h, data=data, stereotypes=stereotypes)
+        e = self._edge('association', t, h, data=data, stereotypes=stereotypes)
         if name:
             e.name = name
 
@@ -457,7 +457,7 @@ class piUMLParser(GenericParser):
 
         assert args[0].type == 'ID' and args[2].type == 'ID'
 
-        e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
+        e = self._edge('dependency', *self._get_ends(args), stereotypes=stereotypes)
         e.data['supplier'] = e.tail if v[0] == '<' else e.head
 
         if dt and dt in 'ime':
@@ -491,7 +491,7 @@ class piUMLParser(GenericParser):
         """
         self._trim(args)
         v = args[1].value
-        n = self._line('generalization', *self._get_ends(args))
+        n = self._edge('generalization', *self._get_ends(args))
         n.data['supplier'] = n.tail if v == '<=' else n.head
         return n
 
@@ -505,7 +505,7 @@ class piUMLParser(GenericParser):
         # one of ends shall be comment
         if not (tail.element == 'comment') ^ (head.element == 'comment'):
             raise UMLError('One of comment line ends shall be comment')
-        n = self._line('commentline', tail, head)
+        n = self._edge('commentline', tail, head)
         return n
 
 
@@ -532,8 +532,8 @@ class piUMLParser(GenericParser):
             if n2.element != 'component':
                 raise UMLError(error_fmt % n2.id)
 
-            c1 = self._line('connector', n1, iface)
-            c2 = self._line('connector', iface, n2)
+            c1 = self._edge('connector', n1, iface)
+            c2 = self._edge('connector', iface, n2)
             n = Node('connector', 'assembly')
             n.data['interface'] = iface
             iface.data['assembly'] = n
@@ -554,7 +554,7 @@ class piUMLParser(GenericParser):
             if n.element != 'component':
                 raise UMLError(error_fmt % n.id)
 
-            c = self._line('connector', tail, head)
+            c = self._edge('connector', tail, head)
             iface.data['lines'].append(c)
             return assembly
 
@@ -589,7 +589,7 @@ class piUMLParser(GenericParser):
         tid = args[0].type == 'ID'
         s = tmatrix[(tid, iface.data['symbol'])]
 
-        n = self._line('dependency', tail, head, stereotypes=[s])
+        n = self._edge('dependency', tail, head, stereotypes=[s])
 
         # link dependency and interface
         n.data['supplier'] = iface

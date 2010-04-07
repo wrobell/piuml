@@ -539,7 +539,29 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         pass
 
 
-    def n_association(self, edge):
+    def n_edge(self, edge):
+        """
+        Draw an edge.
+
+        :Parameters:
+         edge
+            piUML edge instance.
+        """
+        F = {
+            'association': self._association,
+            'commentline': self._commentline,
+            'dependency': self._dependency,
+            'generalization': self._dependency,
+        }
+        f = F.get(edge.element)
+        if not f:
+            print 'WARN: no rendering for edge', edge.element
+            return
+
+        f(edge)
+
+
+    def _association(self, edge):
         """
         Draw association and extension UML lines.
 
@@ -584,7 +606,7 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
         self._edge(edge, tail_arrow=ta, head_arrow=ha, label=name)
 
 
-    def n_dependency(self, edge):
+    def _dependency(self, edge):
         """
         Draw dependency, generalization and realization UML lines.
 
@@ -608,11 +630,14 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
             ta, ha = ha, ta
         self._edge(edge, tail_arrow=ta, head_arrow=ha, dashed=dashed, label=st)
 
-    n_generalization = n_dependency
 
-    def n_commentline(self, edge):
+    def _commentline(self, edge):
         """
         Draw comment line.
+
+        :Parameters:
+         edge
+            piUML edge instance.
         """
         self._edge(edge, dashed=True)
 
