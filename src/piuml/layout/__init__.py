@@ -236,7 +236,6 @@ class PreLayout(object):
         """
 
 
-from piuml.layout.gsolver import ConstraintLayout as Layout
-#from piuml.layout.mp import MLayout as Layout
+from piuml.layout.solver import ConstraintLayout as Layout
 
 # vim: sw=4:et:ai
