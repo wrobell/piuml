@@ -17,9 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import time
+import math
+from collections import deque
+
 from piuml.layout import PreLayout
 from piuml.data import Size, Style, Area
-from collections import deque
 
 EPSILON = 1
 
@@ -272,6 +275,15 @@ class Within(Constraint):
 
 
 class Solver(object):
+    """
+    Constraint solver.
+
+    :Attributes:
+     _constraints
+        List of constraints.
+     _dep
+        Dependencies between constraints.
+    """
     def __init__(self):
         self._constraints = []
         self._deps = {}
@@ -293,36 +305,48 @@ class Solver(object):
 
 
     def solve(self):
+        """
+        Find solution for all constraints.
+        """
+        # deque with set properties would be nice...
         unsolved = deque(self._constraints)
         inque = set(self._constraints)
 
-        self.count = 0
-        import time
         t1 = time.time()
-        while unsolved:
-            # get constraint to solve...
-            c = unsolved.popleft()     # get constraint to solve
-            # and find solution
-            changed = c()
-            inque.remove(c)
 
-            # if a variable is modified, then push dependencies to solve
-            # again
-            for m in changed:
-                deps = self._deps.get(m, set())
+        self.count = 0 # count of constraint solving events, if too many,
+                       # then bail out to avoid cpu hog
+        kill = len(self._constraints) ** 2 # we won't accept O(n^2)
+        while unsolved:
+            
+            c = unsolved.popleft()    # get a constraint to solve...
+            inque.remove(c)
+            variables = c()           # ... and find solution
+
+            # if a variable is changed, then push dependant constraints to
+            # solve again
+            for v in variables:
+                deps = self._deps.get(v, set())
+
                 # skip constraints already being in unsolved queue
                 to_solve = deps - inque
+
                 unsolved.extend(to_solve)
                 inque.update(to_solve)
 
             self.count += 1
-            if self.count > len(self._constraints) ** 2:
-                raise ValueError('Could not solve; unsolved=%d after %d iterations' % (len(unsolved), self.count))
+            if self.count > kill:
+                raise ValueError('Could not solve' \
+                        '(unsolved=%d after %d iterations' \
+                    % (len(unsolved), self.count))
+
         assert len(unsolved) == 0
+
+        # some stats follows
         t2 = time.time()
         k = len(self._constraints)
-        import math
-        print 'steps: ', self.count, k, 2 * math.log(k, 2) * k, '%ss' % (t2 - t1)
+        fmt = 'k=constraints: {k}, steps: {c}, 2*O(k*log(k))={O}, time: {t:.3f}'
+        print fmt.format(k=k, c=self.count, O=2 * math.log(k, 2) * k, t=t2 -t1)
 
 
 
