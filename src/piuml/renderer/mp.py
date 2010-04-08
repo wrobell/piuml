@@ -421,6 +421,7 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
             'association': self._association,
             'commentline': self._commentline,
             'dependency': self._dependency,
+            'extension': self._association,
             'generalization': self._dependency,
         }
         f = F.get(edge.element)
