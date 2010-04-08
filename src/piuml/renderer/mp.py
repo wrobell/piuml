@@ -191,8 +191,10 @@ beginfig(1);
                 w, h = max(w, default_w), max(h, default_h)
 
                 # define minimal sizes
+                style.min_size = Size(w, h)
                 style.size = Size(w, h)
                 style.head = head
+                print id, style.head
             else:
                 assert False
 

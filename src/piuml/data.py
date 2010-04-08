@@ -31,7 +31,6 @@ is done from top to bottom.
 
 from collections import namedtuple, MutableSequence
 from uuid import uuid4 as uuid
-from gaphas import solver
 
 
 # packaging element
@@ -49,41 +48,32 @@ KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
 
 Area = namedtuple('Area', 'top right bottom left')
-#Pos = namedtuple('Pos', 'x y')
+_Pos = namedtuple('_Pos', 'x y')
 Size = namedtuple('Size', 'width height')
 # alignment constraints
 AlignConstraints = namedtuple('AlignConstraints',
     'top right bottom left center middle hspan vspan')
 
-class Pos(object):
-    _x = solver.solvable(varname='_v_x')
-    _y = solver.solvable(varname='_v_y')
 
-    def __init__(self, x, y, strength=solver.NORMAL):
-        self._x, self._y = x, y
-        self._x.strength = strength
-        self._y.strength = strength
+class Pos(object):
+    def __init__(self, x, y):
+        self._pos = _Pos(x, y)
 
 
     def __getitem__(self, index):
-        return (self.x, self.y)[index]
+        return self._pos[index]
 
 
     def _set_x(self, x):
-        self._x = x
+        self._pos = Pos(x, self._pos.y)
 
 
     def _set_y(self, y):
-        self._y = y
+        self._pos = Pos(self._pos.x, y)
 
+    x = property(lambda s: s._pos.x, _set_x)
+    y = property(lambda s: s._pos.y, _set_y)
 
-    def __str__(self):
-        return '<%s at (%g, %g)>' % (self.__class__.__name__, float(self._x), float(self._y))
-
-    x = property(lambda s: s._x, _set_x)
-    y = property(lambda s: s._y, _set_y)
-
-    __repr__ = __str__
 
 
 class Style(object):
@@ -117,7 +107,8 @@ class BoxStyle(Style):
         self.margin = Area(10, 10, 10, 10)
         self.padding = Area(5, 10, 5, 10)
         self.icon_size = Size(0, 0)
-        self._set_size((80, 40))
+        self.min_size = Size(80, 40)
+        self._set_size(self.min_size)
 
 
     def _get_size(self):

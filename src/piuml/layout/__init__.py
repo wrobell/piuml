@@ -54,13 +54,13 @@ class PreLayout(object):
         Create layout constraints.
         """
         F = {
-            AST: self._node,
-            Node: self._node,
-            Edge: self._edge,
+            'diagram': self._node,
+            'element': self._node,
+            'edge': self._edge,
         }
         # process in reversed order to constraint edges first
         for n in reversed(list(ast.unwind())):
-            f = F.get(n.__class__)
+            f = F.get(n.type)
             if f:
                 f(n)
 
@@ -157,7 +157,7 @@ class PreLayout(object):
         """
         self.size(node)
         if node.parent:
-            self.within(node.parent, node)
+            self.within(node, node.parent)
 
         ns = node.style
         if node.is_packaging():
