@@ -18,7 +18,7 @@
 #
 
 """
-MetaUML/Metapost based renderer.
+MetaPost based renderer.
 """
 
 from spark import GenericASTTraversal
@@ -71,13 +71,13 @@ def _ids(nodes, f=lambda n: True):
 
 def save(fout, data):
     """
-    Process Metapost program and save it to specified file.
+    Process MetaPost program and save it to specified file.
 
     :Parameters:
      fout
         Target file name.
      data
-        Metapost program (list of strings).
+        MetaPost program (list of strings).
           
     """
     fn = 'diagram.mp'

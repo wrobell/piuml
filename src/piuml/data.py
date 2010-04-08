@@ -20,10 +20,9 @@
 """
 Coordination System
 ===================
-Cartesian coordinate system is assumed. This means that coordinates grow
-from left to right and from bottom to top, which is aligned with standard
-geometry, Metapost, Postcript, etc. but is different with screen oriented
-systems.
+Cartesian coordinate system is assumed (x-axis leftward, y-axis upward),
+which is aligned with standard geometry, MetaPost, PostScript, etc. but is
+different with screen oriented systems.
 
 Above needs to be considered carefully in case of vertical alignment, which
 is done from top to bottom.
