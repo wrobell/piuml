@@ -195,7 +195,6 @@ beginfig(1);
                 style.min_size = Size(w, h)
                 style.size = Size(w, h)
                 style.head = head
-                print id, style.head
             else:
                 assert False
 

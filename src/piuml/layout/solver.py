@@ -375,14 +375,11 @@ class ConstraintLayout(PreLayout):
 
         # calculate height of compartments as packaged element is between
         # head and compartments
-        h = ps.size.height - (ps.head + pad.top + pad.bottom)
-        print node.id, node.type, node.element, 'h', h, ps.size.height, ps.head
-        #h = ps.size.height - ps.head
-        #h = pad.bottom
-        #h = 0
-        cpad = Area(pad.top + ps.head + pad.bottom,
+        head = ps.head + pad.top + pad.bottom
+        h = ps.size.height - head
+        cpad = Area(head + pad.top, # area pad.top
                 pad.right,
-                pad.bottom + h,
+                pad.bottom + h,     # area pad.bottom
                 pad.left)
         self.add_c(Within(ns, ps, cpad))
 
