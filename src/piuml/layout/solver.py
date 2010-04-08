@@ -407,8 +407,7 @@ class ConstraintLayout(PreLayout):
             m = k1.style.margin.bottom + k2.style.margin.top
             l = self.edges.get((k1.id, k2.id), 0)
             # span from top to bottom
-            #self.add_c(MinVDist(k2.style, k1.style, max(l, m)))
-            self.add_c(MinVDist(k1.style, k2.style, max(l, m)))
+            self.add_c(MinVDist(k2.style, k1.style, max(l, m)))
         self._apply(f, nodes)
 
 
