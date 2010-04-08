@@ -185,8 +185,9 @@ beginfig(1);
                 if ccounts[id] == 1:
                     w, h = 0, 0
 
-                # include head size
-                w += width + pad.left + pad.right
+                # take head size into account
+                w = max(w, width)
+                w += pad.left + pad.right
                 h += height + ccounts[id] * (pad.top + pad.bottom)
                 w, h = max(w, default_w), max(h, default_h)
 
