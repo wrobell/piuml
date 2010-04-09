@@ -21,7 +21,7 @@ from cStringIO import StringIO
 import unittest
 
 from piuml.layout import PreLayout
-from piuml.parser import parse
+from piuml.parser import parse, ParseError
 
 class AlignPostprocessTestCase(unittest.TestCase):
     def test_default_simple(self):
@@ -38,6 +38,19 @@ class c2 "C2"
         self.assertEquals([['c1', 'c2']], ast.align.hspan)
 
 
+    def test_invalid_align(self):
+        """Test invalid align specification
+        """
+        l = PreLayout()
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+
+    center: c1 c2
+""")
+        self.assertRaises(ParseError, parse, f)
+
+
     def test_defined_simple(self):
         """Test defined, simple alignment
         """
@@ -46,7 +59,8 @@ class c2 "C2"
 class c1 "C1"
 class c2 "C2"
 
-align=left: c2 c1 # note reorder
+:layout:
+    left: c2 c1 # note reorder
 """)
         ast = parse(f)
         l.create(ast)
@@ -63,7 +77,8 @@ class c1 "C1"
 class c2 "C2"
 class c3 "C3"
 
-align=left: c1 c3
+:layout:
+    left: c1 c3
 """)
         ast = parse(f)
         l.create(ast)
@@ -93,7 +108,8 @@ class c3 "C3"
 class c4 "C4"
 class c5 "C5"
 
-align=left: c2 c3
+:layout:
+    left: c2 c3
 """)
         ast = parse(f)
         l.create(ast)
@@ -119,8 +135,9 @@ class c "C3"
 class d "C4"
 class e "C5"
 
-align=center: a b
-align=center: d e
+:layout:
+    center: a b
+    center: d e
 """)
         ast = parse(f)
         l.create(ast)

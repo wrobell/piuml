@@ -19,7 +19,8 @@ class b1 'Bottom' <<align>>
             : c3()
         class bc4 'D'
 
-align=bottom: bc1 bc3
+:layout:
+    bottom: bc1 bc3
 
 class r1 'Right' <<align>>
     class rc1 'A'
@@ -29,6 +30,6 @@ class r1 'Right' <<align>>
         class rc3 'Copy Reference'
         class rc4 'D'
 
-align=right: rc1 rc3
-
-align=center: d1 t1 b1
+:layout:
+    right: rc1 rc3
+    center: d1 t1 b1

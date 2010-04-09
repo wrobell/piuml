@@ -55,6 +55,14 @@ class UMLError(ParseError):
 
 
 
+class AlignmentError(ParseError):
+    """
+    Alignment error. Raised when some specified alignment is invalid
+    or impossible to obtain.
+    """
+
+
+
 class Token(object):
     """
     piUML language token data with type and value.
@@ -141,7 +149,8 @@ RE_STEREOTYPE = r'<<[ ]*\w[\w ,]*>>'
 RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
 RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
 RE_STATTRIBUTES = r'^\s+:\s*<<\w+>>\s*:$'
-RE_ALIGN = r'^align=(top|right|bottom|left|middle|center)\s*:'
+RE_LAYOUT = r'^:layout:$'
+RE_ALIGN = r'^\s+(top|right|bottom|left|middle|center)\s*:\s*'
 
 RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
     ($
@@ -163,6 +172,7 @@ TOKENS = {
     'ATTRIBUTE': RE_ATTRIBUTE,
     'OPERATION': RE_OPERATION,
     'STATTRIBUTES': RE_STATTRIBUTES,
+    'LAYOUT': RE_LAYOUT,
     'ALIGN': RE_ALIGN,
     'SPACE': r'(?<=[^\s])[ 	]+',
 }
@@ -275,6 +285,7 @@ class piUMLParser(GenericParser):
         expr ::= fdifacedep
         expr ::= assembly
         expr ::= comment
+        expr ::= layout
         expr ::= align
         expr ::= empty
         """
@@ -688,14 +699,29 @@ class piUMLParser(GenericParser):
         return Node('comment', 'comment')
 
 
+    def p_layout(self, args):
+        """
+        layout ::= LAYOUT
+        """
+        n = Node('switch', 'layout')
+        self._set_parent('', n)
+        return n
+
+
     def p_align(self, args):
         """
-        align ::= ALIGN SPACE ID SPACE ID
+        align ::= ALIGN ID SPACE ID
         align ::= align SPACE ID
         """
+        parent = self._istack[-1][1]
+
+        if parent.type != 'switch' and parent.element != 'layout' \
+                and parent.type != 'align':
+            raise ParseError('Alignment specification outside layout group')
+
         self._trim(args)
         if args[0].type == 'ALIGN':
-            align = re.match(RE_ALIGN, args[0].value).group(1)
+            align = args[0].value.strip()[:-1]
             n = Align(align)
             n.data.append(self.ast.cache[args[1].value])
             n.data.append(self.ast.cache[args[2].value])
