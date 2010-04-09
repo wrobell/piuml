@@ -84,18 +84,32 @@ class NodeCache(dict):
     Cache of nodes.
 
     A node is accessed by its id.
+
+    Duplicate id's are disallowed - an error is raised when trying to
+    replace existing node.
     """
-    def __getitem__(self, key):
+    def __getitem__(self, id):
         """
         Provides access to nodes by their ids.
 
         If node is not stored in the cache, then parsing exception is
         raised.
         """
-        if key not in self:
-            raise ParseError('Id "%s" is not defined' % key)
+        if id in self:
+            return super(NodeCache, self).__getitem__(id)
         else:
-            return super(NodeCache, self).__getitem__(key)
+            raise ParseError('Id "%s" is not defined' % id)
+
+
+    def __setitem__(self, id, node):
+        """
+        Store node by its id in cache. If there is a node already stored
+        for given id, then ParseError error is raised.
+        """
+        if id in self:
+            raise ParseError('Id "%s" is already defined' % id)
+        else:
+            super(NodeCache, self).__setitem__(id, node)
 
 
 
@@ -364,14 +378,14 @@ class piUMLParser(GenericParser):
         if stereotypes is None:
             stereotypes = ()
 
-        n = Edge('edge', element, tail, head, data=data)
+        edge = Edge('edge', element, tail, head, data=data)
 
-        n.stereotypes.extend(stereotypes)
+        edge.stereotypes.extend(stereotypes)
 
-        self.ast.append(n)
-        self._istack[-1] = (0, n)
-        self.ast.cache[id] = n
-        return n
+        self.ast.append(edge)
+        self._istack[-1] = (0, edge)
+        self.ast.cache[edge.id] = edge
+        return edge
 
 
     def _get_ends(self, args):

@@ -241,6 +241,36 @@ c1 -- cx
         self.assertRaises(ParseError, parse, f)
 
 
+    def test_duplicate_id(self):
+        """Test duplicate id specification
+        """
+        f = StringIO("""
+class c1 "Test1"
+class c1 "Test2" # note duplicated id
+""")
+        self.assertRaises(ParseError, parse, f)
+
+
+    def test_line_interleave(self):
+        """Test an edge to an undefined id
+        """
+        f = StringIO("""
+class c1 "Test1"
+    class c2 "Test2"
+
+c1 == c2
+
+class c3 "Test3"
+    class c4 "Test4"
+
+c2 == c3
+""")
+        ast = parse(f)
+        data = [n.parent.type for n in ast.unwind() if n.element == 'class']
+        self.assertEquals(['diagram', 'element'] * 2, data)
+
+
+
 
 class UMLCheckTestCase(unittest.TestCase):
     """
