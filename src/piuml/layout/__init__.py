@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.data import lca, Node, Edge, AST
+from piuml.data import lca
 
 class PreLayout(object):
     """
