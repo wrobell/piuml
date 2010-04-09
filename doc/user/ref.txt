@@ -1,6 +1,13 @@
 piUML Language Reference
 ========================
 
+Identifiers
+-----------
+The indentifiers
+
+- must exist when references (i.e. by edges or alignment)
+- cannot be duplicated
+
 UML Elements
 ------------
 
