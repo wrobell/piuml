@@ -133,6 +133,41 @@ class TopEq(Constraint):
         return changed
 
 
+class BottomEq(Constraint):
+    """
+    Constraint to maintain bottom edges of two rectangles at the same
+    position.
+
+    :Attributes:
+     a
+        First rectangle.
+     b
+        Second rectangle
+    """
+    def __init__(self, a, b):
+        super(BottomEq, self).__init__()
+        self.a = a
+        self.b = b
+        self.variables = [a, b]
+
+
+    def __call__(self):
+        changed = []
+        a = self.a
+        b = self.b
+        if a.ll.y < b.ll.y:
+            h = a.size.height
+            a.ll.y = b.ll.y
+            a.ur.y = a.ll.y + h
+            changed = [a]
+        if a.ll.y > b.ll.y:
+            h = b.size.height
+            b.ll.y = a.ll.y
+            b.ur.y = b.ll.y + h
+            changed = [b]
+        return changed
+
+
 
 class LeftEq(Constraint):
     """
@@ -165,6 +200,42 @@ class LeftEq(Constraint):
             w = b.size.width
             b.ll.x = a.ll.x
             b.ur.x = b.ll.x + w
+            changed = [b]
+        return changed
+
+
+
+class RightEq(Constraint):
+    """
+    Constraint to maintain right edges of two rectangles at the same
+    position.
+
+    :Attributes:
+     a
+        First rectangle.
+     b
+        Second rectangle
+    """
+    def __init__(self, a, b):
+        super(RightEq, self).__init__()
+        self.a = a
+        self.b = b
+        self.variables = [a, b]
+
+
+    def __call__(self):
+        changed = []
+        a = self.a
+        b = self.b
+        if a.ur.x < b.ur.x:
+            w = a.size.width
+            a.ur.x = b.ur.x
+            a.ll.x = a.ur.x - w
+            changed = [a]
+        if a.ur.x > b.ur.x:
+            w = b.size.width
+            b.ur.x = a.ur.x
+            b.ll.x = b.ur.x - w
             changed = [b]
         return changed
 
@@ -337,7 +408,7 @@ class Solver(object):
             self.count += 1
             if self.count > kill:
                 raise ValueError('Could not solve' \
-                        '(unsolved=%d after %d iterations' \
+                        '; unsolved=%d after %d iterations' \
                     % (len(unsolved), self.count))
 
         assert len(unsolved) == 0
@@ -345,7 +416,7 @@ class Solver(object):
         # some stats follows
         t2 = time.time()
         k = len(self._constraints)
-        fmt = 'k=constraints: {k}, steps: {c}, 2*O(k*log(k))={O}, time: {t:.3f}'
+        fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
         print fmt.format(k=k, c=self.count, O=2 * math.log(k, 2) * k, t=t2 -t1)
 
 
@@ -391,7 +462,7 @@ class ConstraintLayout(PreLayout):
 
     def bottom(self, *nodes):
         def f(k1, k2):
-            self.add_c(TopEq(k1.style, k2.style))
+            self.add_c(BottomEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def middle(self, *nodes):
@@ -406,7 +477,7 @@ class ConstraintLayout(PreLayout):
 
     def right(self, *nodes):
         def f(k1, k2):
-            self.add_c(LeftEq(k1.style, k2.style))
+            self.add_c(RightEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def center(self, *nodes):
