@@ -613,6 +613,15 @@ class piUMLParser(GenericParser):
 
 
     def _feature(self, feature, value):
+        """
+        Create feature node. 
+
+        :Parameters:
+         feature
+            Feature type, i.e. attribute, operation.
+         value
+            Name assigned to feature node.
+        """
         indent = value.split(':')[0]
         txt = value.strip()[1:].strip()
 
