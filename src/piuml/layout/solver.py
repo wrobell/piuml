@@ -74,28 +74,32 @@ class CenterLinesConstraint(Constraint):
             l2[1].value = v1 + w2 / 2
 
 
-def rect(self):
+class MinSizeConstraint(Constraint):
     """
-    Rectangle constraint. It maintains minimal size of a rectangle.
-    
-    Rectangle constraint is a wrapper around node's style object (from
-    piUML language data model) and it could be any generic rectangle.
+    Rectangle minimal size constraint.
     """
-    changed = []
-    w, h = self.min_size
-    if self.ur.x - self.ll.x < w:
-        self.ur.x += 10 #w + pad.left + pad.right
-        changed = [self]
-    if self.ur.y - self.ll.y < h:
-        self.ur.y += 10 #h + pad.top + pad.bottom
-        changed = [self]
-    return changed
+    def __init__(self, r):
+        super(MinSizeConstraint, self).__init__()
+        self.r = r
+        self.variables = [r]
 
 
-# bind rectangle constraint to Style class to maintain node rectangle
-# properties
-Style.__call__ = rect
-Style.variables = property(lambda s: [])
+    def __call__(self):
+        changed = []
+        r = self.r
+        w, h = r.min_size
+        pad = r.padding
+        w += pad.left + pad.right
+        h += pad.top + pad.bottom
+        if r.ur.x - r.ll.x < w:
+            #r.ur.x = r.ll.x + w
+            r.ur.x += 10
+            changed = [r]
+        if r.ur.y - r.ll.y < h:
+            #r.ur.y = r.ur.y + h
+            r.ur.y += 10
+            changed = [r]
+        return changed
 
 
 class RectConstraint(Constraint):
@@ -386,7 +390,7 @@ class ConstraintLayout(PreLayout):
 
 
     def size(self, node):
-        self.add_c(node.style)
+        self.add_c(MinSizeConstraint(node.style))
 
 
     def within(self, node, parent):
