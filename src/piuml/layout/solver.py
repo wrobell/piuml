@@ -38,9 +38,9 @@ class Constraint(object):
      variables
         List of variables being manipulated by a constraint.
     """
-    def __init__(self):
+    def __init__(self, *variables):
         super(Constraint, self).__init__()
-        self.variables = []
+        self.variables = list(variables)
 
 
     def __call__(self):
@@ -79,9 +79,8 @@ class MinSizeConstraint(Constraint):
     Rectangle minimal size constraint.
     """
     def __init__(self, r):
-        super(MinSizeConstraint, self).__init__()
+        super(MinSizeConstraint, self).__init__(r)
         self.r = r
-        self.variables = [r]
 
 
     def __call__(self):
@@ -102,6 +101,7 @@ class MinSizeConstraint(Constraint):
         return changed
 
 
+
 class RectConstraint(Constraint):
     """
     Abstract constraint to align two rectangles.
@@ -113,10 +113,9 @@ class RectConstraint(Constraint):
         Second rectangle
     """
     def __init__(self, a, b):
-        super(RectConstraint, self).__init__()
+        super(RectConstraint, self).__init__(a, b)
         self.a = a
         self.b = b
-        self.variables = [a, b]
 
 
 class TopEq(RectConstraint):
@@ -256,6 +255,7 @@ class MinVDist(MinDistConstraint):
         return changed
 
 
+
 class Within(Constraint):
     """
     Keep two rectangles within each other using specified padding.
@@ -269,10 +269,10 @@ class Within(Constraint):
         Padding information (tuple: top, right, bottom, left).
     """
     def __init__(self, kid, parent, pad):
+        super(Within, self).__init__(kid, parent)
         self.parent = parent
         self.kid = kid
         self.pad = pad
-        self.variables = [parent, kid]
 
 
     def __call__(self):
@@ -297,6 +297,7 @@ class Within(Constraint):
             p.ur.y = k.ur.y + pad.top
             changed.add(p)
         return changed
+
 
 
 class Solver(object):
