@@ -302,6 +302,13 @@ class Within(Constraint):
 
 
 
+class SolverError(Exception):
+    """
+    Constraint solver exception.
+    """
+
+
+
 class Solver(object):
     """
     Constraint solver.
@@ -364,13 +371,13 @@ class Solver(object):
 
             self.count += 1
             if self.count > kill:
-                raise ValueError('Could not solve' \
-                        '; unsolved=%d after %d iterations' \
-                    % (len(unsolved), self.count))
+                raise SolverError('Could not find a solution;' \
+                    ' unsolved={0} after {1} iterations' \
+                    .format(len(unsolved), self.count))
 
         assert len(unsolved) == 0
 
-        # some stats follows
+        # some stats follow
         t2 = time.time()
         k = len(self._constraints)
         fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
