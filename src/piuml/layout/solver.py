@@ -51,28 +51,6 @@ class Constraint(object):
         raise NotImplemented('Constraint solution not implemented')
 
 
-class CenterLinesConstraint(Constraint):
-    def __init__(self, l1=None, l2=None):
-        super(CenterLinesConstraint, self).__init__(l1[0], l1[1], l2[0], l2[1])
-        self.l1 = l1
-        self.l2 = l2
-
-    def solve_for(self, var):
-        l1 = self.l1
-        l2 = self.l2
-        if var in l2:
-            l1, l2 = l2, l1
-        w1 = l1[1].value - l1[0].value
-        w2 = l2[1].value - l2[0].value
-        v1 = l1[0].value + w1 / 2
-        v2 = l2[0].value + w2 / 2
-        if abs(v1 - v2) > 1e-6:
-            v1 = max(v1, v2)
-            l1[0].value = v1 - w1 / 2
-            l1[1].value = v1 + w1 / 2
-            l2[0].value = v1 - w2 / 2
-            l2[1].value = v1 + w2 / 2
-
 
 class MinSizeConstraint(Constraint):
     """
@@ -208,6 +186,67 @@ class RightEq(RectConstraint):
             b.ll.x = b.ur.x - w
             changed = [b]
         return changed
+
+
+
+class CenterEq(RectConstraint):
+    """
+    Constraint to center two rectangles horizontally.
+    """
+    def __call__(self):
+        changed = []
+        a = self.a
+        b = self.b
+
+        wa = a.size.width / 2.0
+        wb = b.size.width / 2.0
+
+        # calculate centres of both rectangles
+        v1 = a.ll.x + wa
+        v2 = b.ll.x + wb
+
+        # move the middle of one of the rectangles
+        if v1 > v2:
+            b.ll.x = v1 - wb
+            b.ur.x = v1 + wb
+            changed = [b]
+        elif v2 > v1:
+            a.ll.x = v2 - wa
+            a.ur.x = v2 + wa
+            changed = [a]
+
+        return changed
+
+
+
+class MiddleEq(RectConstraint):
+    """
+    Constraint to center two rectangles vertically.
+    """
+    def __call__(self):
+        changed = []
+        a = self.a
+        b = self.b
+
+        ha = a.size.height / 2.0
+        hb = b.size.height / 2.0
+
+        # calculate centres of both rectangles
+        v1 = a.ll.y + ha
+        v2 = b.ll.y + hb
+
+        # move the middle of one of the rectangles
+        if v1 > v2:
+            b.ll.y = v1 - hb
+            b.ur.y = v1 + hb
+            changed = [b]
+        elif v2 > v1:
+            a.ll.y = v2 - ha
+            a.ur.y = v2 + ha
+            changed = [a]
+
+        return changed
+
 
 
 class MinDistConstraint(RectConstraint):
@@ -431,7 +470,7 @@ class ConstraintLayout(PreLayout):
 
     def middle(self, *nodes):
         def f(k1, k2):
-            self.add_c(TopEq(k1.style, k2.style))
+            self.add_c(MiddleEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def left(self, *nodes):
@@ -446,7 +485,7 @@ class ConstraintLayout(PreLayout):
 
     def center(self, *nodes):
         def f(k1, k2):
-            self.add_c(LeftEq(k1.style, k2.style))
+            self.add_c(CenterEq(k1.style, k2.style))
         self._apply(f, nodes)
 
 
