@@ -82,14 +82,16 @@ class MinSizeConstraint(Constraint):
         super(MinSizeConstraint, self).__init__(r)
         self.r = r
 
+        # this is a hack, all other constraints maintain minimal size of
+        # the rectangle, so no point to invoke it again; we gain some speed
+        self.variables = []
+
 
     def __call__(self):
         changed = []
         r = self.r
         w, h = r.min_size
         pad = r.padding
-        w += pad.left + pad.right
-        h += pad.top + pad.bottom
         if r.ur.x - r.ll.x < w:
             #r.ur.x = r.ll.x + w
             r.ur.x += 10
