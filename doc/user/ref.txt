@@ -59,6 +59,41 @@ Generalization
 
 Layout
 ------
+Default layout middle.
+
+Horizontal alignment
+    top
+    center
+    bottom
+
+Vertical alignment
+    left
+    middle
+    right
+
+
+    a b c
+    center: b c
+
+    a b
+      c
+
+
+    a b c d
+    center: c d
+
+    a b c
+        d
+
+
+    a b c d e
+    center: a b
+    center: d e
+
+    a c d
+    b   e
+
+
 
 Errors
 ------

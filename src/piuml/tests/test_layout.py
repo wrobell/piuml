@@ -105,4 +105,33 @@ align=left: c2 c3
         self.assertEquals([['c2', 'c3']], ast.align.left)
 
 
+    def test_default_interleave(self):
+        """Test default align constraining with defined layout
+        """
+        l = PreLayout()
+        # diagram:
+        # a c d
+        # b   e
+        f = StringIO("""
+class a "C1"
+class b "C2"
+class c "C3"
+class d "C4"
+class e "C5"
+
+align=center: a b
+align=center: d e
+""")
+        ast = parse(f)
+        l.create(ast)
+
+        # default and defined alignment plays well
+        self.assertEquals([['a', 'c', 'd']], ast.align.middle)
+        self.assertEquals([['a', 'c', 'd']], ast.align.hspan)
+
+        # check defined alignment
+        self.assertEquals([['a', 'b'], ['d', 'e']], ast.align.vspan)
+        self.assertEquals([['a', 'b'], ['d', 'e']], ast.align.center)
+
+
 # vim: sw=4:et:ai

@@ -112,27 +112,17 @@ class PreLayout(object):
         # unique set of node ids used in alignment definition
         done = set(id for k in defined for id in k)
         # list of non-aligned node ids
-        lost = [a for a in packaged if a not in done]
+        default = [a for a in packaged if a not in done]
 
-        # set default layout for non aligned node ids,
-        # which is: span horizontally, center vertically
-        if len(lost) == 1 and len(middle) == 0 and len(center) > 0:
-            center[0].extend(lost)
-            vspan[0].extend(lost)
-        elif len(lost) > 0 and len(middle) > 0:
-            middle[0].extend(lost)
-            hspan[0].extend(lost)
-        elif len(lost) > 0 and len(vspan) > 0:
-            middle.append([vspan[0][0]])
-            hspan.append([vspan[0][0]])
-            middle[0].extend(lost)
-            hspan[0].extend(lost)
-        else:
-            middle.append(lost)
-            hspan.append(lost)
+        # interleave non-aligned ids with the top of defined by user
+        # alignment
+        default.extend((v[0] for v in vspan))
+        default.sort(key=packaged.index)
+        middle.insert(0, default)
+        hspan.insert(0, default)
 
         if __debug__:
-            print node.id, 'lost', lost
+            print node.id, 'default', default
             print node.id, 'top', top
             print node.id, 'right', right
             print node.id, 'bottom', bottom
