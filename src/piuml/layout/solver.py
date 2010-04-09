@@ -98,10 +98,9 @@ Style.__call__ = rect
 Style.variables = property(lambda s: [])
 
 
-class TopEq(Constraint):
+class RectConstraint(Constraint):
     """
-    Constraint to maintain top edges of two rectangles at the same
-    position.
+    Abstract constraint to align two rectangles.
 
     :Attributes:
      a
@@ -110,12 +109,17 @@ class TopEq(Constraint):
         Second rectangle
     """
     def __init__(self, a, b):
-        super(TopEq, self).__init__()
+        super(RectConstraint, self).__init__()
         self.a = a
         self.b = b
         self.variables = [a, b]
 
 
+class TopEq(RectConstraint):
+    """
+    Constraint to maintain top edges of two rectangles at the same
+    position.
+    """
     def __call__(self):
         changed = []
         a = self.a
@@ -133,24 +137,11 @@ class TopEq(Constraint):
         return changed
 
 
-class BottomEq(Constraint):
+class BottomEq(RectConstraint):
     """
     Constraint to maintain bottom edges of two rectangles at the same
     position.
-
-    :Attributes:
-     a
-        First rectangle.
-     b
-        Second rectangle
     """
-    def __init__(self, a, b):
-        super(BottomEq, self).__init__()
-        self.a = a
-        self.b = b
-        self.variables = [a, b]
-
-
     def __call__(self):
         changed = []
         a = self.a
@@ -169,24 +160,11 @@ class BottomEq(Constraint):
 
 
 
-class LeftEq(Constraint):
+class LeftEq(RectConstraint):
     """
     Constraint to maintain left edges of two rectangles at the same
     position.
-
-    :Attributes:
-     a
-        First rectangle.
-     b
-        Second rectangle
     """
-    def __init__(self, a, b):
-        super(LeftEq, self).__init__()
-        self.a = a
-        self.b = b
-        self.variables = [a, b]
-
-
     def __call__(self):
         changed = []
         a = self.a
@@ -205,24 +183,11 @@ class LeftEq(Constraint):
 
 
 
-class RightEq(Constraint):
+class RightEq(RectConstraint):
     """
     Constraint to maintain right edges of two rectangles at the same
     position.
-
-    :Attributes:
-     a
-        First rectangle.
-     b
-        Second rectangle
     """
-    def __init__(self, a, b):
-        super(RightEq, self).__init__()
-        self.a = a
-        self.b = b
-        self.variables = [a, b]
-
-
     def __call__(self):
         changed = []
         a = self.a
@@ -240,25 +205,24 @@ class RightEq(Constraint):
         return changed
 
 
-class MinHDist(Constraint):
+class MinDistConstraint(RectConstraint):
     """
-    Constraint to maintain minimal horizontal distance between two
-    rectangles.
+    Abstract constraint for minimal distance between two rectangles.
 
     :Attributes:
-     a
-        First rectangle.
-     b
-        Second rectangle
      dist
         The distance to maintain.
     """
     def __init__(self, a, b, dist):
-        self.a = a
-        self.b = b
+        super(MinDistConstraint, self).__init__(a, b)
         self.dist = dist
-        self.variables = [a, b]
 
+
+class MinHDist(MinDistConstraint):
+    """
+    Constraint to maintain minimal horizontal distance between two
+    rectangles.
+    """
     def __call__(self):
         changed = []
         a = self.a
@@ -271,25 +235,11 @@ class MinHDist(Constraint):
         return changed
 
 
-class MinVDist(Constraint):
+class MinVDist(MinDistConstraint):
     """
     Constraint to maintain minimal vertical distance between two
     rectangles.
-
-    :Attributes:
-     a
-        First rectangle.
-     b
-        Second rectangle
-     dist
-        The distance to maintain.
     """
-    def __init__(self, a, b, dist):
-        self.a = a
-        self.b = b
-        self.dist = dist
-        self.variables = [a, b]
-
     def __call__(self):
         changed = []
         a = self.a
