@@ -367,7 +367,7 @@ class Solver(object):
         t2 = time.time()
         k = len(self._constraints)
         fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
-        print fmt.format(k=k, c=self.count, O=2 * math.log(k, 2) * k, t=t2 -t1)
+        print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
 
 
 
