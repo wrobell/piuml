@@ -304,7 +304,14 @@ class piUMLParser(GenericParser):
         return n
 
 
-    def _set_parent(self, indent, n):
+    def _set_parent(self, indent, node):
+        """
+        Set parent for a node.
+
+        :Parameters:
+         node
+            Node, to which parent shall be assigned.
+        """
         # identify diagram level on which grouping happens
         level = len(indent)
 
@@ -315,18 +322,18 @@ class piUMLParser(GenericParser):
             # last node cannot group anymore, replace it with current one
             if len(istack) > 1:
                 istack.pop()
-            istack.append((level, n))
+            istack.append((level, node))
         elif i < level:
-            istack.append((level, n))
+            istack.append((level, node))
         else: # i > level
             while i > level:
                 i = istack.pop()[0]
             if i < level:
                 raise ParseError('Inconsistent indentation')
-            istack.append((level, n))
+            istack.append((level, node))
 
-        n.parent = parent = istack[-2][1]
-        parent.append(n)
+        node.parent = parent = istack[-2][1]
+        parent.append(node)
 
 
     def p_fdiface(self, args):
@@ -382,8 +389,7 @@ class piUMLParser(GenericParser):
 
         edge.stereotypes.extend(stereotypes)
 
-        self.ast.append(edge)
-        self._istack[-1] = (0, edge)
+        self._set_parent('', edge)
         self.ast.cache[edge.id] = edge
         return edge
 
