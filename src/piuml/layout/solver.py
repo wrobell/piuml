@@ -17,11 +17,117 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Simple constraint solver to solve constraints related to rectangles
+alignment (minimal size, position, containment, etc.).
+
+A rectangle has to implement following interface
+
+    interface rec 'Rectangle'
+        : ll: Pos
+        : ur: Pos
+
+    class p 'Pos'
+        : x: float
+        : y: float
+
+where
+
+    Rectangle.ll
+        Rectangle's lower level corner.
+
+    Rectangle.ur
+        Rectangle's upper right corner.
+"""
+
 import time
 import math
 from collections import deque
 
-EPSILON = 1
+
+class SolverError(Exception):
+    """
+    Constraint solver exception raised when constraints solution cannot be
+    found.
+    """
+
+
+
+class Solver(object):
+    """
+    Constraint solver.
+
+    :Attributes:
+     _constraints
+        List of constraints.
+     _dep
+        Dependencies between constraints.
+    """
+    def __init__(self):
+        self._constraints = []
+        self._deps = {}
+
+
+    def add(self, c):
+        """
+        Add a constraint to constraint solver.
+
+        Constraint's variables are used to build dependency cache.
+        """
+        self._constraints.append(c)
+        for d in c.variables:
+            if d in self._deps:
+                deps = self._deps[d]
+            else:
+                deps = self._deps[d] = set()
+            deps.add(c)
+
+
+    def solve(self):
+        """
+        Find solution for all constraints.
+        """
+        # deque with set properties would be nice...
+        unsolved = deque(self._constraints)
+        inque = set(self._constraints)
+
+        t1 = time.time()
+
+        self.count = 0 # count of constraint solving events, if too many,
+                       # then bail out to avoid cpu hog
+        kill = len(self._constraints) ** 2 # we won't accept O(n^2)
+        while unsolved:
+            
+            c = unsolved.popleft()    # get a constraint to solve...
+            inque.remove(c)
+            variables = c()           # ... and find solution
+
+            # if a variable is changed, then push dependant constraints to
+            # solve again
+            for v in variables:
+                deps = self._deps.get(v, set())
+
+                # skip constraints already being in unsolved queue
+                to_solve = deps - inque
+
+                unsolved.extend(to_solve)
+                inque.update(to_solve)
+
+            self.count += 1
+            if self.count > kill:
+                raise SolverError('Could not find a solution;' \
+                    ' unsolved={0} after {1} iterations' \
+                    .format(len(unsolved), self.count))
+
+        assert len(unsolved) == 0
+
+        # some stats follow
+        t2 = time.time()
+        k = len(self._constraints)
+        fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
+        print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
+
+
 
 class Constraint(object):
     """
@@ -334,89 +440,6 @@ class Within(Constraint):
             p.ur.y = k.ur.y + pad.top
             changed.add(p)
         return changed
-
-
-
-class SolverError(Exception):
-    """
-    Constraint solver exception.
-    """
-
-
-
-class Solver(object):
-    """
-    Constraint solver.
-
-    :Attributes:
-     _constraints
-        List of constraints.
-     _dep
-        Dependencies between constraints.
-    """
-    def __init__(self):
-        self._constraints = []
-        self._deps = {}
-
-
-    def add(self, c):
-        """
-        Add a constraint to constraint solver.
-
-        Constraint's variables are used to build dependency cache.
-        """
-        self._constraints.append(c)
-        for d in c.variables:
-            if d in self._deps:
-                deps = self._deps[d]
-            else:
-                deps = self._deps[d] = set()
-            deps.add(c)
-
-
-    def solve(self):
-        """
-        Find solution for all constraints.
-        """
-        # deque with set properties would be nice...
-        unsolved = deque(self._constraints)
-        inque = set(self._constraints)
-
-        t1 = time.time()
-
-        self.count = 0 # count of constraint solving events, if too many,
-                       # then bail out to avoid cpu hog
-        kill = len(self._constraints) ** 2 # we won't accept O(n^2)
-        while unsolved:
-            
-            c = unsolved.popleft()    # get a constraint to solve...
-            inque.remove(c)
-            variables = c()           # ... and find solution
-
-            # if a variable is changed, then push dependant constraints to
-            # solve again
-            for v in variables:
-                deps = self._deps.get(v, set())
-
-                # skip constraints already being in unsolved queue
-                to_solve = deps - inque
-
-                unsolved.extend(to_solve)
-                inque.update(to_solve)
-
-            self.count += 1
-            if self.count > kill:
-                raise SolverError('Could not find a solution;' \
-                    ' unsolved={0} after {1} iterations' \
-                    .format(len(unsolved), self.count))
-
-        assert len(unsolved) == 0
-
-        # some stats follow
-        t2 = time.time()
-        k = len(self._constraints)
-        fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
-        print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
 
 
 # vim: sw=4:et:ai
