@@ -408,7 +408,20 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
 
 
     def n_ielement(self, node):
-        pass
+        """
+        Draw icon-like element.
+
+        :Parameters:
+         node
+            piUML language node instance representing the element.
+        """
+        self._draw("""
+path pp, pr;
+pp := fullcircle scaled 14;
+pr := halfcircle scaled 20 rotated 90;
+draw pp shifted (50, 150);
+draw pr shifted (50, 150);
+        """)
 
 
     def n_edge(self, edge):
