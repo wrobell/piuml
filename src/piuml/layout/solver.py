@@ -48,12 +48,12 @@ class Constraint(object):
 
 
 
-class MinSizeConstraint(Constraint):
+class MinSize(Constraint):
     """
     Rectangle minimal size constraint.
     """
     def __init__(self, r):
-        super(MinSizeConstraint, self).__init__(r)
+        super(MinSize, self).__init__(r)
         self.r = r
 
         # this is a hack, all other constraints maintain minimal size of

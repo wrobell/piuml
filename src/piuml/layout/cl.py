@@ -242,7 +242,7 @@ class ConstraintLayout(Layout):
 
 
     def size(self, node):
-        self.add_c(MinSizeConstraint(node.style))
+        self.add_c(MinSize(node.style))
 
 
     def within(self, node, parent):
