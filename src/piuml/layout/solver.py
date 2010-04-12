@@ -21,11 +21,7 @@ import time
 import math
 from collections import deque
 
-from piuml.layout import PreLayout
-from piuml.data import Size, Style, Area
-
 EPSILON = 1
-
 
 class Constraint(object):
     """
@@ -422,92 +418,5 @@ class Solver(object):
         fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
         print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
 
-
-
-class ConstraintLayout(PreLayout):
-    def __init__(self):
-        PreLayout.__init__(self)
-        self.solver = Solver()
-
-    def add_c(self, c):
-        self.solver.add(c)
-
-
-    def layout(self, ast):
-        PreLayout.layout(self, ast)
-        self.solver.solve()
-
-
-    def size(self, node):
-        self.add_c(MinSizeConstraint(node.style))
-
-
-    def within(self, node, parent):
-        ns = node.style
-        ps = parent.style
-        pad = ps.padding
-
-        # calculate height of compartments as packaged element is between
-        # head and compartments
-        head = ps.head + pad.top + pad.bottom
-        h = ps.size.height - head
-        cpad = Area(head + pad.top, # area pad.top
-                pad.right,
-                pad.bottom + h,     # area pad.bottom
-                pad.left)
-        self.add_c(Within(ns, ps, cpad))
-
-
-    def top(self, *nodes):
-        def f(k1, k2):
-            self.add_c(TopEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-    def bottom(self, *nodes):
-        def f(k1, k2):
-            self.add_c(BottomEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-    def middle(self, *nodes):
-        def f(k1, k2):
-            self.add_c(MiddleEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-    def left(self, *nodes):
-        def f(k1, k2):
-            self.add_c(LeftEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-    def right(self, *nodes):
-        def f(k1, k2):
-            self.add_c(RightEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-    def center(self, *nodes):
-        def f(k1, k2):
-            self.add_c(CenterEq(k1.style, k2.style))
-        self._apply(f, nodes)
-
-
-    def hspan(self, *nodes):
-        def f(k1, k2):
-            m = k1.style.margin.right + k2.style.margin.left
-            l = self.edges.get((k1.id, k2.id), 0)
-            self.add_c(MinHDist(k1.style, k2.style, max(l, m)))
-        self._apply(f, nodes)
-
-
-    def vspan(self, *nodes):
-        def f(k1, k2):
-            m = k1.style.margin.bottom + k2.style.margin.top
-            l = self.edges.get((k1.id, k2.id), 0)
-            # span from top to bottom
-            self.add_c(MinVDist(k2.style, k1.style, max(l, m)))
-        self._apply(f, nodes)
-
-
-    def _apply(self, f, node):
-        for k1, k2 in zip(node[:-1], node[1:]):
-            f(k1, k2)
 
 # vim: sw=4:et:ai
