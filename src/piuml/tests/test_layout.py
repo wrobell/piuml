@@ -20,14 +20,14 @@
 from cStringIO import StringIO
 import unittest
 
-from piuml.layout import PreLayout
+from piuml.layout import Layout
 from piuml.parser import parse, ParseError
 
 class AlignPostprocessTestCase(unittest.TestCase):
     def test_default_simple(self):
         """Test default, simple alignment
         """
-        l = PreLayout()
+        l = Layout()
         f = StringIO("""
 class c1 "C1"
 class c2 "C2"
@@ -41,7 +41,7 @@ class c2 "C2"
     def test_invalid_align(self):
         """Test invalid align specification
         """
-        l = PreLayout()
+        l = Layout()
         f = StringIO("""
 class c1 "C1"
 class c2 "C2"
@@ -54,7 +54,7 @@ class c2 "C2"
     def test_defined_simple(self):
         """Test defined, simple alignment
         """
-        l = PreLayout()
+        l = Layout()
         f = StringIO("""
 class c1 "C1"
 class c2 "C2"
@@ -71,7 +71,7 @@ class c2 "C2"
     def test_orphaned(self):
         """Test orphaned (in alignment) elements
         """
-        l = PreLayout()
+        l = Layout()
         f = StringIO("""
 class c1 "C1"
 class c2 "C2"
@@ -93,7 +93,7 @@ class c3 "C3"
     def test_deep_align(self):
         """Test align with packaged elements
         """
-        l = PreLayout()
+        l = Layout()
         # diagram:
         # -- c --
         # |c1 c2| c4 c5
@@ -124,7 +124,7 @@ class c5 "C5"
     def test_default_interleave(self):
         """Test default align constraining with defined layout
         """
-        l = PreLayout()
+        l = Layout()
         # diagram:
         # a c d
         # b   e
