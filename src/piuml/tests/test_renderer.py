@@ -22,7 +22,9 @@ piUML rendering tests.
 """
 
 from piuml.renderer.util import st_fmt
+from piuml.renderer.mp import id2mp
 
+from uuid import uuid4 as uuid
 import unittest
 
 class StereotypeTestCase(unittest.TestCase):
@@ -45,5 +47,20 @@ class StereotypeTestCase(unittest.TestCase):
         """Test stereotypes rendering with keywords
         """
         self.assertEquals(u'<<interface>> <<t1, t2, t3>>', st_fmt(['t1', 'interface', 't2', 't3']))
+
+
+
+class MetaPostIdTestCase(unittest.TestCase):
+    """
+    Node identifiers to MetaPost tokens conversion tests.
+    """
+    def test_id2mp(self):
+        """Test id to MetaPost token conversion
+        """
+        t = id2mp(str(uuid()))
+        self.assertTrue('-' not in t)
+        for i in range(10):
+            self.assertTrue(('%s' % i) not in t, i)
+
 
 # vim: sw=4:et:ai

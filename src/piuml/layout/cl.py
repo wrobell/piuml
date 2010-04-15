@@ -17,9 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.data import lca
+from piuml.data import lca, lsb
 from piuml.layout.solver import *
-from piuml.data import Area
+from piuml.data import Area, Node
+
 
 class Layout(object):
     """
@@ -61,6 +62,7 @@ class Layout(object):
             'diagram': self._node,
             'element': self._node,
             'edge': self._edge,
+            'ielement': self._ielement,
         }
         # process in reversed order to constraint edges first
         for n in reversed(list(ast.unwind())):
@@ -69,30 +71,28 @@ class Layout(object):
                 f(n)
 
 
+    def _ielement(self, node):
+        nodes = []
+        for e in node.data['lines']:
+            p = lca(self.ast, e.tail, e.head)
+            dist = lsb(p, [e.tail, e.head])
+            self.hspan(dist[0], dist[1])
+            if e.tail.element != node.element:
+                nodes.append(e.tail)
+            if e.head.element != node.element:
+                nodes.append(e.head)
+        self.between(node, nodes)
+
+
     def _defined_align(self, align):
         """
         Process specification of alignment of nodes and assign alignment
         information to their common parent (lca).
         """
-        ids = [n.id for n in align.data]
-        p = lca(self.ast, *(n for n in align.data))
+        p = lca(self.ast, *align.data)
 
-        def span(ids):
-            span = []
-            for id in ids:
-                k = self.ast.cache[id]
-                # k at least 2 levels lower
-                if k.parent.id != p.id:
-                    pp = k.parent
-                    while pp.parent.id != p.id:
-                        pp = pp.parent
-                    span.append(pp.id)
-                else:
-                    span.append(id)
-            return span
-
-        dist = span(ids[:])
-        getattr(p.align, align.element).append(ids[:])
+        dist = lsb(p, align.data)
+        getattr(p.align, align.element).append(align.data)
         if align.element in ('top', 'middle', 'bottom'):
             p.align.hspan.append(dist)
         else: # left, center, right
@@ -107,7 +107,7 @@ class Layout(object):
          node
             Packaging node.
         """
-        packaged = [k.id for k in node if k.type == 'element']
+        packaged = [k for k in node if k.type == 'element']
         top, right, bottom, left, center, middle, hspan, vspan = node.align
 
         # summarize defined alignment
@@ -135,6 +135,9 @@ class Layout(object):
             print node.id, 'middle', middle
             print node.id, 'hspan', hspan
             print node.id, 'vspan', vspan
+            for align in node.align:
+                for nodes in align:
+                    assert not nodes or all(isinstance(k, Node) for k in nodes)
 
 
     def _node(self, node):
@@ -151,13 +154,16 @@ class Layout(object):
 
         ns = node.style
         if node.is_packaging():
-            f = self.top, self.right, self.bottom, self.left, \
+            # all the alignment functions...
+            F = self.top, self.right, self.bottom, self.left, \
                 self.center, self.middle, \
                 self.hspan, self.vspan
 
-            for f, data in zip(f, node.align):
-                for ids in data:
-                    nodes = [self.ast.cache[id] for id in ids]
+            # ... are zipped with appropriate alignment information (top,
+            # right, etc.)
+            for f, align in zip(F, node.align):
+                for nodes in align:
+                    assert not nodes or all(isinstance(k, Node) for k in nodes)
                     f(*nodes)
 
 
@@ -184,6 +190,13 @@ class Layout(object):
         """
         Constraint node to be contained within parent.
         """
+
+
+    def between(self, node, nodes):
+        """
+        Constraint node to be between other nodes.
+        """
+
 
     def top(self, *nodes):
         """
@@ -259,6 +272,12 @@ class ConstraintLayout(Layout):
                 pad.bottom + h,     # area pad.bottom
                 pad.left)
         self.add_c(Within(ns, ps, cpad))
+
+
+    def between(self, node, nodes):
+        ns = node.style
+        others = [n.style for n in nodes]
+        self.add_c(Between(ns, others))
 
 
     def top(self, *nodes):

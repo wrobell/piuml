@@ -442,4 +442,42 @@ class Within(Constraint):
         return changed
 
 
+
+class Between(Constraint):
+    """
+    Keep a rectangle between other rectangles.
+
+    :Attributes:
+     a
+        Rectangle to be aligned.
+     others
+        Alignment rectangles.
+    """
+    def __init__(self, a, others):
+        super(Between, self).__init__(a, *others)
+        self.a = a
+        self.others = others
+
+
+    def __call__(self):
+        rects = sorted(self.others, cmp=lambda a, b: cmp(a.ur.x, b.ll.x))
+        minx = rects[0]
+        maxx = rects[-1]
+
+        rects = sorted(self.others, cmp=lambda a, b: cmp(a.ur.y, b.ll.y))
+        miny = rects[0]
+        maxy = rects[-1]
+
+        x = (minx.ur.x + maxx.ll.x) / 2.0
+        y = (miny.ur.y + maxy.ll.y) / 2.0
+
+        a = self.a
+        w, h = a.size
+        a.ll.x = x
+        a.ll.y = y
+        a.ur.x = a.ll.x + w
+        a.ur.y = a.ll.y + h
+        return []
+
+
 # vim: sw=4:et:ai

@@ -171,7 +171,7 @@ class Node(list):
         self.style = BoxStyle()
         self.align = AlignConstraints([], [], [], [], [], [], [], [])
 
-        # few exceptions for default style
+        # few exceptions to default style
         if element == 'actor':
             self.style.padding = Area(0, 0, 0, 0)
             self.style.size = Size(40, 60)
@@ -179,6 +179,9 @@ class Node(list):
             self.style.padding = Area(3, 18, 3, 18)
         elif element in ('artifact', 'component'):
             self.style.icon_size = Size(10, 15)
+        elif element == 'fdiface':
+            self.style.min_size = Size(30, 30)
+            self.style.size = Size(30, 30)
 
 
     def is_packaging(self):
@@ -197,6 +200,20 @@ class Node(list):
 
     def __str__(self):
         return self.element + ': ' + '[%s]' % ','.join(str(k) for k in self)
+
+
+    def __hash__(self):
+        """
+        AST nodes are hashed with their id's hash value.
+        """
+        return self.id.__hash__()
+
+
+    def __eq__(self, other):
+        """
+        Equality comparision of AST nodes is their id equality.
+        """
+        return isinstance(other, Node) and self.id == other.id
 
 
 class NodeList(Node):
@@ -231,7 +248,7 @@ class AST(Node):
         self.constraints = []
 
     def reorder(self):
-        self.order = [k.id for k in self.unwind()]
+        self.order = [k for k in self.unwind()]
 
 
 class Align(NodeList):
@@ -280,7 +297,7 @@ def lca(ast, *args):
         p = set()
         k = n
         while k.parent:
-            p.add(k.parent.id)
+            p.add(k.parent)
             k = k.parent
         parents.append(p)
     p = parents.pop()
@@ -288,7 +305,25 @@ def lca(ast, *args):
         p.intersection_update(parents.pop())
 
     data = sorted(p, key=ast.order.index)
-    return ast.cache[data[-1]]
+    return data[-1]
+
+
+def lsb(parent, kids):
+    """
+    Given parent node and its (direct or non-direct) descendants find
+    nodes, which are direct descendants of parent (or are siblings).
+    """
+    siblings = []
+    for k in kids:
+        # k at least 2 levels lower
+        if k.parent != parent:
+            pp = k.parent
+            while pp.parent != parent:
+                pp = pp.parent
+            siblings.append(pp)
+        else:
+            siblings.append(k)
+    return siblings
 
 
 # vim: sw=4:et:ai

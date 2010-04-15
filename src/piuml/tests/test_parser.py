@@ -24,7 +24,6 @@ piUML language parser tests.
 import unittest
 from cStringIO import StringIO
 
-from piuml.data import AST, Node, lca
 from piuml.parser import parse, ParseError, UMLError, st_parse
 
 
@@ -414,7 +413,9 @@ c3 == c1
         ast = parse(f)
         dirs = [n.data['direction'] for n in ast.unwind() \
             if n.element == 'association']
-        self.assertEquals(['head', 'tail', None], dirs)
+        self.assertEquals('c2', dirs[0].id)
+        self.assertEquals('c2', dirs[1].id)
+        self.assertFalse(dirs[2])
 
 
     def test_association_name(self):
@@ -477,26 +478,6 @@ s == m
         ast = parse(f)
         exts = [n for n in ast.unwind() if n.element == 'extension']
         self.assertEquals(1, len(exts))
-       
-
-
-class LCATestCase(unittest.TestCase):
-    def test_simple(self):
-        """Test LCA for simple case
-        """
-        n1 = AST()
-        n1.id = 'n1'
-        n1.cache['n1'] = n1
-
-        n2 = Node('a', 'a', id='n2')
-        n3 = Node('a', 'a', id='n3')
-        n1.reorder()
-        n1.extend((n2, n3))
-        n2.parent = n1
-        n3.parent = n1
-
-        p = lca(n1, n2, n3)
-        self.assertEquals('n1', p.id)
 
 
 # vim: sw=4:et:ai

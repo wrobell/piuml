@@ -47,10 +47,14 @@ def st_fmt(stereotypes):
 
 
 def id2mp(id):
-    id = id.replace('a', 'aa').replace('1', 'a')
-    id = id.replace('b', 'bb').replace('2', 'b')
-    id = id.replace('c', 'cc').replace('3', 'c')
-    id = id.replace('dir', 'dirdir')
+    """
+    Convert and id to MetaPost token.
+    """
+    id = id.replace('H', 'HH').replace('-', 'H')
+    id = id.replace('dir', 'dirdir') # dir is mp keyword
+
+    for l, d in zip(string.uppercase, string.digits):
+        id = id.replace(l, l + l).replace(d, l)
     return id
 
 
@@ -415,13 +419,23 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
          node
             piUML language node instance representing the element.
         """
+        print node.style.ll.x, node.style.ll.y
+        print node.style.size
+        pos = node.style.ll
         self._draw("""
 path pp, pr;
 pp := fullcircle scaled 14;
 pr := halfcircle scaled 20 rotated 90;
-draw pp shifted (50, 150);
-draw pr shifted (50, 150);
-        """)
+draw pp shifted ({pos.x}, {pos.y});
+draw pr shifted ({pos.x}, {pos.y});
+path {id}Shape;
+pair {id}.required, {id}.provided;
+{id}.required := ({pos.x} - 13, {pos.y});
+{id}.provided := ({pos.x} + 10, {pos.y});
+{id}Shape := {id}.required -- {id}.provided;
+draw ({pos.x} - 13, {pos.y}) -- ({pos.x} - 10, {pos.y});
+draw ({pos.x} + 7, {pos.y}) -- ({pos.x} + 10, {pos.y});
+        """.format(id=id2mp(node.id), pos=pos))
 
 
     def n_edge(self, edge):
@@ -435,6 +449,7 @@ draw pr shifted (50, 150);
         F = {
             'association': self._association,
             'commentline': self._commentline,
+            'connector': self._association,
             'dependency': self._dependency,
             'extension': self._association,
             'generalization': self._dependency,
@@ -537,6 +552,12 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
     -- (xpart {id}.e, ypart {id}Comp{cid}.n + {pad.top});
         """.format(id=id, cid=c.id, pad=pad))
 
+        # create path
+        self._draw("""
+path {id}Shape;
+{id}Shape := bpath {id};
+        """.format(id=id))
+
 
     def _name_s(self, node, underline=False, bold=True):
         name = qstr(node.name)
@@ -608,6 +629,24 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
             # todo: ... and return, with extension typed by an association we
             # will deal in the future
             return
+        elif edge.element == 'connector':
+            t = edge.tail
+            h = edge.head
+            iface = ''
+            tp = 'c'
+            hp = 'c'
+            print edge.tail.element, edge.tail.data
+            print edge.head.element, edge.head.data
+            if t.element == 'fdiface':
+                tp = 'provided' if t.data['symbol'] == '(o' else 'required'
+                iface = t.name
+            if h.element == 'fdiface':
+                hp = 'required' if h.data['symbol'] == '(o' else 'provided'
+                iface = h.name
+            self._edge(edge, tail_point=tp, head_point=hp, label=iface)
+            # todo: ... and return, with connector typed by an association we
+            # will deal in the future
+            return
 
         END = {
             'none': 'x',
@@ -665,7 +704,10 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         self._edge(edge, dashed=True)
 
 
-    def _edge(self, edge,
+    def _edge(self,
+            edge,
+            tail_point='c',
+            head_point='c',
             tail_arrow=None,
             head_arrow=None,
             dashed=False,
@@ -676,6 +718,10 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
         :Parameters:
          edge
             piUML edge instance.
+         tail_point
+            Tail connection point.
+         head_point
+            Head connection point.
          tail_arrow
             Type of arrow to be drawn at edge's tail end.
          head_arrow
@@ -708,14 +754,14 @@ draw (xpart {id}.w, ypart {id}Comp{cid}.n + {pad.top})
 
         path = """
 path tempPath;
-tempPath := {t}.c -- {h}.c cutbefore bpath {t} cutafter bpath {h};
+tempPath := {t}.{tpoint} -- {h}.{hpoint} cutbefore {t}Shape cutafter {h}Shape;
 """
         path += 'draw tempPath'
         if dashed:
             path += ' dashed evenly scaled 1.2'
         path += ';\n'
 
-        self._draw(path.format(t=t, h=h))
+        self._draw(path.format(t=t, h=h, tpoint=tail_point, hpoint=head_point))
         if ta:
             self._draw(ta)
         if ha:
