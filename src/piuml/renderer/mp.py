@@ -342,7 +342,7 @@ end
         comps = self._compartments(node)
 
         # draw element and its compartments
-        self._element(node, comps, border=border, underline=underline, bold=bold)
+        self._node(node, comps, border=border, underline=underline, bold=bold)
 
         # custom shapes
         if node.element in ('package', 'profile'):
@@ -462,7 +462,7 @@ draw ({pos.x} + 7, {pos.y}) -- ({pos.x} + 10, {pos.y});
         f(edge)
 
 
-    def _element(self, node, comps, border=True, underline=False, bold=True):
+    def _node(self, node, comps, border=True, underline=False, bold=True):
         """
         Draw name and compartments of an element.
 
