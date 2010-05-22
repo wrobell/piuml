@@ -307,15 +307,11 @@ endfig;
 end
 """);
 
-        def w(fout):
-            with open(fout, 'w') as f:
+        if self.filetype == 'mp':
+            with open(self.output, 'w') as f:
                 for l in self._defs + self._draws:
                     f.write(l)
                     f.write('\n')
-
-
-        if self.filetype == 'mp':
-            w(self.output)
         else:
             save(self.output, self._defs + self._draws)
 
