@@ -92,11 +92,11 @@ class BoxStyle(Style):
 
     :Attributes:
      ll
-      Lower left corner.
+        Lower left corner.
      ur
-      Upper right corner.
+        Upper right corner.
      head
-      Head height.
+        Head height.
     """
     def __init__(self):
         self.ll = Pos(0, 0)
