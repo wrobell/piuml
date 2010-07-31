@@ -42,6 +42,7 @@ n =>=> 'has style' style
 #n ==> n # parent
 #n ==> n # 0..* children
 
-align=center: n e
+:layout:
+    center: n e
 
 # vim: sw=4:et:ai
