@@ -62,6 +62,7 @@ def qstr(text):
     """
     Quote string to render it with TeX.
     """
+    text = text.replace('_', '\\_')
     t = ['\\hbox{%s}' % s for s in text.split('\\n')]
     if len(t) > 1:
         return '\\vbox{' + ''.join(t) + '}'
@@ -136,7 +137,7 @@ beginfig(1);
 """)
             ccounts = {}
             for k in ast.unwind():
-                if k.type != 'element':
+                if k.type not in ('element', 'edge'):
                     continue
 
                 fmt = 'size("{id},{type}")(btex {text} etex);\n'
@@ -583,8 +584,8 @@ path {id}Shape;
          node
             Element's node.
         """
-        attrs = [f.name for f in node if f.element == 'attribute']
-        opers = [f.name for f in node if f.element == 'operation']
+        attrs = [qstr(f.name) for f in node if f.element == 'attribute']
+        opers = [qstr(f.name) for f in node if f.element == 'operation']
         st_attrs = [f for f in node if f.element == 'stattributes']
 
         cids = (c for c in string.uppercase)
