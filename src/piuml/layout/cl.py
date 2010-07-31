@@ -177,8 +177,9 @@ class Layout(object):
         """
         t, h = edge.tail, edge.head
         # fixme: there can be multiple edges
-        self.edges[t.id, h.id] = 100
-        self.edges[h.id, t.id] = 100
+        length = edge.style.min_size[0]
+        self.edges[t.id, h.id] = length
+        self.edges[h.id, t.id] = length
 
 
     def size(self, node):
