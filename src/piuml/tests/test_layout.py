@@ -34,8 +34,8 @@ class c2 "C2"
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals([['c1', 'c2']], ast.align.middle)
-        self.assertEquals([['c1', 'c2']], ast.align.hspan)
+        self.assertEquals('[[c1, c2]]', str(ast.align.middle))
+        self.assertEquals('[[c1, c2]]', str(ast.align.hspan))
 
 
     def test_invalid_align(self):
@@ -64,8 +64,8 @@ class c2 "C2"
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals([['c2', 'c1']], ast.align.left)
-        self.assertEquals([['c2', 'c1']], ast.align.vspan)
+        self.assertEquals('[[c2, c1]]', str(ast.align.left))
+        self.assertEquals('[[c2, c1]]', str(ast.align.vspan))
 
 
     def test_orphaned(self):
@@ -82,12 +82,12 @@ class c3 "C3"
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals([['c1', 'c3']], ast.align.left)
-        self.assertEquals([['c1', 'c3']], ast.align.vspan)
+        self.assertEquals('[[c1, c3]]', str(ast.align.left))
+        self.assertEquals('[[c1, c3]]', str(ast.align.vspan))
 
         # orphaned element alignment
-        self.assertEquals([['c1', 'c2']], ast.align.hspan)
-        self.assertEquals([['c1', 'c2']], ast.align.middle)
+        self.assertEquals('[[c1, c2]]', str(ast.align.hspan))
+        self.assertEquals('[[c1, c2]]', str(ast.align.middle))
 
 
     def test_deep_align(self):
@@ -103,7 +103,7 @@ class c3 "C3"
         f = StringIO("""
 class c "C"
     class c1 "C1"
-        class c2 "C2"
+    class c2 "C2"
 class c3 "C3"
 class c4 "C4"
 class c5 "C5"
@@ -113,12 +113,12 @@ class c5 "C5"
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals([['c', 'c4', 'c5']], ast.align.middle)
-        self.assertEquals([['c', 'c4', 'c5']], ast.align.hspan)
+        self.assertEquals('[[c, c4, c5]]', str(ast.align.middle))
+        self.assertEquals('[[c, c4, c5]]', str(ast.align.hspan))
 
         # c2 is replaced with c - lca
-        self.assertEquals([['c', 'c3']], ast.align.vspan)
-        self.assertEquals([['c2', 'c3']], ast.align.left)
+        self.assertEquals('[[c, c3]]', str(ast.align.vspan))
+        self.assertEquals('[[c2, c3]]', str(ast.align.left))
 
 
     def test_default_interleave(self):
@@ -143,12 +143,42 @@ class e "C5"
         l.create(ast)
 
         # default and defined alignment plays well
-        self.assertEquals([['a', 'c', 'd']], ast.align.middle)
-        self.assertEquals([['a', 'c', 'd']], ast.align.hspan)
+        self.assertEquals('[[a, c, d]]', str(ast.align.middle))
+        self.assertEquals('[[a, c, d]]', str(ast.align.hspan))
 
         # check defined alignment
-        self.assertEquals([['a', 'b'], ['d', 'e']], ast.align.vspan)
-        self.assertEquals([['a', 'b'], ['d', 'e']], ast.align.center)
+        self.assertEquals('[[a, b], [d, e]]', str(ast.align.vspan))
+        self.assertEquals('[[a, b], [d, e]]', str(ast.align.center))
+
+
+    def test_deep_default_interleave(self):
+        """Test deep default align constraining with defined layout
+        """
+        l = Layout()
+        # diagram:
+        # -- c --
+        # |c1 c2|
+        # -------
+        #  c3 c4
+        #
+        f = StringIO("""
+class c "C"
+    class c1 "C1"
+    class c2 "C2"
+class c3 "C3"
+class c4 "C4"
+
+:layout:
+    center: c1 c3
+    center: c2 c4
+""")
+        ast = parse(f)
+        l.create(ast)
+        self.assertEquals('[[c, c3], [c, c4]]', str(ast.align.vspan))
+        # it is (c, c) due to (c1, c3) and (c2, c4)
+        self.assertEquals('[[c]]', str(ast.align.hspan))
+        self.assertEquals('[[c]]', str(ast.align.middle))
+        self.assertEquals('[[c1, c3], [c2, c4]]', str(ast.align.center))
 
 
 # vim: sw=4:et:ai

@@ -31,7 +31,7 @@ class UMLDiagram(Figure):
         img = data[0][0]
 
         uri = img['uri']
-        fin = uri + '.txt'
+        fin = uri + '.pml'
         fname = os.path.basename(uri) + '.svg'
         fout = os.path.join(self.app.builder.outdir, '_images', fname)
         

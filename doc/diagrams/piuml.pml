@@ -13,7 +13,8 @@ cr -> <<create>> m
 cp <- cl
 cl <- cr
 
-align=center: cp f
-align=center: cr m
+:layout:
+    center: cp f
+    center: cr m
 
 # vim: sw=4:et:ai

@@ -137,7 +137,7 @@ beginfig(1);
 """)
             ccounts = {}
             for k in ast.unwind():
-                if k.type not in ('element', 'edge'):
+                if k.type not in ('element', 'line'):
                     continue
 
                 fmt = 'size("{id},{type}")(btex {text} etex);\n'
@@ -326,9 +326,9 @@ end
             piUML language node instance.
         """
         id = id2mp(node.id)
-        underline = node.element == 'instance'
-        border = node.element not in ('usecase', 'actor', 'comment')
-        bold = node.element != 'comment'
+        underline = node.cls == 'instance'
+        border = node.cls not in ('usecase', 'actor', 'comment')
+        bold = node.cls != 'comment'
         style = node.style
         pad = style.padding
         ipad = 5
@@ -342,19 +342,19 @@ end
         self._node(node, comps, border=border, underline=underline, bold=bold)
 
         # custom shapes
-        if node.element in ('package', 'profile'):
+        if node.cls in ('package', 'profile'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (0, 20) -- {id}.nw + (50, 20) -- {id}.nw + (50, 0);
 """.format(id=id))
 
-        elif node.element in ('node', 'device'):
+        elif node.cls in ('node', 'device'):
             self._draw("""
 draw {id}.nw -- {id}.nw + (10, 10) -- {id}.ne + (10, 10) -- {id}.se + (10, 10) -- {id}.se;
 draw {id}.ne --  {id}.ne + (10, 10);
 """.format(id=id))
 
         # icons
-        if node.element == 'component':
+        if node.cls == 'component':
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
 pickup iconpen;
@@ -372,7 +372,7 @@ draw {p} - ({w} + {w} / 3, 3 * {h} / 5) -- {p} - ({w} - {w} / 3, 3 * {h} / 5)
 pickup defaultpen;
 """.format(p=p, w=icon_w, h=icon_h))
 
-        elif node.element == 'artifact':
+        elif node.cls == 'artifact':
             p = '{id}.ne - ({ipad}, {ipad})'.format(id=id, ipad=ipad)
             self._draw("""
 pickup iconpen;
@@ -381,13 +381,13 @@ draw {p} - ({w}, 0) -- {p} - (5, 0)-- {p} - (0, 5)
 draw {p} - (5, 0) -- {p} - (5, 5) -- {p} - (0, 5);
 pickup defaultpen;
 """.format(p=p, w=icon_w, h=icon_h))
-        elif node.element == 'usecase':
+        elif node.cls == 'usecase':
             self._draw("""
 draw fullcircle
     xscaled (xpart {id}.w - xpart {id}.e)
     yscaled (ypart {id}.s - ypart {id}.n) shifted {id}.c;
 """.format(id=id));
-        elif node.element == 'actor':
+        elif node.cls == 'actor':
             self._draw("""
 % head
 draw {id}.n .. {id}.n + (10, -10) .. {id}.n + (0, -20)
@@ -400,7 +400,7 @@ draw {id}.n + (-20, -35) -- {id}.n + (0, -25) -- {id}.n + (20, -35);
 draw {id}.n + (-20, -60) -- {id}.n + (0, -40) -- {id}.n + (20, -60);
             """.format(id=id));
 
-        elif node.element == 'comment':
+        elif node.cls == 'comment':
             self._draw("""
 draw {id}.nw -- {id}.ne - (15, 0) -- {id}.ne - (0, 15)
     -- {id}.se -- {id}.sw -- cycle;
@@ -435,13 +435,13 @@ draw ({pos.x} + 7, {pos.y}) -- ({pos.x} + 10, {pos.y});
         """.format(id=id2mp(node.id), pos=pos))
 
 
-    def n_edge(self, edge):
+    def n_line(self, line):
         """
-        Draw an edge.
+        Draw a line.
 
         :Parameters:
-         edge
-            piUML edge instance.
+         line
+            piUML line instance.
         """
         F = {
             'association': self._association,
@@ -451,12 +451,12 @@ draw ({pos.x} + 7, {pos.y}) -- ({pos.x} + 10, {pos.y});
             'extension': self._association,
             'generalization': self._dependency,
         }
-        f = F.get(edge.element)
+        f = F.get(line.cls)
         if not f:
-            print 'WARN: no rendering for edge', edge.element
+            print 'WARN: no rendering for line', line.cls
             return
 
-        f(edge)
+        f(line)
 
 
     def _node(self, node, comps, border=True, underline=False, bold=True):
@@ -484,14 +484,14 @@ boxit.{id}();
 {id}.ne = {id}.sw + ({w}, {h});
 boxit.{id}Name(btex {name} etex);
 
-        """.format(id=id, nc=node.name, type=node.element,
+        """.format(id=id, nc=node.name, type=node.cls,
             name=name,
             x=float(style.ll.x), y=float(style.ll.y),
             w=style.size.width, h=style.size.height))
 
-        if node.element == 'usecase':
+        if node.cls == 'usecase':
             self._def('{id}Name.c = {id}.c;'.format(id=id))
-        elif node.element == 'actor':
+        elif node.cls == 'actor':
             self._def('{id}Name.n + (0, {pad.bottom}) = {id}.s;'.format(id=id, pad=pad))
         else:
             self._def('{id}Name.n + (0, {pad.top}) = {id}.n;'.format(id=id,
@@ -584,9 +584,9 @@ path {id}Shape;
          node
             Element's node.
         """
-        attrs = [qstr(f.name) for f in node if f.element == 'attribute']
-        opers = [qstr(f.name) for f in node if f.element == 'operation']
-        st_attrs = [f for f in node if f.element == 'stattributes']
+        attrs = [qstr(f.name) for f in node if f.cls == 'attribute']
+        opers = [qstr(f.name) for f in node if f.cls == 'operation']
+        st_attrs = [f for f in node if f.cls == 'stattributes']
 
         cids = (c for c in string.uppercase)
         data = []
@@ -602,45 +602,45 @@ path {id}Shape;
         return data
 
 
-    def _association(self, edge):
+    def _association(self, line):
         """
         Draw association and extension UML lines.
 
         :Parameters:
-         edge
-            piUML edge instance.
+         line
+            piUML line instance.
         """
-        if edge.element == 'extension':
+        if line.cls == 'extension':
             ha = None
             ta = None
-            if edge.tail.element == 'metaclass':
+            if line.tail.cls == 'metaclass':
                 ta = 'blacktriangle'
-            elif edge.head.element == 'metaclass':
+            elif line.head.cls == 'metaclass':
                 ha = 'blacktriangle'
             else:
                 assert False
 
             # draw extension...
-            self._edge(edge, tail_arrow=ta, head_arrow=ha)
+            self._line(line, tail_arrow=ta, head_arrow=ha)
 
             # todo: ... and return, with extension typed by an association we
             # will deal in the future
             return
-        elif edge.element == 'connector':
-            t = edge.tail
-            h = edge.head
+        elif line.cls == 'connector':
+            t = line.tail
+            h = line.head
             iface = ''
             tp = 'c'
             hp = 'c'
-            print edge.tail.element, edge.tail.data
-            print edge.head.element, edge.head.data
-            if t.element == 'fdiface':
+            print line.tail.cls, line.tail.data
+            print line.head.cls, line.head.data
+            if t.cls == 'fdiface':
                 tp = 'provided' if t.data['symbol'] == '(o' else 'required'
                 iface = t.name
-            if h.element == 'fdiface':
+            if h.cls == 'fdiface':
                 hp = 'required' if h.data['symbol'] == '(o' else 'provided'
                 iface = h.name
-            self._edge(edge, tail_point=tp, head_point=hp, label=iface)
+            self._line(line, tail_point=tp, head_point=hp, label=iface)
             # todo: ... and return, with connector typed by an association we
             # will deal in the future
             return
@@ -652,57 +652,57 @@ path {id}Shape;
             'navigable': 'arrow',
             'unknown': None,
         }
-        ta = END[edge.data['tail'][-1]]
-        ha = END[edge.data['head'][-1]]
+        ta = END[line.data['tail'][-1]]
+        ha = END[line.data['head'][-1]]
 
-        name = edge.name
-        dir = edge.data['direction']
-        if dir is edge.tail:
+        name = line.name
+        dir = line.data['direction']
+        if dir is line.tail:
             name = name + '\\;$\\blacktriangleright$'
-        elif dir is edge.head:
+        elif dir is line.head:
             name = '$\\blacktriangleleft$\\;' + name
 
-        self._edge(edge, tail_arrow=ta, head_arrow=ha, label=name)
+        self._line(line, tail_arrow=ta, head_arrow=ha, label=name)
 
 
-    def _dependency(self, edge):
+    def _dependency(self, line):
         """
         Draw dependency, generalization and realization UML lines.
 
         :Parameters:
-         edge
-            piUML edge instance.
+         line
+            piUML line instance.
         """
-        dashed = edge.element != 'generalization'
+        dashed = line.cls != 'generalization'
         ta = None
-        ha = 'triangle' if edge.element == 'generalization' else 'arrow'
+        ha = 'triangle' if line.cls == 'generalization' else 'arrow'
 
         st = ''
-        if edge.stereotypes:
-            stl = edge.stereotypes[:]
-            if 'realization' in edge.stereotypes:
+        if line.stereotypes:
+            stl = line.stereotypes[:]
+            if 'realization' in line.stereotypes:
                 stl.remove('realization')
                 ha = 'triangle'
             st = st_fmt(stl)
 
-        if edge.tail is edge.data['supplier']:
+        if line.tail is line.data['supplier']:
             ta, ha = ha, ta
-        self._edge(edge, tail_arrow=ta, head_arrow=ha, dashed=dashed, label=st)
+        self._line(line, tail_arrow=ta, head_arrow=ha, dashed=dashed, label=st)
 
 
-    def _commentline(self, edge):
+    def _commentline(self, line):
         """
         Draw comment line.
 
         :Parameters:
-         edge
-            piUML edge instance.
+         line
+            piUML line instance.
         """
-        self._edge(edge, dashed=True)
+        self._line(line, dashed=True)
 
 
-    def _edge(self,
-            edge,
+    def _line(self,
+            line,
             tail_point='c',
             head_point='c',
             tail_arrow=None,
@@ -710,24 +710,24 @@ path {id}Shape;
             dashed=False,
             label=''):
         """
-        Draw a line for specified edge.
+        Draw a line for specified line.
 
         :Parameters:
-         edge
-            piUML edge instance.
+         line
+            piUML line instance.
          tail_point
             Tail connection point.
          head_point
             Head connection point.
          tail_arrow
-            Type of arrow to be drawn at edge's tail end.
+            Type of arrow to be drawn at line's tail end.
          head_arrow
-            Type of arrow to be drawn at edge's head end.
+            Type of arrow to be drawn at line's head end.
          dashed
             Draw dashed line if true.
         """
-        t = id2mp(edge.tail.id)
-        h = id2mp(edge.head.id)
+        t = id2mp(line.tail.id)
+        h = id2mp(line.head.id)
 
         tp = 'point length tempPath of tempPath'
         hp = 'point 0 of tempPath'

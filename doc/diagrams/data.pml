@@ -8,7 +8,14 @@ class n "Node: list"
     : data: dict = {}
     : is_packaging(): bool
 
-class e "Edge"
+class e "Element"
+class f "Feature"
+class ie "IElement"
+class st "Section"
+class d "Diagram"
+class an "Align"
+
+class l "Line"
     : tail: Node
     : head: Node
 
@@ -34,7 +41,7 @@ class s "Size: tuple"
     : width: float
     : height: float
 
-e => n
+l => n
 #n -> style <<AAAA>>
 n =>=> 'has style' style
     : [1]
@@ -43,6 +50,6 @@ n =>=> 'has style' style
 #n ==> n # 0..* children
 
 :layout:
-    center: n e
+    center: n l
 
 # vim: sw=4:et:ai

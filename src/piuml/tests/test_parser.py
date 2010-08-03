@@ -138,7 +138,7 @@ class b 'B' <<bbb>>
 a -> <<test>> b
 """)
         ast = parse(f)
-        deps = [n for n in ast.unwind() if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.cls == 'dependency']
         dep = deps[0]
         self.assertEquals(['test'], dep.stereotypes)
 
@@ -153,7 +153,7 @@ class b 'B' <<bbb>>
 a == 'a name' <<t1, t2>> b
 """)
         ast = parse(f)
-        assocs = [n for n in ast.unwind() if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.cls == 'association']
         assoc = assocs[0]
         self.assertEquals('a name', assoc.name)
         self.assertEquals(['t1', 't2'], assoc.stereotypes)
@@ -214,7 +214,7 @@ c1 == c2
 """)
         ast = parse(f)
         ast.id = 'diagram'
-        assocs = [n for n in ast.unwind() if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.cls == 'association']
         self.assertEquals(1, len(assocs))
 
         assoc = assocs[0]
@@ -265,7 +265,7 @@ class c3 "Test3"
 c2 == c3
 """)
         ast = parse(f)
-        data = [n.parent.type for n in ast.unwind() if n.element == 'class']
+        data = [n.parent.type for n in ast.unwind() if n.cls == 'class']
         self.assertEquals(['diagram', 'element'] * 2, data)
 
 
@@ -329,7 +329,7 @@ p1 -m> p2
 p1 -i> p2
 """)
         ast = parse(f)
-        deps = [n for n in ast.unwind() if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.cls == 'dependency']
         self.assertEquals(['merge'], deps[0].stereotypes)
         self.assertEquals(['import'], deps[1].stereotypes)
 
@@ -369,7 +369,7 @@ u1 -i> u2
 u1 -e> u2
 """)
         ast = parse(f)
-        deps = [n for n in ast.unwind() if n.element == 'dependency']
+        deps = [n for n in ast.unwind() if n.cls == 'dependency']
         self.assertEquals(['include'], deps[0].stereotypes)
         self.assertEquals(['extend'], deps[1].stereotypes)
 
@@ -412,7 +412,7 @@ c3 == c1
 """)
         ast = parse(f)
         dirs = [n.data['direction'] for n in ast.unwind() \
-            if n.element == 'association']
+            if n.cls == 'association']
         self.assertEquals('c2', dirs[0].id)
         self.assertEquals('c2', dirs[1].id)
         self.assertFalse(dirs[2])
@@ -428,7 +428,7 @@ class c2 "C2"
 c1 == "An association" c2
 """)
         ast = parse(f)
-        names = [n.name for n in ast.unwind() if n.element == 'association']
+        names = [n.name for n in ast.unwind() if n.cls == 'association']
         self.assertEquals(['An association'], names)
 
 
@@ -458,7 +458,7 @@ c1 == "An association" c2
     :: head [0..n]
 """)
         ast = parse(f)
-        assocs = [n for n in ast.unwind() if n.element == 'association']
+        assocs = [n for n in ast.unwind() if n.cls == 'association']
         self.assertEquals(['An association'], [n.name for n in assocs])
         assoc = assocs[0]
         self.assertEquals(0, len(assoc))
@@ -476,7 +476,7 @@ metaclass m "M"
 s == m
 """)
         ast = parse(f)
-        exts = [n for n in ast.unwind() if n.element == 'extension']
+        exts = [n for n in ast.unwind() if n.cls == 'extension']
         self.assertEquals(1, len(exts))
 
 

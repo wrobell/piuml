@@ -25,7 +25,8 @@ from spark import GenericScanner, GenericParser, GenericASTTraversal
 
 import re
 
-from piuml.data import Align, AST, Node, Edge, ELEMENTS, KEYWORDS
+from piuml.data import Diagram, Element, Feature, IElement, Line, \
+    Section, Align, Dummy, ELEMENTS, KEYWORDS
 
 class ParseError(Exception):
     """
@@ -243,7 +244,7 @@ class piUMLParser(GenericParser):
     """
     def __init__(self):
         GenericParser.__init__(self, 'expr')
-        ast = self.ast = AST()
+        ast = self.ast = Diagram()
         ast.cache = NodeCache()
         ast.cache[ast.id] = self.ast
 
@@ -298,16 +299,16 @@ class piUMLParser(GenericParser):
         """
         self._trim(args)
 
-        element = args[0].value.strip()
-        indent = args[0].value.split(element)[0]
+        cls = args[0].value.strip()
+        indent = args[0].value.split(cls)[0]
         id = args[1].value
         name = args[2].value
 
-        n = Node('element', element, name=name)
+        n = Element(cls, name=name)
         n.id = id
 
-        if element in KEYWORDS:
-            n.stereotypes.insert(0, element)
+        if cls in KEYWORDS:
+            n.stereotypes.insert(0, cls)
 
         self.ast.cache[id] = n
         self._set_parent(indent, n)
@@ -358,7 +359,7 @@ class piUMLParser(GenericParser):
         symbol = args[1].value
         if args[0].type == 'FDIFACE':
             symbol, name = name, symbol
-        n = Node('ielement', 'fdiface', name)
+        n = IElement('fdiface', name)
         n.data['symbol'] = symbol
         n.data['dependency'] = None
         n.data['assembly'] = None
@@ -389,20 +390,20 @@ class piUMLParser(GenericParser):
                 del args[t - i -1]
 
 
-    def _edge(self, element, tail, head, stereotypes=None, data=None):
+    def _line(self, cls, tail, head, stereotypes=None, data=None):
 
         if data is None:
             data = {}
         if stereotypes is None:
             stereotypes = ()
 
-        edge = Edge('edge', element, tail, head, data=data)
+        line = Line(cls, tail, head, data=data)
 
-        edge.stereotypes.extend(stereotypes)
+        line.stereotypes.extend(stereotypes)
 
-        self._set_parent('', edge)
-        self.ast.cache[edge.id] = edge
-        return edge
+        self._set_parent('', line)
+        self.ast.cache[line.id] = line
+        return line
 
 
     def _get_ends(self, args):
@@ -450,13 +451,13 @@ class piUMLParser(GenericParser):
                     else t if '=<=' in v \
                     else None,
         }
-        e = self._edge('association', t, h, data=data, stereotypes=stereotypes)
+        e = self._line('association', t, h, data=data, stereotypes=stereotypes)
         if name:
             e.name = name
 
-        t = e.tail.element, e.head.element
+        t = e.tail.cls, e.head.cls
         if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
-            e.element = 'extension'
+            e.cls = 'extension'
 
         return e
 
@@ -488,11 +489,11 @@ class piUMLParser(GenericParser):
 
         assert args[0].type == 'ID' and args[2].type == 'ID'
 
-        e = self._edge('dependency', *self._get_ends(args), stereotypes=stereotypes)
+        e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
         e.data['supplier'] = e.tail if v[0] == '<' else e.head
 
         if dt and dt in 'ime':
-            t = e.tail.element, e.head.element
+            t = e.tail.cls, e.head.cls
             t_p = 'package', 'package'
             t_u = 'usecase', 'usecase'
 
@@ -522,7 +523,7 @@ class piUMLParser(GenericParser):
         """
         self._trim(args)
         v = args[1].value
-        n = self._edge('generalization', *self._get_ends(args))
+        n = self._line('generalization', *self._get_ends(args))
         n.data['supplier'] = n.tail if v == '<=' else n.head
         return n
 
@@ -534,9 +535,9 @@ class piUMLParser(GenericParser):
         self._trim(args)
         tail, head = self._get_ends(args)
         # one of ends shall be comment
-        if not (tail.element == 'comment') ^ (head.element == 'comment'):
+        if not (tail.cls == 'comment') ^ (head.cls == 'comment'):
             raise UMLError('One of comment line ends shall be comment')
-        n = self._edge('commentline', tail, head)
+        n = self._line('commentline', tail, head)
         return n
 
 
@@ -558,14 +559,14 @@ class piUMLParser(GenericParser):
             n1 = self.ast.cache[id1]
             n2 = self.ast.cache[id2]
 
-            if n1.element != 'component':
+            if n1.cls != 'component':
                 raise UMLError(error_fmt % n1.id)
-            if n2.element != 'component':
+            if n2.cls != 'component':
                 raise UMLError(error_fmt % n2.id)
 
-            c1 = self._edge('connector', n1, iface)
-            c2 = self._edge('connector', iface, n2)
-            n = Node('connector', 'assembly')
+            c1 = self._line('connector', n1, iface)
+            c2 = self._line('connector', iface, n2)
+            n = IElement('assembly')
             n.data['interface'] = iface
             iface.data['assembly'] = n
             iface.data['lines'].extend((c1, c2))
@@ -582,10 +583,10 @@ class piUMLParser(GenericParser):
                 iface = tail = assembly.data['interface']
                 head = n
 
-            if n.element != 'component':
+            if n.cls != 'component':
                 raise UMLError(error_fmt % n.id)
 
-            c = self._edge('connector', tail, head)
+            c = self._line('connector', tail, head)
             iface.data['lines'].append(c)
             return assembly
 
@@ -620,7 +621,7 @@ class piUMLParser(GenericParser):
         tid = args[0].type == 'ID'
         s = tmatrix[(tid, iface.data['symbol'])]
 
-        n = self._edge('dependency', tail, head, stereotypes=[s])
+        n = self._line('dependency', tail, head, stereotypes=[s])
 
         # link dependency and interface
         n.data['supplier'] = iface
@@ -645,7 +646,7 @@ class piUMLParser(GenericParser):
         parent = self._istack[-1][1]
 
         # special treatment for an association
-        if parent.element == 'association':
+        if parent.cls == 'association':
             is_head = value.strip().startswith('::')
 
             if parent.data['tail'][1] is None and not is_head:
@@ -663,7 +664,7 @@ class piUMLParser(GenericParser):
                 name = ''
             parent.data[end] = (constaint, name, mult, et)
         else:
-            n = Node('feature', feature)
+            n = Feature(feature)
             n.name = txt
             self._set_parent(indent, n)
             return n
@@ -696,14 +697,14 @@ class piUMLParser(GenericParser):
         """
         comment ::= COMMENT
         """
-        return Node('comment', 'comment')
+        return Dummy('comment')
 
 
     def p_layout(self, args):
         """
         layout ::= LAYOUT
         """
-        n = Node('switch', 'layout')
+        n = Section('layout')
         self._set_parent('', n)
         return n
 
@@ -715,7 +716,7 @@ class piUMLParser(GenericParser):
         """
         parent = self._istack[-1][1]
 
-        if parent.type != 'switch' and parent.element != 'layout' \
+        if parent.type != 'section' and parent.cls != 'layout' \
                 and parent.type != 'align':
             raise ParseError('Alignment specification outside layout group')
 
@@ -723,12 +724,12 @@ class piUMLParser(GenericParser):
         if args[0].type == 'ALIGN':
             align = args[0].value.strip()[:-1]
             n = Align(align)
-            n.data.append(self.ast.cache[args[1].value])
-            n.data.append(self.ast.cache[args[2].value])
+            n.nodes.append(self.ast.cache[args[1].value])
+            n.nodes.append(self.ast.cache[args[2].value])
             self._set_parent('', n)
         else:
             n = args[0]
-            n.data.append(self.ast.cache[args[1].value])
+            n.nodes.append(self.ast.cache[args[1].value])
         return n
 
 
@@ -736,7 +737,7 @@ class piUMLParser(GenericParser):
         """
         empty ::= EMPTY
         """
-        return Node('empty', 'empty')
+        return Dummy('empty')
 
 
 

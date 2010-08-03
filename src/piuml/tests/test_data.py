@@ -19,7 +19,7 @@
 
 import unittest
 
-from piuml.data import AST, Node, lca, lsb
+from piuml.data import Diagram, Dummy, lca, lsb
 
 """
 piUML language parser data model routines tests.
@@ -33,8 +33,8 @@ class DataModelTestCase(unittest.TestCase):
         """
         Test AST nodes equality.
         """
-        n1 = Node('a', 'b')
-        n2 = Node('a', 'b')
+        n1 = Dummy('b')
+        n2 = Dummy('b')
         assert n1.id != n2.id
 
         self.assertNotEquals(n1, n2)
@@ -47,8 +47,8 @@ class DataModelTestCase(unittest.TestCase):
         """
         Test hashing of AST nodes.
         """
-        n1 = Node('a', 'b')
-        n2 = Node('a', 'b')
+        n1 = Dummy('b')
+        n2 = Dummy('b')
         assert n1.id != n2.id
 
         s = set([n1, n2])
@@ -65,12 +65,12 @@ class TreeTestCase(unittest.TestCase):
     def test_lca(self):
         """Test LCA
         """
-        n1 = AST()
+        n1 = Diagram()
         n1.id = 'n1'
         n1.cache['n1'] = n1
 
-        n2 = Node('a', 'a', id='n2')
-        n3 = Node('a', 'a', id='n3')
+        n2 = Dummy('a', id='n2')
+        n3 = Dummy('a', id='n3')
         n1.reorder()
         n1.extend((n2, n3))
         n2.parent = n1
@@ -83,12 +83,12 @@ class TreeTestCase(unittest.TestCase):
     def test_lsb(self):
         """Test LSB
         """
-        n1 = AST()
+        n1 = Diagram()
         n1.id = 'n1'
 
-        n2 = Node('a', 'a', id='n2')
-        n3 = Node('a', 'a', id='n3')
-        n4 = Node('a', 'a', id='n4')
+        n2 = Dummy('a', id='n2')
+        n3 = Dummy('a', id='n3')
+        n4 = Dummy('a', id='n4')
 
         n1.extend((n2, n3))
         n2.append(n4)

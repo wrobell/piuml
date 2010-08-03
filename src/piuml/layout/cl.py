@@ -29,13 +29,13 @@ class Layout(object):
     :Attributes:
      ast
         piUML source parsed tree.
-     edges
-        Cache of edges with tail and head nodes as key.
+     lines
+        Cache of lines with tail and head nodes as key.
     """
     def __init__(self):
         super(Layout, self).__init__()
         self.ast = None
-        self.edges = {}
+        self.lines = {}
 
 
     def create(self, ast):
@@ -61,10 +61,10 @@ class Layout(object):
         F = {
             'diagram': self._node,
             'element': self._node,
-            'edge': self._edge,
+            'line': self._line,
             'ielement': self._ielement,
         }
-        # process in reversed order to constraint edges first
+        # process in reversed order to constraint lines first
         for n in reversed(list(ast.unwind())):
             f = F.get(n.type)
             if f:
@@ -77,9 +77,9 @@ class Layout(object):
             p = lca(self.ast, e.tail, e.head)
             dist = lsb(p, [e.tail, e.head])
             self.hspan(dist[0], dist[1])
-            if e.tail.element != node.element:
+            if e.tail.cls != node.cls:
                 nodes.append(e.tail)
-            if e.head.element != node.element:
+            if e.head.cls != node.cls:
                 nodes.append(e.head)
         self.between(node, nodes)
 
@@ -89,11 +89,11 @@ class Layout(object):
         Process specification of alignment of nodes and assign alignment
         information to their common parent (lca).
         """
-        p = lca(self.ast, *align.data)
+        p = lca(self.ast, *align.nodes)
 
-        dist = lsb(p, align.data)
-        getattr(p.align, align.element).append(align.data)
-        if align.element in ('top', 'middle', 'bottom'):
+        dist = lsb(p, align.nodes)
+        getattr(p.align, align.cls).append(align.nodes)
+        if align.cls in ('top', 'middle', 'bottom'):
             p.align.hspan.append(dist)
         else: # left, center, right
             p.align.vspan.append(dist)
@@ -120,7 +120,7 @@ class Layout(object):
 
         # interleave non-aligned ids with the top of defined by user
         # alignment
-        default.extend((v[0] for v in vspan))
+        default.extend(set(v[0] for v in vspan))
         default.sort(key=packaged.index)
         middle.insert(0, default)
         hspan.insert(0, default)
@@ -167,19 +167,19 @@ class Layout(object):
                     f(*nodes)
 
 
-    def _edge(self, edge):
+    def _line(self, line):
         """
-        Store edge minimal length in edge cache.
+        Store line minimal length in line cache.
 
         :Parameters:
-         edge
+         line
             Edge to constraint.
         """
-        t, h = edge.tail, edge.head
-        # fixme: there can be multiple edges
-        length = edge.style.min_size[0]
-        self.edges[t.id, h.id] = length
-        self.edges[h.id, t.id] = length
+        t, h = line.tail, line.head
+        # fixme: there can be multiple lines
+        length = line.style.min_size[0]
+        self.lines[t.id, h.id] = length
+        self.lines[h.id, t.id] = length
 
 
     def size(self, node):
@@ -315,7 +315,7 @@ class ConstraintLayout(Layout):
     def hspan(self, *nodes):
         def f(k1, k2):
             m = k1.style.margin.right + k2.style.margin.left
-            l = self.edges.get((k1.id, k2.id), 0)
+            l = self.lines.get((k1.id, k2.id), 0)
             self.add_c(MinHDist(k1.style, k2.style, max(l, m)))
         self._apply(f, nodes)
 
@@ -323,7 +323,7 @@ class ConstraintLayout(Layout):
     def vspan(self, *nodes):
         def f(k1, k2):
             m = k1.style.margin.bottom + k2.style.margin.top
-            l = self.edges.get((k1.id, k2.id), 0)
+            l = self.lines.get((k1.id, k2.id), 0)
             # span from top to bottom
             self.add_c(MinVDist(k2.style, k1.style, max(l, m)))
         self._apply(f, nodes)

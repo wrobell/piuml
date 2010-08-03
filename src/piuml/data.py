@@ -32,7 +32,7 @@ from collections import namedtuple, MutableSequence
 from uuid import uuid4 as uuid
 
 
-# packaging element
+# packaging elements
 PELEMENTS = ('artifact', 'class', 'component', 'device', 'node',
         'instance', 'package', 'profile', 'subsystem')
 
@@ -52,6 +52,15 @@ Size = namedtuple('Size', 'width height')
 # alignment constraints
 AlignConstraints = namedtuple('AlignConstraints',
     'top right bottom left center middle hspan vspan')
+
+
+def ntype(cls):
+    """
+    Set type of parsed piUML language AST node, so it can be recognized by
+    Spark parsing routines.
+    """
+    cls.type = cls.__name__.lower()
+    return cls
 
 
 class Pos(object):
@@ -121,16 +130,15 @@ class BoxStyle(Style):
     size = property(_get_size, _set_size)
 
 
-# todo: rename to BoxNode and create LineNode
 class Node(list):
     """
-    Parsed piUML language data.
+    Parsed piUML language node.
 
-    Contains preprocessed UML element data like name and applied
+    Contains preprocessed UML data like name and applied
     stereotypes.
 
     The class itself is a list and may contain additional nodes as its
-    children. The children maybe
+    children. The children may be
     
     - attributes and operation of a class
     - artifacts deployed within a node
@@ -139,28 +147,31 @@ class Node(list):
     :Attributes:
      type
         Basic node type.
+     cls     
+        Particularizes node type, which can be an UML class (element,
+        relationship) or subtype of other part of piUML language (i.e.
+        section type, align type, etc.).
      id
         Node identifier. It should be unique.
      parent
         Parent node.
-     element
-        UML element type, i.e. class, association, etc.
      name
         Name of named element (i.e. class). Empty by default and empty for
         non-named elements (i.e. dependency).
      stereotypes
-        List of stereotypes applied to an element.
+        List of stereotypes applied to an UML class.
      style
         Style information of rendered node.
      data
         Additional node data, i.e. in case of association its ends
         navigability information.
     """
-    def __init__(self, type, element, name='', data=None, id=None):
+    type = None
+
+    def __init__(self, cls, name='', data=None, id=None):
         super(Node, self).__init__()
         self.parent = None
-        self.type = type
-        self.element = element
+        self.cls = cls
         if id is None:
             self.id = str(uuid())
         else:
@@ -172,14 +183,14 @@ class Node(list):
         self.align = AlignConstraints([], [], [], [], [], [], [], [])
 
         # few exceptions to default style
-        if element == 'actor':
+        if cls == 'actor':
             self.style.padding = Area(0, 0, 0, 0)
             self.style.size = Size(40, 60)
-        elif element == 'association':
+        elif cls == 'association':
             self.style.padding = Area(3, 18, 3, 18)
-        elif element in ('artifact', 'component'):
+        elif cls in ('artifact', 'component'):
             self.style.icon_size = Size(10, 15)
-        elif element == 'fdiface':
+        elif cls == 'fdiface':
             self.style.min_size = Size(30, 30)
             self.style.size = Size(30, 30)
 
@@ -188,7 +199,7 @@ class Node(list):
         """
         Check is UML element is packaging other UML elements.
         """
-        return len([n for n in self if n.element in ELEMENTS]) > 0
+        return len([n for n in self if n.cls in ELEMENTS]) > 0
 
 
     def unwind(self):
@@ -199,7 +210,11 @@ class Node(list):
 
 
     def __str__(self):
-        return self.element + ': ' + '[%s]' % ','.join(str(k) for k in self)
+        return self.cls + ': ' + '[%s]' % ','.join(str(k) for k in self)
+
+
+    def __repr__(self):
+        return self.id
 
 
     def __hash__(self):
@@ -216,22 +231,13 @@ class Node(list):
         return isinstance(other, Node) and self.id == other.id
 
 
-class NodeList(Node):
+@ntype
+class Diagram(Node):
     """
-    List of nodes.
-
-    :Attributes:
-     data
-        List of nodes.
-    """
-    def __init__(self, type, element):
-        super(NodeList, self).__init__(type, element)
-        self.data = []
-
-
-class AST(Node):
-    """
-    Root node of abstract syntax tree.
+    Diagram node.
+    
+    Diagram node is root node of parsed abstract syntax tree (AST) of
+    diagram written in piUML language.
 
     :Attributes:
      cache
@@ -242,7 +248,7 @@ class AST(Node):
         All alignment constraints.
     """
     def __init__(self):
-        super(AST, self).__init__('diagram', 'diagram')
+        super(Diagram, self).__init__('diagram')
         self.cache = {}
         self.order = []
         self.constraints = []
@@ -251,7 +257,58 @@ class AST(Node):
         self.order = [k for k in self.unwind()]
 
 
-class Align(NodeList):
+@ntype
+class Element(Node):
+    """
+    Representation of UML element like class, component, node, etc.
+    """
+
+
+@ntype
+class Feature(Node):
+    """
+    Representation of UML feature like attribute or operation.
+    """
+
+
+@ntype
+class IElement(Node):
+    """
+    Representation of UML element having form of an icon, i.e. assembly
+    connector, iconified interface, activity nodes.
+    """
+
+
+@ntype
+class Line(Node):
+    """
+    Representation of UML relationship like association, dependency,
+    comment line, etc.
+
+    :Attributes:
+     tail
+        Tail node.
+     head
+        Head node. 
+    """
+    def __init__(self, cls, tail, head, name='', data=[]):
+        super(Line, self).__init__(cls, name, data)
+        self.tail = tail
+        self.head = head
+        self.style.padding = Area(3, 10, 3, 10)
+
+
+@ntype
+class Section(Node):
+    """
+    Section in a diagram written in piUML language.
+
+    There is only one section currently specified - 'layout'.
+    """
+
+
+@ntype
+class Align(Node):
     """
     Alignment definition information.
 
@@ -264,28 +321,19 @@ class Align(NodeList):
     - middle
 
     :Attributes:
-     align
+     cls
         Alignment type.
     """
-    def __init__(self, align):
-        super(Align, self).__init__('align', align)
+    def __init__(self, cls):
+        super(Align, self).__init__(cls)
+        self.nodes = []
 
 
-class Edge(Node):
+@ntype
+class Dummy(Node):
     """
-    Edge between nodes like association, dependency, comment line, etc.
-
-    :Attributes:
-     tail
-        Tail node.
-     head
-        Head node. 
+    Non-important part of piUML language like comment or whitespace.
     """
-    def __init__(self, type, element, tail, head, name='', data=[]):
-        super(Edge, self).__init__(type, element, name, data)
-        self.tail = tail
-        self.head = head
-        self.style.padding = Area(3, 10, 3, 10)
 
 
 def lca(ast, *args):
