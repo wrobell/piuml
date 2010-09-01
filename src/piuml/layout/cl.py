@@ -266,17 +266,23 @@ class ConstraintLayout(Layout):
 
     def within(self, node, parent):
         ns = node.style
+        mar = ns.margin
         ps = parent.style
         pad = ps.padding
 
+        top = max(mar.top, pad.top)
+        right = max(mar.right, pad.right)
+        bottom = max(mar.bottom, pad.bottom)
+        left = max(mar.left, pad.left)
+
         # calculate height of compartments as packaged element is between
         # head and compartments
-        head = ps.head + pad.top + pad.bottom
+        head = ps.head + top + bottom
         h = ps.size.height - head
-        cpad = Area(head + pad.top, # area pad.top
-                pad.right,
-                pad.bottom + h,     # area pad.bottom
-                pad.left)
+        cpad = Area(head + top, # area pad.top
+                right,
+                bottom + h,     # area pad.bottom
+                left)
         self.add_c(Within(ns, ps, cpad))
 
 
