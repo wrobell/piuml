@@ -181,6 +181,11 @@ class Layout(object):
             Edge to constraint.
         """
         t, h = line.tail, line.head
+
+        # find siblings
+        p = lca(self.ast, t, h)
+        t, h = lsb(p, [t, h])
+
         # fixme: there can be multiple lines
         length = line.style.min_size[0]
         self.lines[t.id, h.id] = length
