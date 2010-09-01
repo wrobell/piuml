@@ -193,6 +193,8 @@ class Node(list):
         elif cls == 'fdiface':
             self.style.min_size = Size(30, 30)
             self.style.size = Size(30, 30)
+        elif cls == 'node':
+            self.style.margin = Area(20, 20, 10, 10)
 
 
     def is_packaging(self):
