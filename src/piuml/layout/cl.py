@@ -94,9 +94,11 @@ class Layout(object):
         dist = lsb(p, align.nodes)
         getattr(p.align, align.cls).append(align.nodes)
         if align.cls in ('top', 'middle', 'bottom'):
-            p.align.hspan.append(dist)
+            for k1, k2 in zip(dist[:-1], dist[1:]):
+                p.align.span.hspan(k1, k2)
         else: # left, center, right
-            p.align.vspan.append(dist)
+            for k1, k2 in zip(dist[:-1], dist[1:]):
+                p.align.span.vspan(k1, k2)
 
 
     def _default_align(self, node):
@@ -108,22 +110,19 @@ class Layout(object):
             Packaging node.
         """
         packaged = [k for k in node if k.type == 'element']
-        top, right, bottom, left, center, middle, hspan, vspan = node.align
+        top, right, bottom, left, center, middle, span = node.align
 
         # summarize defined alignment
-        defined = top + right + bottom + left + center + middle + hspan + vspan
+        defined = top + right + bottom + left + center + middle
 
         # unique set of node ids used in alignment definition
         done = set(id for k in defined for id in k)
         # list of non-aligned node ids
         default = [a for a in packaged if a not in done]
 
-        # interleave non-aligned ids with the top of defined by user
-        # alignment
-        default.extend(set(v[0] for v in vspan))
-        default.sort(key=packaged.index)
-        middle.insert(0, default)
-        hspan.insert(0, default)
+        middle.append(default)
+        for k1, k2 in zip(default[:-1], default[1:]):
+            span.hspan(k1, k2)
 
         if __debug__:
             print node.id, 'default', default
@@ -133,9 +132,8 @@ class Layout(object):
             print node.id, 'left', left
             print node.id, 'center', center
             print node.id, 'middle', middle
-            print node.id, 'hspan', hspan
-            print node.id, 'vspan', vspan
-            for align in node.align:
+            print node.id, 'span', span.data
+            for align in node.align[:-1]:
                 for nodes in align:
                     assert not nodes or all(isinstance(k, Node) for k in nodes)
 
@@ -156,8 +154,7 @@ class Layout(object):
         if node.is_packaging():
             # all the alignment functions...
             F = self.top, self.right, self.bottom, self.left, \
-                self.center, self.middle, \
-                self.hspan, self.vspan
+                self.center, self.middle
 
             # ... are zipped with appropriate alignment information (top,
             # right, etc.)
@@ -165,6 +162,14 @@ class Layout(object):
                 for nodes in align:
                     assert not nodes or all(isinstance(k, Node) for k in nodes)
                     f(*nodes)
+
+            m, n = node.align.span.dim()
+            for i in range(n):
+                nodes = (d[i] for d in node.align.span.data if d[i] is not None)
+                self.hspan(*nodes)
+
+            for nodes in node.align.span.data:
+                self.vspan(*(k for k in nodes if k is not None))
 
 
     def _line(self, line):

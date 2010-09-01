@@ -35,7 +35,7 @@ class c2 "C2"
         ast = parse(f)
         l.create(ast)
         self.assertEquals('[[c1, c2]]', str(ast.align.middle))
-        self.assertEquals('[[c1, c2]]', str(ast.align.hspan))
+        self.assertEquals('[[c1], [c2]]', str(ast.align.span))
 
 
     def test_invalid_align(self):
@@ -65,7 +65,7 @@ class c2 "C2"
         ast = parse(f)
         l.create(ast)
         self.assertEquals('[[c2, c1]]', str(ast.align.left))
-        self.assertEquals('[[c2, c1]]', str(ast.align.vspan))
+        self.assertEquals('[[c2, c1]]', str(ast.align.span))
 
 
     def test_orphaned(self):
@@ -83,11 +83,10 @@ class c3 "C3"
         ast = parse(f)
         l.create(ast)
         self.assertEquals('[[c1, c3]]', str(ast.align.left))
-        self.assertEquals('[[c1, c3]]', str(ast.align.vspan))
+        self.assertEquals('[[c1, c3]]', str(ast.align.span))
 
         # orphaned element alignment
-        self.assertEquals('[[c1, c2]]', str(ast.align.hspan))
-        self.assertEquals('[[c1, c2]]', str(ast.align.middle))
+        self.assertEquals('[[c2]]', str(ast.align.middle))
 
 
     def test_deep_align(self):
@@ -114,11 +113,10 @@ class c5 "C5"
         ast = parse(f)
         l.create(ast)
         self.assertEquals('[[c, c4, c5]]', str(ast.align.middle))
-        self.assertEquals('[[c, c4, c5]]', str(ast.align.hspan))
-
         # c2 is replaced with c - lca
-        self.assertEquals('[[c, c3]]', str(ast.align.vspan))
         self.assertEquals('[[c2, c3]]', str(ast.align.left))
+        self.assertEquals('[[c, c3], [c4, None], [c5, None]]',
+            str(ast.align.span))
 
 
     def test_default_interleave(self):
@@ -143,12 +141,13 @@ class e "C5"
         l.create(ast)
 
         # default and defined alignment plays well
-        self.assertEquals('[[a, c, d]]', str(ast.align.middle))
-        self.assertEquals('[[a, c, d]]', str(ast.align.hspan))
+        self.assertEquals('[[c]]', str(ast.align.middle))
 
         # check defined alignment
-        self.assertEquals('[[a, b], [d, e]]', str(ast.align.vspan))
         self.assertEquals('[[a, b], [d, e]]', str(ast.align.center))
+
+        # check span
+        self.assertEquals('[[a, None, d, e]]', str(ast.align.span))
 
 
     def test_deep_default_interleave(self):
@@ -174,9 +173,7 @@ class c4 "C4"
 """)
         ast = parse(f)
         l.create(ast)
-        self.assertEquals('[[c, c3], [c, c4]]', str(ast.align.vspan))
-        # it is (c, c) due to (c1, c3) and (c2, c4)
-        self.assertEquals('[[c]]', str(ast.align.hspan))
+        self.assertEquals('[[c, c4, c3]]', str(ast.align.span))
         self.assertEquals('[[c]]', str(ast.align.middle))
         self.assertEquals('[[c1, c3], [c2, c4]]', str(ast.align.center))
 
