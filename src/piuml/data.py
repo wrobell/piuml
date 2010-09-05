@@ -176,7 +176,7 @@ class SpanMatrix(object):
         pb = self.index(b)
         if not pa and not pb:
             k, l = self.dim()
-            self.insert_row(k)
+            self.insert_row(l)
             self[0, l] = a
             self.insert_row(l + 1)
             self[0, l + 1] = b
