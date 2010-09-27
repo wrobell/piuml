@@ -11,7 +11,8 @@ p -> <<create>> ast
 l -> <<process>> ast
 r -u> ast
 
-align=top: p l r
-align=center: l ast
+:layout:
+    top: p l r
+    center: l ast
 
 # vim: sw=4:et:ai
