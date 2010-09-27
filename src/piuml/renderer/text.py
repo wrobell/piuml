@@ -22,45 +22,16 @@ Renderer text routines.
 """
 
 import cairo
-import re
+import pango
+import pangocairo
+
 from math import atan2
-
-# Default font.
-FONT = 'sans 10'
-
-# Default font for abstract named (e.g. attributes).
-FONT_ABSTRACT = 'sans italic 10'
-
-# Font for names of elements (such as classes).
-FONT_NAME = 'sans bold 10'
-
-# Abstract classes use this font for their name.
-FONT_ABSTRACT_NAME = 'sans bold italic 10'
-
-# Small text, e.g. the (from ...) line in classes.
-FONT_SMALL = 'sans 8'
-
-LINE_STRETCH=1.0
 
 # Horizontal align.
 ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 
 # Vertical align.
 ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
-
-def set_font(cr, font):
-    """
-    Set the font from a string. E.g. 'sans 10' or 'sans italic bold 12'
-    only restriction is that the font name should be the first option and
-    the font size as last argument
-    """
-    font = font.split()
-    cr.select_font_face(font[0],
-        cairo.FONT_SLANT_ITALIC if 'italic' in font else cairo.FONT_SLANT_NORMAL,
-        cairo.FONT_WEIGHT_BOLD  if 'bold' in font else cairo.FONT_WEIGHT_NORMAL)
-    size = float(font[-1])
-    cr.set_font_size(size)
-    return float(font[-1])
 
 
 def text_pos_at_box(size, box, style, align, outside=False):
@@ -243,60 +214,49 @@ def line_center(edges):
     return pos, angle
 
 
+def pango_layout(cr, text):
+    pcr = pangocairo.CairoContext(cr)
+    l = pcr.create_layout()
+    l.set_font_description(pango.FontDescription('sans 10'))
+    attrs, t, _ = pango.parse_markup(text)
+    l.set_attributes(attrs)
+    l.set_text(t)
+    return pcr, l
 
-def draw_text(cr, shape, style, txt, font=FONT, skip_top=0, skip_left=0,
-        align=(0, -1), outside=False, underline=False,
+
+def pango_size(layout):
+    return layout.get_pixel_extents()[1][2:]
+
+
+def draw_text(cr, shape, style, text,
+        lalign=pango.ALIGN_LEFT,
+        pos=(0, 0),
+        align=(0, -1),
+        outside=False,
         align_f=text_pos_at_box):
 
-    h, v = align
-    set_font(cr, font)
-    TALIGN = { -1: 'n', 0: 'c', 1: 'r', }
-    ALIGN = { 'n': -1, 'c': 0, 'r': 1, }
+    pcr, l = pango_layout(cr, text)
+    size = pango_size(l)
+    l.set_alignment(lalign)
 
-    txts = re.split(r'\\[ncr]', txt)
-    ends = re.findall(r'\\([ncr])', txt) + [TALIGN[h]]
+    x0, y0 = pos
+    x, y = align_f(size, shape, style, align=align, outside=outside)
 
-    tskip = 0
-    for t, e in zip(txts, ends):
-        h = ALIGN[e]
-
-        size = text_size(cr, t, font)
-        x0, y0 = align_f(size, shape, style, align=(h, v), outside=outside)
-        x0 += skip_left
-
-        tskip += size[1] * LINE_STRETCH
-        y = y0 + skip_top + tskip
-
-        cr.save()
-        cr.move_to(x0, y - 2) # fixme: little hack as text appears bit below than expected, to be fixed
-        cr.show_text(t)
-        if underline:
-            cr.save()
-            cr.set_line_width(0.8)
-            cr.move_to(x0, y + 1)
-            cr.line_to(x0 + size[0], y + 1)
-            cr.stroke()
-            cr.restore()
-            tskip += 2
-        cr.restore()
-
-    return tskip
-
-
-def text_size(cr, txt, font):
-    """
-    Calculate total size of a text for specified font.
-
-    Text can be multiline - '\n', '\c' and '\r' are recognized as end of
-    line.
-    """
     cr.save()
-    set_font(cr, font)
-    txts = re.split(r'\\[cnr]', txt)
-    widths = [cr.text_extents(t)[-2] for t in txts] 
-    height = cr.font_extents()[2] * len(txts)
+    cr.move_to(x + x0, y + y0)
+    pcr.show_layout(l)
     cr.restore()
-    return max(widths), height
+
+    return size[1]
+
+
+def text_size(cr, text):
+    """
+    Calculate total size of a multiline text.
+    """
+    _, l = pango_layout(cr, text)
+    return pango_size(l)
+
 
 # vim: sw=4:et:ai
 
