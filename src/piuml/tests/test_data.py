@@ -19,7 +19,7 @@
 
 import unittest
 
-from piuml.data import Diagram, Dummy, SpanMatrix, lca, lsb
+from piuml.data import Diagram, Dummy, lca, lsb
 
 """
 piUML language parser data model routines tests.
@@ -97,105 +97,8 @@ class TreeTestCase(unittest.TestCase):
         n3.parent = n1
         n4.parent = n2
 
-        siblings = lsb(n1, [n3, n4])
+        siblings = lsb(n1, n3, n4)
         self.assertEquals([n3, n2], siblings)
-
-
-class SpanMatrixTestCase(unittest.TestCase):
-    """
-    Span matrix tests.
-    """
-    def test_empty(self):
-        """Test empty span matrix
-        """
-        m = SpanMatrix()
-        self.assertEquals(0, len(m.data))
-
-
-    def test_empty_insert_row(self):
-        """Test inserting row into empty matrix
-        """
-        m = SpanMatrix()
-        m.insert_row(0)
-        self.assertEquals(1, len(m.data))
-        self.assertEquals(1, len(m.data[0]))
-        self.assertEquals(None, m[0, 0])
-
-
-    def test_insert_row(self):
-        """Test inserting row
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        m.insert_row(1)
-        d = [t[1] for t in m.data] # get row
-        self.assertEquals([None, None], d)
-
-
-    def test_empty_insert_col(self):
-        """Test inserting col into empty matrix
-        """
-        m = SpanMatrix()
-        m.insert_col(0)
-        self.assertEquals(1, len(m.data))
-        self.assertEquals(1, len(m.data[0]))
-        self.assertEquals(None, m[0, 0])
-
-
-    def test_insert_col(self):
-        """Test inserting column
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        m.insert_col(1)
-        self.assertEquals([None] * 4, m.data[1])
-
-
-    def test_get(self):
-        """Test getting an item
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        self.assertEquals('B', m[0, 1])
-        self.assertEquals(3, m[1, 2])
-
-
-    def test_set(self):
-        """Test setting an item
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        assert 3 == m.data[1][2]
-        m[1, 2] = 'X'
-        self.assertEquals('X', m.data[1][2])
-
-
-    def test_hspan(self):
-        """Test horizontal span
-        """
-        m = SpanMatrix()
-        m.hspan('A', 'B')
-        self.assertEquals([['A'], ['B']], m.data)
-        m.hspan('A', 'C')
-        self.assertEquals([['A'], ['C'], ['B']], m.data)
-        m.hspan('B', 'D')
-        self.assertEquals([['A'], ['C'], ['B'], ['D']], m.data)
-        m.hspan('F', 'A')
-        self.assertEquals([['F'], ['A'], ['C'], ['B'], ['D']], m.data)
-
-
-    def test_vspan(self):
-        """Test vertical span
-        """
-        m = SpanMatrix()
-        m.vspan('A', 'B')
-        self.assertEquals([['A','B']], m.data)
-        m.vspan('A', 'C')
-        self.assertEquals([['A','C','B']], m.data)
-        m.vspan('B', 'D')
-        self.assertEquals([['A','C','B','D']], m.data)
-        m.vspan('F', 'A')
-        self.assertEquals([['F','A','C','B','D']], m.data)
 
 
 # vim: sw=4:et:ai

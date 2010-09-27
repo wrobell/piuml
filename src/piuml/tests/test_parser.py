@@ -269,6 +269,18 @@ c2 == c3
         self.assertEquals(['diagram', 'element'] * 2, data)
 
 
+    def test_invalid_layout_spec(self):
+        """Test parsing of invalid layout specification
+        """
+        f = StringIO("""
+class c1 "C1"
+class c2 "C2"
+
+    center: c1 c2
+""")
+        self.assertRaises(ParseError, parse, f)
+
+
 
 
 class UMLCheckTestCase(unittest.TestCase):

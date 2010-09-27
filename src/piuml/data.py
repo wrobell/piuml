@@ -49,9 +49,6 @@ KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
 Area = namedtuple('Area', 'top right bottom left')
 _Pos = namedtuple('_Pos', 'x y')
 Size = namedtuple('Size', 'width height')
-# alignment constraints
-AlignConstraints = namedtuple('AlignConstraints',
-    'top right bottom left center middle span')
 
 
 def ntype(cls):
@@ -81,123 +78,6 @@ class Pos(object):
 
     x = property(lambda s: s._pos.x, _set_x)
     y = property(lambda s: s._pos.y, _set_y)
-
-
-class SpanMatrix(object):
-    """
-    Two dimensional matrix.
-
-    The matrix is a list of lists organized in following manner::
-
-              --       --
-              | --- --- |
-              | |A| |1| |
-     m.data = |  B   2  |
-              |  C   3  |
-              | |D| |4| |
-              | --- --- |
-              --       --
-
-    therefore, for example::
-
-        m[0, 1] == B == m.data[0][1]
-        m[1, 2] == 3 == m.data[1][2]
-
-    """
-    def __init__(self):
-        self.data = []
-
-    def __getitem__(self, (col, row)):
-        return self.data[col][row]
-
-    def __setitem__(self, (col, row), value):
-        self.data[col][row] = value
-
-
-    def insert_col(self, col):
-        k = len(self.data[0]) if len(self.data) > 0 else 1
-        self.data.insert(col, [None] * k)
-
-
-    def insert_row(self, row):
-        if self.data:
-            for l in self.data:
-                l.insert(row, None)
-        else:
-            self.data.append([None])
-
-
-    def index(self, value):
-        row = None
-        for col, d in enumerate(self.data):
-            try:
-                row = d.index(value)
-                break
-            except ValueError:
-                pass
-                
-        return None if row is None else (col, row)
-
-
-    def dim(self):
-        """
-        Return matrix dimensions.
-        """
-        return (len(self.data), len(self.data[0])) if self.data else (0, 0)
-
-
-    def hspan(self, a, b):
-        pa = self.index(a)
-        pb = self.index(b)
-        if not pa and not pb:
-            k, l = self.dim()
-            self.insert_col(k)
-            self[k, 0] = a
-            self.insert_col(k + 1)
-            self[k + 1, 0] = b
-        elif pa and not pb:
-            n, m = pa
-            k, l = self.dim()
-            if n + 1 == k or self[n + 1, m] != None:
-                self.insert_col(n + 1)
-            self[n + 1, m] = b
-        elif not pa and pb:
-            n, m = pb
-            if n == 0:
-                self.insert_col(0)
-                self[0, m] = a
-            elif self[n - 1, m] != None:
-                self.insert_col(n - 1)
-                self[n - 1, m] = a
-
-
-    def vspan(self, a, b):
-        pa = self.index(a)
-        pb = self.index(b)
-        if not pa and not pb:
-            k, l = self.dim()
-            self.insert_row(l)
-            self[0, l] = a
-            self.insert_row(l + 1)
-            self[0, l + 1] = b
-        elif pa and not pb:
-            n, m = pa
-            k, l = self.dim()
-            if m + 1 == l or self[n, m + 1] != None:
-                self.insert_row(m + 1)
-            self[n, m + 1] = b
-        elif not pa and pb:
-            n, m = pb
-            if m == 0:
-                self.insert_row(0)
-                self[n, 0] = a
-            elif self[n, m - 1] != None:
-                self.insert_row(m - 1)
-                self[n, m - 1] = a
-
-
-    def __str__(self):
-        return str(self.data)
 
 
 
@@ -297,7 +177,6 @@ class Node(list):
         self.stereotypes = []
         self.data = data if data else {}
         self.style = BoxStyle()
-        self.align = AlignConstraints([], [], [], [], [], [], SpanMatrix())
 
         # few exceptions to default style
         if cls == 'actor':
@@ -363,14 +242,11 @@ class Diagram(Node):
         Cache of nodes by their id.
      order
         Order of nodes (LR then TB).
-     constraints
-        All alignment constraints.
     """
     def __init__(self):
         super(Diagram, self).__init__('diagram')
         self.cache = {}
         self.order = []
-        self.constraints = []
 
     def reorder(self):
         self.order = [k for k in self.unwind()]
@@ -475,7 +351,7 @@ def lca(ast, *args):
     return data[-1]
 
 
-def lsb(parent, kids):
+def lsb(parent, *kids):
     """
     Given parent node and its (direct or non-direct) descendants find
     nodes, which are direct descendants of parent (or are siblings).

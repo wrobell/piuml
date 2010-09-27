@@ -2,9 +2,9 @@
 
 artifact f 'model.pml' <<piuml, source>>
 component c 'piUML'
-    component cp 'Parser'
-    component cl 'Layout'
     component cr 'Renderer'
+    component cl 'Layout'
+    component cp 'Parser'
 artifact m 'model.pdf' <<document>>
 
 f <u- cp
@@ -14,7 +14,6 @@ cp <- cl
 cl <- cr
 
 :layout:
-    center: f cp
-    center: cr m
+    center: cr cl cp
 
 # vim: sw=4:et:ai

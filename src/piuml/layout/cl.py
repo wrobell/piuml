@@ -21,6 +21,160 @@ from piuml.data import lca, lsb
 from piuml.layout.solver import *
 from piuml.data import Area, Node
 
+from collections import namedtuple
+
+
+DefinedAlign = namedtuple('DefinedAlign', 'cls align span')
+
+
+class LayoutError(Exception):
+    """
+    Layout exception.
+    """
+
+
+class SpanMatrix(object):
+    """
+    Two dimensional matrix.
+
+    The matrix is a list of lists organized in following manner::
+
+              --       --
+              | --- --- |
+              | |A| |1| |
+     m.data = |  B   2  |
+              |  C   3  |
+              | |D| |4| |
+              | --- --- |
+              --       --
+
+    therefore, for example::
+
+        m[0, 1] == B == m.data[0][1]
+        m[1, 2] == 3 == m.data[1][2]
+
+    """
+    def __init__(self, *items):
+        """
+        Create span matrix with a row of items.
+
+        :Parameters:
+         items
+            Items to be put in first row of span matrix, can be empty or
+            null.
+        """
+        if items:
+            self.data = [[d] for d in items]
+        else:
+            self.data = []
+
+
+    def __getitem__(self, (col, row)):
+        return self.data[col][row]
+
+
+    def __setitem__(self, (col, row), value):
+        self.data[col][row] = value
+
+
+    def insert_col(self, col):
+        k = len(self.data[0]) if len(self.data) > 0 else 1
+        self.data.insert(col, [None] * k)
+
+
+    def insert_row(self, row):
+        if self.data:
+            for l in self.data:
+                l.insert(row, None)
+        else:
+            self.data.append([None])
+
+
+    def index(self, value):
+        row = None
+        for col, d in enumerate(self.data):
+            try:
+                row = d.index(value)
+                break
+            except ValueError:
+                pass
+                
+        return None if row is None else (col, row)
+
+
+    def dim(self):
+        """
+        Return span matrix dimensions.
+        """
+        return (len(self.data), len(self.data[0])) if self.data else (0, 0)
+
+
+    def hspan(self, a, b):
+        """
+        Span two items horizontally.
+        """
+        pa = self.index(a)
+        pb = self.index(b)
+        if not pa or not pb:
+            raise ValueError('One of arguments not found in span matrix')
+
+        n, m = pa
+        k, l = self.dim()
+        self[pb] = None
+        col = n + 1
+        # find column, where 'b' can be put...
+        while col < k and self[col, m] != None:
+            col += 1
+        # ... but if end of the span matrix, then add column
+        if col == k:
+            self.insert_col(col)
+        self[col, m] = b
+
+
+    def vspan(self, a, b):
+        """
+        Span two items vertically.
+        """
+        pa = self.index(a)
+        pb = self.index(b)
+        if not pa or not pb:
+            raise ValueError('One of arguments not found in span matrix')
+
+        n, m = pa
+        k, l = self.dim()
+        self[pb] = None
+        row = m + 1
+        # find row, where 'b' can be put...
+        while row < l and self[n, row] != None:
+            row += 1
+        # ... but if end of the span matrix, then add row
+        if row == l:
+            self.insert_row(row)
+        self[n, row] = b
+
+
+    def columns(self):
+        """
+        Get list of columns.
+        """
+        return self.data
+
+
+    def rows(self):
+        """
+        Get list of rows.
+        """
+        m = len(self.data[0])
+        return [[d[i] for d in self.data] for i in range(m)]
+
+
+    def __str__(self):
+        """
+        Convert span matrix to a string.
+        """
+        return str(self.data)
+
+
 
 class Layout(object):
     """
@@ -38,109 +192,100 @@ class Layout(object):
         self.lines = {}
 
 
-    def create(self, ast):
-        """
-        Postprocess align information.
-        """
-        self.ast = ast
-
-        # postprocess align information to simplify layout constraints
-        # assignment
-        align = (n for n in self.ast.unwind() if n.type == 'align')
-        for n in align:             # defined alignment
-            self._defined_align(n)
-        align = (n for n in self.ast.unwind() if n.is_packaging())
-        for n in align:             # default alignment
-            self._default_align(n)
-
-
     def layout(self, ast):
         """
-        Create layout constraints.
         """
-        F = {
-            'diagram': self._node,
-            'element': self._node,
+        self._prepare(ast)
+        self._process()
+
+
+    def _prepare(self, ast):
+        """
+        Postprocess alignment information from parser and prepare alignment
+        information for layout.
+        """
+        self.ast = ast
+        # all alignment is defined at this stage, therefore align
+        # information can be assigned to appropriate nodes and
+        # postprocessed to simplify layout constraints assignment
+
+        align = (n for n in ast if n.type == 'align')
+
+        # find
+        # - common parent of nodes to align
+        # - to level the nodes to align
+        for n in align:
+            p = lca(self.ast, *n.nodes)
+
+            if 'align' in p.data:
+                data = p.data['align']
+            else:
+                data = p.data['align'] = []
+
+            dist = lsb(p, *n.nodes)
+            data.append(DefinedAlign(n.cls, list(n.nodes), dist))
+
+
+    def _process(self):
+        """
+        Process layout alignment information and create layout.
+        """
+        # functions to set constraints
+        FC = {
+            'diagram': self._element,
+            'element': self._element,
             'line': self._line,
             'ielement': self._ielement,
         }
         # process in reversed order to constraint lines first
-        for n in reversed(list(ast.unwind())):
-            f = F.get(n.type)
+        for n in reversed(list(self.ast.unwind())):
+            # perform layout with constraints
+            f = FC.get(n.type)
             if f:
                 f(n)
 
 
-    def _ielement(self, node):
-        nodes = []
-        for e in node.data['lines']:
-            p = lca(self.ast, e.tail, e.head)
-            dist = lsb(p, [e.tail, e.head])
-            self.hspan(dist[0], dist[1])
-            if e.tail.cls != node.cls:
-                nodes.append(e.tail)
-            if e.head.cls != node.cls:
-                nodes.append(e.head)
-        self.between(node, nodes)
-
-
-    def _defined_align(self, align):
+    def _span_matrix(self, node, align=[]):
         """
-        Process specification of alignment of nodes and assign alignment
-        information to their common parent (lca).
-        """
-        p = lca(self.ast, *align.nodes)
-
-        dist = lsb(p, align.nodes)
-        getattr(p.align, align.cls).append(align.nodes)
-        if align.cls in ('top', 'middle', 'bottom'):
-            for k1, k2 in zip(dist[:-1], dist[1:]):
-                p.align.span.hspan(k1, k2)
-        else: # left, center, right
-            for k1, k2 in zip(dist[:-1], dist[1:]):
-                p.align.span.vspan(k1, k2)
-
-
-    def _default_align(self, node):
-        """
-        Set default alignment within specified, packaging node.
+        Create span matrix for node using defined alignment information.
 
         :Parameters:
          node
-            Packaging node.
+            Node for which span matrix should be created.
+         align
+            User defined alignment information.
         """
-        packaged = [k for k in node if k.type == 'element']
-        top, right, bottom, left, center, middle, span = node.align
+        # nodes to align
+        nodes = [k for k in node if k.type == 'element']
 
-        # summarize defined alignment
-        defined = top + right + bottom + left + center + middle
+        # middle is default alignment
+        sm = SpanMatrix(*nodes)
 
-        # unique set of node ids used in alignment definition
-        done = set(id for k in defined for id in k)
-        # list of non-aligned node ids
-        default = [a for a in packaged if a not in done]
+        span_f = {
+            'top': sm.hspan,
+            'middle': sm.hspan,
+            'bottom': sm.hspan,
+            'left': sm.vspan,
+            'center': sm.vspan,
+            'right': sm.vspan,
+        }
+        for a in align:
+            assert a.cls in span_f.keys(), 'Unknown alignment type'
+            for k1, k2 in zip(a.span[:-1], a.span[1:]):
+                span_f[a.cls](k1, k2)
+                if k2 in nodes:
+                    nodes.remove(k2)
 
-        middle.append(default)
-        for k1, k2 in zip(default[:-1], default[1:]):
-            span.hspan(k1, k2)
+        default = None
+        if len(nodes) > 1:
+            default = DefinedAlign('middle', nodes, nodes)
 
-        if __debug__:
-            print node.id, 'default', default
-            print node.id, 'top', top
-            print node.id, 'right', right
-            print node.id, 'bottom', bottom
-            print node.id, 'left', left
-            print node.id, 'center', center
-            print node.id, 'middle', middle
-            print node.id, 'span', span.data
-            for align in node.align[:-1]:
-                for nodes in align:
-                    assert not nodes or all(isinstance(k, Node) for k in nodes)
+        return sm, default
 
 
-    def _node(self, node):
+    def _element(self, node):
         """
-        Constraint node and its children using alignment information.
+        Constraint element and its children using alignment information.
 
         :Parameters:
          node
@@ -152,24 +297,41 @@ class Layout(object):
 
         ns = node.style
         if node.is_packaging():
-            # all the alignment functions...
-            F = self.top, self.right, self.bottom, self.left, \
-                self.center, self.middle
+            defined = node.data.get('align', [])
+            sm, default = self._span_matrix(node, defined)
 
-            # ... are zipped with appropriate alignment information (top,
-            # right, etc.)
-            for f, align in zip(F, node.align):
-                for nodes in align:
-                    assert not nodes or all(isinstance(k, Node) for k in nodes)
-                    f(*nodes)
+            all_align = list(defined)
+            if default:
+                all_align.insert(0, default)
 
-            m, n = node.align.span.dim()
-            for i in range(n):
-                nodes = (d[i] for d in node.align.span.data if d[i] is not None)
+            for align in all_align:
+                nodes = align.align
+                assert all(isinstance(k, Node) for k in nodes)
+
+                # get and run alignment function
+                f = getattr(self, align.cls)
+                f(*nodes)
+
+            for row in sm.rows():
+                nodes = (k for k in row if k is not None)
                 self.hspan(*nodes)
 
-            for nodes in node.align.span.data:
-                self.vspan(*(k for k in nodes if k is not None))
+            for col in sm.columns():
+                nodes = (k for k in col if k is not None)
+                self.vspan(*nodes)
+
+
+    def _ielement(self, node):
+        nodes = []
+        for e in node.data['lines']:
+            p = lca(self.ast, e.tail, e.head)
+            dist = lsb(p, e.tail, e.head)
+            self.hspan(dist[0], dist[1])
+            if e.tail.cls != node.cls:
+                nodes.append(e.tail)
+            if e.head.cls != node.cls:
+                nodes.append(e.head)
+        self.between(node, nodes)
 
 
     def _line(self, line):
@@ -184,7 +346,7 @@ class Layout(object):
 
         # find siblings
         p = lca(self.ast, t, h)
-        t, h = lsb(p, [t, h])
+        t, h = lsb(p, t, h)
 
         # fixme: there can be multiple lines
         length = line.style.min_size[0]
@@ -196,6 +358,7 @@ class Layout(object):
         """
         Set node minimum size.
         """
+
 
     def within(self, parent, node):
         """
@@ -214,35 +377,42 @@ class Layout(object):
         Align nodes on the top.
         """
 
+
     def bottom(self, *nodes):
         """
         Align nodes on the bottom.
         """
+
 
     def left(self, *nodes):
         """
         Align nodes on the left.
         """
 
+
     def right(self, *nodes):
         """
         Align nodes on the right.
         """
+
 
     def center(self, *nodes):
         """
         Center horizontally all nodes.
         """
 
+
     def middle(self, *nodes):
         """
         Center vertically all nodes.
         """
 
+
     def hspan(self, *nodes):
         """
         Span nodes horizontally.
         """
+
 
     def vspan(self, *nodes):
         """

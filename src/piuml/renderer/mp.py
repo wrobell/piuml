@@ -301,8 +301,6 @@ pickup defaultpen;
 
 
     def n_diagram_exit(self, node):
-        for c in node.constraints:
-            self._def(c)
         self._draw("""
 endfig;
 end
