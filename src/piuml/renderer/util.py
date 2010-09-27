@@ -31,7 +31,7 @@ def st_fmt(stereotypes):
      stereotypes
         List of stereotypes.
     """
-    fmt = u'<<%s>>'
+    fmt = u'\xab%s\xbb'
     data = dict(zip(stereotypes, (st in KEYWORDS for st in stereotypes)))
     keyword = ', '.join(st for st in stereotypes if data[st])
     stereotype = ', '.join(st for st in stereotypes if not data[st])

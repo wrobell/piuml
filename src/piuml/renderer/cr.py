@@ -31,7 +31,6 @@ from math import ceil, floor, pi
 from functools import partial
 
 from piuml.data import Size, Pos, Style, Area, Node
-from piuml.parser import unwind
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
 from piuml.renderer.line import *
@@ -140,7 +139,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
          node
             Node, which size shall be calculated.
         """
-        if node.element == 'actor':
+        if node.cls == 'actor':
             node.style.size = Size(40, 60)
             return
 
@@ -163,8 +162,8 @@ class CairoDimensionCalculator(GenericASTTraversal):
         sizes.append(Size(nw, nh))
 
         compartments = []
-        attrs = '\\node'.join(f.name for f in node if f.element == 'attribute')
-        opers = '\\node'.join(f.name for f in node if f.element == 'operation')
+        attrs = '\\node'.join(f.name for f in node if f.cls == 'attribute')
+        opers = '\\node'.join(f.name for f in node if f.cls == 'operation')
         cl = 0
         if attrs:
             w, h = text_size(cr, attrs, FONT)
@@ -174,7 +173,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
             w, h = text_size(cr, opers, FONT)
             sizes.append(Size(w, h))
             cl += 1
-        st_attrs = (f for f in node if f.element == 'stattributes')
+        st_attrs = (f for f in node if f.cls == 'stattributes')
         for f in st_attrs:
             attrs = st_fmt([f.name]) + '\\node' + '\\node'.join(a.name for a in f)
             w, h = text_size(cr, attrs, FONT)
@@ -242,7 +241,7 @@ class CairoRenderer(GenericASTTraversal):
         self.output = None
         self.filetype = 'pdf'
 
-    def dims(self, ast):
+    def constraint(self, ast):
         self.calc.calc(ast)
 
     def render(self, ast):
@@ -251,7 +250,7 @@ class CairoRenderer(GenericASTTraversal):
 
     def _compartment(self, parent, node, filter, skip_top, title=None):
         cr = self.cr
-        pos = x, y = parent.style.pos
+        pos = x, y = parent.style.ll
         size = width, height = parent.style.size
         pad = parent.style.padding
 
@@ -271,7 +270,7 @@ class CairoRenderer(GenericASTTraversal):
     def n_element(self, node):
 
         style = node.style
-        pos = x, y = style.pos
+        pos = x, y = style.ll
         size = width, height = style.size
         pad = style.padding
         iw, ih = style.icon_size
@@ -286,11 +285,11 @@ class CairoRenderer(GenericASTTraversal):
 
         cr = self.cr
         cr.save()
-        if node.element in ('node', 'device'):
+        if node.cls in ('node', 'device'):
             draw_box3d(cr, pos, size)
-        elif node.element in ('package', 'profile'):
+        elif node.cls in ('package', 'profile'):
             draw_tabbed_box(cr, pos, size)
-        elif node.element == 'usecase':
+        elif node.cls == 'usecase':
             align = (0, 0)
 
             r1 = size.width / 2.0
@@ -298,14 +297,14 @@ class CairoRenderer(GenericASTTraversal):
             x0 = pos.x + r1
             y0 = pos.y + r2
             draw_ellipse(cr, (x0, y0), r1, r2)
-        elif node.element == 'actor':
+        elif node.cls == 'actor':
             align = (0, 1)
             outside = True
             draw_human(cr, pos, size)
-        elif node.element == 'comment':
+        elif node.cls == 'comment':
             font = FONT
             draw_note(cr, pos, size)
-        elif node.element in ('instance', 'artifact'):
+        elif node.cls in ('instance', 'artifact'):
             underline = True
             cr.rectangle(x, y, width, height)
             cr.stroke()
@@ -314,10 +313,10 @@ class CairoRenderer(GenericASTTraversal):
             cr.stroke()
 
         # draw icons
-        if node.element in ('artifact', 'component'):
+        if node.cls in ('artifact', 'component'):
             x0 = x + width - iw - pad.top
             y0 = y + pad.top
-            if node.element == 'artifact':
+            if node.cls == 'artifact':
                 draw_artifact(cr, (x0, y0), (iw, ih))
             else:
                 draw_component(cr, (x0, y0), (iw, ih))
@@ -338,12 +337,12 @@ class CairoRenderer(GenericASTTraversal):
         tskip = max(ih, tskip) # choose between name/stereotype skip and icon height
         tskip += pad.top
 
-        tskip = self._compartment(node, node, lambda f: f.element == 'attribute', tskip)
-        tskip = self._compartment(node, node, lambda f: f.element == 'operation', tskip)
-        st_attrs = (f for f in node if f.element == 'stattributes')
+        tskip = self._compartment(node, node, lambda f: f.cls == 'attribute', tskip)
+        tskip = self._compartment(node, node, lambda f: f.cls == 'operation', tskip)
+        st_attrs = (f for f in node if f.cls == 'stattributes')
         for f in st_attrs:
             title = st_fmt([f.name]) + '\\c' 
-            tskip = self._compartment(node, f, lambda f: f.element == 'attribute', tskip, title)
+            tskip = self._compartment(node, f, lambda f: f.cls == 'attribute', tskip, title)
 
         cr.stroke()
         cr.restore()
@@ -407,25 +406,30 @@ class CairoRenderer(GenericASTTraversal):
         draw_text(cr, n.style.size, n.style, n.name, font=FONT_NAME, align=(0, 1), outside=True)
 
 
-    def n_connector(self, n):
+    def n_line(self, n):
+        f = getattr(self, '_' + n.cls)
+        f(n)
+
+
+    def _connector(self, n):
         self._draw_line(n)
 
 
-    def n_commentline(self, node):
+    def _commentline(self, node):
         """
         Draw comment line between elements.
         """
         self._draw_line(node, dash=(7.0, 5.0))
 
 
-    def n_generalization(self, n):
+    def _generalization(self, n):
         if n.data['super'] is n.head:
             self._draw_line(n, draw_head=draw_head_triangle)
         else:
             self._draw_line(n, draw_tail=draw_tail_triangle)
 
 
-    def n_dependency(self, n):
+    def _dependency(self, n):
         supplier = n.data['supplier']
         
         params = {'dash': (7.0, 5.0)}
@@ -434,10 +438,10 @@ class CairoRenderer(GenericASTTraversal):
         else:
             params['draw_tail'] = draw_tail_arrow
 
-        if supplier.element == 'fdiface':
+        if supplier.cls == 'fdiface':
             params = { 'show_st': False }
 
-        if supplier.element in ('interface', 'component'):
+        if supplier.cls in ('interface', 'component'):
             params['show_st'] = False
             if supplier is n.head:
                 params['draw_head'] = draw_head_triangle
@@ -447,7 +451,7 @@ class CairoRenderer(GenericASTTraversal):
         self._draw_line(n, **params)
 
 
-    def n_association(self, edge):
+    def _association(self, edge):
         """
         Draw association represented by edge.
 
@@ -455,11 +459,11 @@ class CairoRenderer(GenericASTTraversal):
          edge
             Edge representing an association.
         """
-        if edge.element == 'extension':
+        if edge.cls == 'extension':
             params = {}
-            if edge.tail.element == 'metaclass':
+            if edge.tail.cls == 'metaclass':
                 params['draw_tail'] = partial(draw_tail_arrow, fill=True)
-            elif edge.head.element == 'metaclass':
+            elif edge.head.cls == 'metaclass':
                 params['draw_head'] = partial(draw_head_arrow, fill=True)
             else:
                 assert False

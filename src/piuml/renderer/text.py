@@ -81,7 +81,7 @@ def text_pos_at_box(size, box, style, align, outside=False):
     """
     w, h = size # size of the text
     width, height = box
-    x0, y0 = style.pos
+    x0, y0 = style.ll
     pad = style.padding
 
     halign, valign = align
