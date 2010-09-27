@@ -39,14 +39,18 @@ from piuml.renderer.line import *
 from piuml.renderer.util import st_fmt
 
 
-def _name(node, underline=False):
+def _name(node, bold=True, underline=False):
     texts = []
     if node.stereotypes:
         texts.append('<span size="small">%s</span>' \
                 % st_fmt(node.stereotypes))
-    texts.append('<b>%s</b>' % node.name)
-    if underline:
-        texts[-1] = '<u>%s</u>' % texts[-1]
+    name = node.name.replace('\\n', '\n')
+    if name:
+        if bold:
+            name = '<b>%s</b>' % name
+        if underline:
+            name = '<u>%s</u>' % name
+        texts.append(name)
     return '\n'.join(texts)
 
 
@@ -290,6 +294,8 @@ class CairoRenderer(GenericASTTraversal):
         align = (0, -1)
         outside = False
         underline = False
+        lalign = pango.ALIGN_CENTER
+        bold = True
         lskip = 0
         tskip = 0
 
@@ -313,6 +319,8 @@ class CairoRenderer(GenericASTTraversal):
             draw_human(cr, pos, size)
         elif node.cls == 'comment':
             draw_note(cr, pos, size)
+            lalign = pango.ALIGN_LEFT
+            bold = False
         elif node.cls in ('instance', 'artifact'):
             underline = True
             cr.rectangle(x, y, width, height)
@@ -331,10 +339,10 @@ class CairoRenderer(GenericASTTraversal):
                 draw_component(cr, (x0, y0), (iw, ih))
             lskip = -(iw + pad.top) / 2.0
 
-        name = _name(node, underline)
+        name = _name(node, bold, underline)
         tskip += draw_text(cr._cr, style.size, style,
                 name,
-                lalign=pango.ALIGN_CENTER,
+                lalign=lalign,
                 pos=(lskip, tskip),
                 align=align, outside=outside)
 
