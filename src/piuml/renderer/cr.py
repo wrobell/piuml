@@ -419,7 +419,10 @@ class CairoRenderer(GenericASTTraversal):
 
 
     def n_line(self, n):
-        f = getattr(self, '_' + n.cls)
+        t = '_' + n.cls
+        if n.cls == 'extension':
+            t = '_association'
+        f = getattr(self, t)
         f(n)
 
 
