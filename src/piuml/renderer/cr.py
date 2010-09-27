@@ -525,7 +525,7 @@ class CairoRenderer(GenericASTTraversal):
 
 
     def _draw_line(self,
-            edge,
+            line,
             draw_tail=draw_tail_none,
             draw_head=draw_head_none,
             dash=None,
@@ -535,8 +535,8 @@ class CairoRenderer(GenericASTTraversal):
         Draw line between tail and head of an edge.
 
         :Parameters:
-         edge
-            Edge to be drawn.
+         line
+            Line to draw.
          draw_tail
             Function used to draw tail of the edge.
          draw_head
@@ -544,18 +544,27 @@ class CairoRenderer(GenericASTTraversal):
          name_fmt
             String format used to format name of an edge.
         """
-        edges = edge.style.edges
+        #edges = line.style.edges
+        # FIXME: code cleanup
+        t, h = line.tail, line.head
+        def get_cp(node):
+            x1, y1 = node.style.ll
+            x2, y2 = node.style.ur
+            x = (x1 + x2) / 2.0
+            y = (y1 + y2) / 2.0
+            return (x1, y), (x2, y), (x, y1), (x, y2)
+
+        def shortest(t, h):
+            r = sorted(get_cp(t) + get_cp(h))
+            return r[len(r) / 2 - 1], r[len(r) / 2]
+
+        edges = shortest(t, h)
         draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        text = []
-        if show_st and edge.stereotypes:
-            text.append(st_fmt(edge.stereotypes))
-        if edge.name:
-            text.append(name_fmt % edge.name)
-        if text:
-            text = '\n'.join(text)
+        name = _name(line)
+        if name:
             segment = line_middle_segment(edges)
-            draw_text(self.cr._cr, segment, edge.style, text, align=(0, -1), align_f=text_pos_at_line)
+            draw_text(self.cr._cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
 
 
     def n_diagram(self, n):
