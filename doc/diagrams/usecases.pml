@@ -16,8 +16,9 @@ comment c 'For example\n\n- Sphinx\n- Epydoc\n- TeX\n'
 m -e> wd
 doc -- c
 
-align=center: pu doc
-align=middle: doc c
-align=middle: w pu
+:layout:
+    center: pu doc
+    middle: doc c
+    middle: w pu
 
 # vim: sw=4:et:ai
