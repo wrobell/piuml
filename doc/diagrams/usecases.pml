@@ -10,8 +10,8 @@ subsystem doc 'Documentation'
 
 comment c 'For example\n\n- Sphinx\n- Epydoc\n- TeX\n'
 
-#w ==> m
-#w ==> wd
+w ==> m
+w ==> wd
 
 m -e> wd
 doc -- c
