@@ -174,6 +174,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
         if ics != (0, 0):
             nw += ics[0] + pad.right
             nh = max(nh, ics[1])
+        node.style.head = nh
         sizes.append(Size(nw, nh))
 
         compartments = []
