@@ -59,10 +59,10 @@ class SolverTestCase(unittest.TestCase):
         self.assertTrue(r3.size.width >= 5)
         self.assertTrue(r3.size.height >= 15)
 
-        self.assertEquals(40, r1.ur.y)
-        self.assertEquals(40, r2.ur.y)
+        self.assertEquals(40, r1.size.height)
+        self.assertEquals(40, r2.size.height)
 
-        self.assertTrue(r3.ll.x - r2.ur.x >= 10)
+        self.assertTrue(r3.pos.x - r2.pos.x - r2.size.width >= 10)
 
 
 # vim: sw=4:et:ai

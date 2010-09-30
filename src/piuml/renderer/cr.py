@@ -151,7 +151,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
 
     def n_element(self, node):
         """
-        Calculate minimal size of a node.
+        Calculate minimal size of an element.
 
         :Parameters:
          node
@@ -162,46 +162,50 @@ class CairoDimensionCalculator(GenericASTTraversal):
             return
 
         cr = self.cr
-        pad = node.style.padding
-        sizes = [(80, 0)]
+        style = node.style
+        pad = style.padding
+        sizes = []
 
         # calculate name size, but include icon size if necessary
         name = _name(node)
         nw, nh = text_size(cr, name)
 
         # include icon size
-        ics = node.style.icon_size
+        ics = style.icon_size
         if ics != (0, 0):
-            nw += ics[0] + pad.right
-            nh = max(nh, ics[1])
-        node.style.head = nh
+            nw += ics.width + pad.right
+            nh = max(nh, ics.height)
+        style.compartment[0] = nh
         sizes.append(Size(nw, nh))
 
         compartments = []
         attrs = '\n'.join(f.name for f in node if f.cls == 'attribute')
         opers = '\n'.join(f.name for f in node if f.cls == 'operation')
-        cl = 0
         if attrs:
             w, h = text_size(cr, attrs)
             sizes.append(Size(w, h))
-            cl += 1
+            style.compartment.append(h)
         if opers:
             w, h = text_size(cr, opers)
             sizes.append(Size(w, h))
-            cl += 1
+            style.compartment.append(h)
         st_attrs = (f for f in node if f.cls == 'stattributes')
         for f in st_attrs:
             title = '<small>%s</small>\n' % st_fmt([f.name])
             attrs = title + '\n'.join(a.name for a in f)
             w, h = text_size(cr, attrs)
             sizes.append(Size(w, h))
-            cl += 1
+            style.compartment.append(h)
 
-        width = max(w for w, h in sizes)
-        height = sum(h for w, h in sizes)
-        width += pad.left + pad.right
-        height += pad.top + pad.bottom + cl * pad.top * 2
-        node.style.size = Size(width, max(height, 40))
+        k = len(style.compartment)
+        if node.is_packaging():
+            k += 1
+
+        width = max(w for w, h in sizes) + pad.left + pad.right
+        height = sum(h for w, h in sizes) + (pad.top + pad.bottom) * k
+
+        style.min_size.width = max(width, style.min_size.width)
+        style.min_size.height = max(height, style.min_size.height)
 
 
     def n_ielement(self, n):
@@ -267,7 +271,7 @@ class CairoRenderer(GenericASTTraversal):
 
     def _compartment(self, parent, node, filter, skip_top, title=None):
         cr = self.cr
-        pos = x, y = parent.style.ll
+        pos = x, y = parent.style.pos
         size = width, height = parent.style.size
         pad = parent.style.padding
 
@@ -287,8 +291,8 @@ class CairoRenderer(GenericASTTraversal):
     def n_element(self, node):
 
         style = node.style
-        pos = x, y = style.ll
-        size = width, height = style.size
+        pos = x, y = style.pos
+        width, height = size = style.size
         pad = style.padding
         iw, ih = style.icon_size
 
@@ -298,7 +302,6 @@ class CairoRenderer(GenericASTTraversal):
         lalign = pango.ALIGN_CENTER
         bold = True
         lskip = 0
-        tskip = 0
 
         cr = self.cr
         cr.save()
@@ -341,14 +344,15 @@ class CairoRenderer(GenericASTTraversal):
             lskip = -(iw + pad.top) / 2.0
 
         name = _name(node, bold, underline)
-        tskip += draw_text(cr._cr, style.size, style,
+        draw_text(cr._cr, style.size, style,
                 name,
                 lalign=lalign,
-                pos=(lskip, tskip),
+                pos=(lskip, 0),
                 align=align, outside=outside)
 
-        tskip = max(ih, tskip) # choose between name/stereotype skip and icon height
-        tskip += pad.top
+        k = len(style.compartment) - 1
+        comps = sum(style.compartment[1:]) if k else 0 # height of compartments
+        tskip = height - k * (pad.top + pad.bottom) - comps
 
         tskip = self._compartment(node, node, lambda f: f.cls == 'attribute', tskip)
         tskip = self._compartment(node, node, lambda f: f.cls == 'operation', tskip)
@@ -357,7 +361,6 @@ class CairoRenderer(GenericASTTraversal):
             title = st_fmt([f.name]) + '\n' 
             tskip = self._compartment(node, f, lambda f: f.cls == 'attribute', tskip, title)
 
-        cr.stroke()
         cr.restore()
 
 
@@ -560,8 +563,10 @@ class CairoRenderer(GenericASTTraversal):
         # FIXME: code cleanup
         t, h = line.tail, line.head
         def get_cp(node):
-            x1, y1 = node.style.ll
-            x2, y2 = node.style.ur
+            x1, y1 = node.style.pos
+            w, h = node.style.size
+            x2 = x1 + w
+            y2 = y1 + h
             x = (x1 + x2) / 2.0
             y = (y1 + y2) / 2.0
             return (x1, y), (x2, y), (x, y1), (x, y2)

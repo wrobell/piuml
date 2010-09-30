@@ -349,7 +349,7 @@ class Layout(object):
         t, h = lsb(p, t, h)
 
         # fixme: there can be multiple lines
-        length = line.style.min_size[0]
+        length = line.style.min_length
         self.lines[t.id, h.id] = length
         self.lines[h.id, t.id] = length
 
@@ -445,19 +445,16 @@ class ConstraintLayout(Layout):
         ps = parent.style
         pad = ps.padding
 
-        top = max(mar.top, pad.top)
+        # put packaged elements between head and rest of compartements 
+        top = ps.compartment[0] + pad.top + pad.bottom
+        bottom = ps.min_size.height - (top + pad.bottom)
+
+        top = max(mar.top, top)
         right = max(mar.right, pad.right)
-        bottom = max(mar.bottom, pad.bottom)
+        bottom = max(mar.bottom, bottom)
         left = max(mar.left, pad.left)
 
-        # calculate height of compartments as packaged element is between
-        # head and compartments
-        head = ps.head + top + bottom
-        h = ps.size.height - head
-        cpad = Area(head + top, # area pad.top
-                right,
-                bottom + h,     # area pad.bottom
-                left)
+        cpad = Area(top, right, bottom, left)
         self.add_c(Within(ns, ps, cpad))
 
 
@@ -510,8 +507,7 @@ class ConstraintLayout(Layout):
         def f(k1, k2):
             m = k1.style.margin.bottom + k2.style.margin.top
             l = self.lines.get((k1.id, k2.id), 0)
-            # span from top to bottom
-            self.add_c(MinVDist(k2.style, k1.style, max(l, m)))
+            self.add_c(MinVDist(k1.style, k2.style, max(l, m)))
         self._apply(f, nodes)
 
 

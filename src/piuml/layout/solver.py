@@ -115,6 +115,8 @@ class Solver(object):
 
             self.count += 1
             if self.count > kill:
+                if __debug__:
+                    print 'Unsolved: %s' % unsolved
                 raise SolverError('Could not find a solution;' \
                     ' unsolved={0} after {1} iterations' \
                     .format(len(unsolved), self.count))
@@ -125,7 +127,8 @@ class Solver(object):
         t2 = time.time()
         k = len(self._constraints)
         fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
-        print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
+        if __debug__:
+            print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
 
 
 
@@ -162,23 +165,19 @@ class MinSize(Constraint):
         super(MinSize, self).__init__(r)
         self.r = r
 
-        # this is a hack, all other constraints maintain minimal size of
-        # the rectangle, so no point to invoke it again; we gain some speed
-        self.variables = []
-
 
     def __call__(self):
         changed = []
         r = self.r
         w, h = r.min_size
         pad = r.padding
-        if r.ur.x - r.ll.x < w:
+        if r.size.width < w:
             #r.ur.x = r.ll.x + w
-            r.ur.x += 10
+            r.size.width += 10
             changed = [r]
-        if r.ur.y - r.ll.y < h:
+        if r.size.height < h:
             #r.ur.y = r.ur.y + h
-            r.ur.y += 10
+            r.size.height += 10
             changed = [r]
         return changed
 
@@ -209,15 +208,11 @@ class TopEq(RectConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ur.y < b.ur.y:
-            h = a.size.height
-            a.ur.y = b.ur.y
-            a.ll.y = a.ur.y - h
+        if a.pos.y < b.pos.y:
+            a.pos.y = b.pos.y
             changed = [a]
-        if a.ur.y > b.ur.y:
-            h = b.size.height
-            b.ur.y = a.ur.y
-            b.ll.y = b.ur.y - h
+        if a.pos.y > b.pos.y:
+            b.pos.y = a.pos.y
             changed = [b]
         return changed
 
@@ -231,15 +226,11 @@ class BottomEq(RectConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ll.y < b.ll.y:
-            h = a.size.height
-            a.ll.y = b.ll.y
-            a.ur.y = a.ll.y + h
+        if a.pos.y + a.size.height < b.pos.y + b.size.height:
+            a.pos.y = b.pos.y + b.size.height - a.size.height
             changed = [a]
         if a.ll.y > b.ll.y:
-            h = b.size.height
-            b.ll.y = a.ll.y
-            b.ur.y = b.ll.y + h
+            b.pos.y = a.pos.y + a.size.height - b.size.height
             changed = [b]
         return changed
 
@@ -254,15 +245,11 @@ class LeftEq(RectConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ll.x < b.ll.x:
-            w = a.size.width
-            a.ll.x = b.ll.x
-            a.ur.x = a.ll.x + w
+        if a.pos.x < b.pos.x:
+            a.pos.x = b.pos.x
             changed = [a]
-        if a.ll.x > b.ll.x:
-            w = b.size.width
-            b.ll.x = a.ll.x
-            b.ur.x = b.ll.x + w
+        if a.pos.x > b.pos.x:
+            b.pos.x = a.pos.x
             changed = [b]
         return changed
 
@@ -277,15 +264,11 @@ class RightEq(RectConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ur.x < b.ur.x:
-            w = a.size.width
-            a.ur.x = b.ur.x
-            a.ll.x = a.ur.x - w
+        if a.pos.x + a.size.width < b.pos.x + b.size.width:
+            a.pos.x = b.pos.x + b.size.width - a.size.width
             changed = [a]
-        if a.ur.x > b.ur.x:
-            w = b.size.width
-            b.ur.x = a.ur.x
-            b.ll.x = b.ur.x - w
+        if a.pos.x + a.size.width > b.pos.x + b.size.width:
+            b.pos.x = a.pos.x + a.size.width - b.size.width
             changed = [b]
         return changed
 
@@ -304,17 +287,17 @@ class CenterEq(RectConstraint):
         wb = b.size.width / 2.0
 
         # calculate centres of both rectangles
-        v1 = a.ll.x + wa
-        v2 = b.ll.x + wb
+        v1 = a.pos.x + wa
+        v2 = b.pos.x + wb
 
         # move the middle of one of the rectangles
         if v1 > v2:
-            b.ll.x = v1 - wb
-            b.ur.x = v1 + wb
+            b.pos.x = v1 - wb
+            b.size.width = v1 + wb - b.pos.x
             changed = [b]
         elif v2 > v1:
-            a.ll.x = v2 - wa
-            a.ur.x = v2 + wa
+            a.pos.x = v2 - wa
+            a.size.width = v2 + wa - a.pos.x
             changed = [a]
 
         return changed
@@ -334,17 +317,17 @@ class MiddleEq(RectConstraint):
         hb = b.size.height / 2.0
 
         # calculate centres of both rectangles
-        v1 = a.ll.y + ha
-        v2 = b.ll.y + hb
+        v1 = a.pos.y + ha
+        v2 = b.pos.y + hb
 
         # move the middle of one of the rectangles
         if v1 > v2:
-            b.ll.y = v1 - hb
-            b.ur.y = v1 + hb
+            b.pos.y = v1 - hb
+            b.size.height = v1 + hb - b.pos.y
             changed = [b]
         elif v2 > v1:
-            a.ll.y = v2 - ha
-            a.ur.y = v2 + ha
+            a.pos.y = v2 - ha
+            a.size.height = v2 + ha - a.pos.y
             changed = [a]
 
         return changed
@@ -373,10 +356,8 @@ class MinHDist(MinDistConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ur.x + self.dist > b.ll.x:
-            w = b.size.width
-            b.ll.x = a.ur.x + self.dist
-            b.ur.x = b.ll.x + w # keep current width of rectangle
+        if a.pos.x + a.size.width + self.dist > b.pos.x:
+            b.pos.x = a.pos.x + a.size.width + self.dist
             changed = [b]
         return changed
 
@@ -390,10 +371,8 @@ class MinVDist(MinDistConstraint):
         changed = []
         a = self.a
         b = self.b
-        if a.ur.y + self.dist > b.ll.y:
-            h = b.size.height
-            b.ll.y = a.ur.y + self.dist
-            b.ur.y = b.ll.y + h # keep current height of rectangle
+        if a.pos.y + a.size.height + self.dist > b.pos.y:
+            b.pos.y = a.pos.y + a.size.height + self.dist
             changed = [b]
         return changed
 
@@ -423,21 +402,17 @@ class Within(Constraint):
         p = self.parent
         k = self.kid
         pad = self.pad
-        if p.ll.x + pad.left > k.ll.x:
-            w = k.size.width
-            k.ll.x = p.ll.x + pad.left
-            k.ur.x = k.ll.x + w
+        if p.pos.x + pad.left > k.pos.x:
+            k.pos.x = p.pos.x + pad.left
             changed.add(k)
-        if k.ur.x + pad.right > p.ur.x:
-            p.ur.x = k.ur.x + pad.right
+        if k.pos.x + k.size.width + pad.right > p.pos.x + p.size.width:
+            p.size.width = k.pos.x + k.size.width + pad.right - p.pos.x
             changed.add(p)
-        if p.ll.y + pad.bottom > k.ll.y:
-            h = k.size.height
-            k.ll.y = p.ll.y + pad.bottom
-            k.ur.y = k.ll.y + h
+        if p.pos.y + pad.top > k.pos.y:
+            k.pos.y = p.pos.y + pad.top
             changed.add(k)
-        if k.ur.y + pad.top > p.ur.y:
-            p.ur.y = k.ur.y + pad.top
+        if k.pos.y + k.size.height + pad.bottom > p.pos.y + p.size.height:
+            p.size.height = k.pos.y + k.size.height + pad.bottom - p.pos.y
             changed.add(p)
         return changed
 

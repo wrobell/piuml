@@ -18,14 +18,10 @@
 #
 
 """
-Coordination System
-===================
-Cartesian coordinate system is assumed (x-axis leftward, y-axis upward),
-which is aligned with standard geometry, MetaPost, PostScript, etc. but is
-different with screen oriented systems.
-
-Above needs to be considered carefully in case of vertical alignment, which
-is done from top to bottom.
+Coordinate System
+=================
+Screen oriented coordinate system is assumed (x-axis leftward, y-axis
+downard), which is aligned with Cairo.
 """
 
 from collections import namedtuple, MutableSequence
@@ -40,15 +36,47 @@ PELEMENTS = ('artifact', 'class', 'component', 'device', 'node',
 NELEMENTS = ('actor', 'comment', 'interface', 'metaclass', 'stereotype',
         'usecase')
 
-# all UML elements
+# all supported UML elements
 ELEMENTS = PELEMENTS + NELEMENTS
 
 KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
 
-Area = namedtuple('Area', 'top right bottom left')
-_Pos = namedtuple('_Pos', 'x y')
-Size = namedtuple('Size', 'width height')
+
+
+class Pos(object):
+    __slots__ = 'x', 'y'
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __iter__(self):
+        return iter((self.x, self.y))
+
+
+class Size(object):
+    __slots__ = 'width', 'height'
+
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def __iter__(self):
+        return iter((self.width, self.height))
+
+
+class Area(object):
+    __slots__ = 'top', 'right', 'bottom', 'left'
+
+    def __init__(self, top, right, bottom, left):
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+        self.left = left
+
+    def __iter__(self):
+        return iter((self.top, self.right, self.bottom, self.left))
 
 
 def ntype(cls):
@@ -60,71 +88,73 @@ def ntype(cls):
     return cls
 
 
-class Pos(object):
-    def __init__(self, x, y):
-        self._pos = _Pos(x, y)
-
-
-    def __getitem__(self, index):
-        return self._pos[index]
-
-
-    def _set_x(self, x):
-        self._pos = Pos(x, self._pos.y)
-
-
-    def _set_y(self, y):
-        self._pos = Pos(self._pos.x, y)
-
-    x = property(lambda s: s._pos.x, _set_x)
-    y = property(lambda s: s._pos.y, _set_y)
-
-
 
 class Style(object):
     """
     Base style class for boxes and lines.
     """
+    def __init__(self):
+        self.margin = Area(10, 10, 10, 10)
+        self.padding = Area(5, 10, 5, 10)
+
 
 
 class BoxStyle(Style):
     """
     Box style information.
 
-    Rectangle of the box is defined by lower-left and upper-right corners.
-    Thanks to this:
-    
-        BoxStyle.size = BoxStyle.ur - BoxStyle.ll
+    Rectangle of the box is defined by its position and size.
+
+    Box has compartments. There is at least one compartment containing
+    information like UML stereotypes, name of UML named element or simply
+    other boxes.
+
+    Box may have an icon, which is displayed in top right corner of the
+    box, i.e. UML artifact or UML component icon.
 
     :Attributes:
-     ll
-        Lower left corner.
-     ur
-        Upper right corner.
-     head
-        Head height.
+     pos
+        Box position.
+     size
+        Current size of the box.
+     min_size
+        Minimum size of the box.
+     compartment
+        Height of each compartment.
+     icon_size
+        Icon size.
     """
     def __init__(self):
-        self.ll = Pos(0, 0)
-        self.ur = Pos(0, 0)
-        self.head = 0
-        self.edges = (Pos(0, 0), Pos(0, 0))
-        self.margin = Area(10, 10, 10, 10)
-        self.padding = Area(5, 10, 5, 10)
+        """
+        Create box style information.
+        """
+        super(BoxStyle, self).__init__()
+
+        # box specific
+        self.pos = Pos(0, 0)
+        self.size = Size(80, 40)
         self.icon_size = Size(0, 0)
         self.min_size = Size(80, 40)
-        self._set_size(self.min_size)
+        self.compartment = [0]
 
 
-    def _get_size(self):
-        return Size(self.ur.x - self.ll.x, self.ur.y - self.ll.y)
 
-    def _set_size(self, size):
-        w, h = size
-        self.ur.x = self.ll.x + w
-        self.ur.y = self.ll.y + h
+class LineStyle(Style):
+    """
+    Line style.
 
-    size = property(_get_size, _set_size)
+    :Attributes:
+     edges
+        List of line points. 
+    """
+    def __init__(self):
+        """
+        Create line style information.
+        """
+        super(LineStyle, self).__init__()
+        self.min_length = 0
+        self.edges = (Pos(0, 0), Pos(0, 0))
+
 
 
 class Node(list):
@@ -288,6 +318,7 @@ class Line(Node):
     """
     def __init__(self, cls, tail, head, name='', data=[]):
         super(Line, self).__init__(cls, name, data)
+        self.style = LineStyle()
         self.tail = tail
         self.head = head
         self.style.padding = Area(3, 10, 3, 10)

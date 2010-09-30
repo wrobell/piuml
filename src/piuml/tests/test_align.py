@@ -29,7 +29,7 @@ import unittest
 from piuml.data import Style, Pos, Area, Size
 from piuml.renderer.text import draw_text, text_pos_at_line
 
-surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 400, 300)
+surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 600, 300)
 cr = cairo.Context(surface)
 
 class BoxAlignTestCase(unittest.TestCase):
@@ -37,7 +37,7 @@ class BoxAlignTestCase(unittest.TestCase):
     Text alignment at a box tests.
     """
     def _draw(self, name, pad, outside=False):
-        cr.rectangle(100, 100, 200, 100)
+        cr.rectangle(100, 100, 400, 100)
         cr.stroke()
 
         cr.save()
@@ -45,9 +45,9 @@ class BoxAlignTestCase(unittest.TestCase):
         cr.set_source_rgba(0.0, 0.0, 0.0, 0.5)
         dd = 50 if outside else 2
         cr.move_to(100 - dd, 150)
-        cr.line_to(300 + dd, 150)
-        cr.move_to(200, 100 - dd)
-        cr.line_to(200, 200 + dd)
+        cr.line_to(500 + dd, 150)
+        cr.move_to(300, 100 - dd)
+        cr.line_to(300, 200 + dd)
         cr.stroke()
         cr.restore()
 
@@ -58,14 +58,14 @@ class BoxAlignTestCase(unittest.TestCase):
             sign = -1 if outside else 1
             cr.rectangle(100 + sign * pad[3],
                     100 + sign * pad[0],
-                    200 - sign * (pad[1] + pad[3]),
+                    400 - sign * (pad[1] + pad[3]),
                     100 - sign * (pad[0] + pad[2]))
             cr.stroke()
             cr.restore()
 
         style = Style()
-        style.size = Size(200, 100)
-        style.ll = Pos(100, 100)
+        style.size = Size(400, 100)
+        style.pos = Pos(100, 100)
         style.padding = Area(*pad)
 
         dt = partial(draw_text, cr, style.size, style, outside=outside)
@@ -74,10 +74,10 @@ class BoxAlignTestCase(unittest.TestCase):
         dt('(BOTTOM)', align=(0, 1))
         dt('(LEFT)', align=(-1, 0))
         dt('(RIGHT)', align=(1, 0))
-        dt('(LEFTTOP)', align=(-1, -1))
-        dt('(RIGHTTOP)', align=(1, -1))
-        dt('(LBOTTOM)', align=(-1, 1))
-        dt('(RBOTTOM)', align=(1, 1))
+        dt('(L-TOP)', align=(-1, -1))
+        dt('(R-TOP)', align=(1, -1))
+        dt('(L-BOTTOM)', align=(-1, 1))
+        dt('(R-BOTTOM)', align=(1, 1))
 
         cr.show_page()
 
@@ -141,7 +141,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_halign(self):
         """Test text at horizontal line alignment
         """
-        line = tuple((x, 150) for x in (100, 150, 250, 300))
+        line = tuple((x, 150) for x in (100, 250, 350, 500))
         self._draw('line_align_h', line, (0, 0, 0, 0))
         self._draw('line_align_hp', line, (10, 5, 10, 5))
 
@@ -149,7 +149,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_valign(self):
         """Test text at vertical line alignment
         """
-        line = tuple((200, y) for y in (100, 125, 175, 200))
+        line = tuple((300, y) for y in (100, 125, 175, 200))
         self._draw('line_align_v', line, (0, 0, 0, 0))
         self._draw('line_align_vp', line, (10, 5, 10, 5))
 
@@ -157,7 +157,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_ahalign(self):
         """Test text at almost horizontal line alignment
         """
-        line = tuple(zip((100, 150, 250, 300), (150, 140, 160, 150)))
+        line = tuple(zip((100, 250, 400, 500), (150, 140, 160, 150)))
         self._draw('line_align_ah', line, (0, 0, 0, 0))
         self._draw('line_align_ahp', line, (10, 5, 10, 5))
 
