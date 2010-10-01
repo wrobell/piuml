@@ -24,20 +24,16 @@ alignment (minimal size, position, containment, etc.).
 A rectangle has to implement following interface
 
     interface rec 'Rectangle'
-        : ll: Pos
-        : ur: Pos
+        : pos: Pos      # rectangle position
+        : size: Size    # rectangle dimensions
 
     class p 'Pos'
         : x: float
         : y: float
 
-where
-
-    Rectangle.ll
-        Rectangle's lower level corner.
-
-    Rectangle.ur
-        Rectangle's upper right corner.
+    class size 'Size'
+        : width: float
+        : heigth: float
 """
 
 import time
@@ -229,7 +225,7 @@ class BottomEq(RectConstraint):
         if a.pos.y + a.size.height < b.pos.y + b.size.height:
             a.pos.y = b.pos.y + b.size.height - a.size.height
             changed = [a]
-        if a.ll.y > b.ll.y:
+        if a.pos.y + a.size.height > b.pos.y + b.size.height:
             b.pos.y = a.pos.y + a.size.height - b.size.height
             changed = [b]
         return changed
@@ -435,23 +431,21 @@ class Between(Constraint):
 
 
     def __call__(self):
-        rects = sorted(self.others, cmp=lambda a, b: cmp(a.ur.x, b.ll.x))
+        rects = sorted(self.others,
+            cmp=lambda a, b: cmp(a.pos.x + a.size.width, b.pos.x))
         minx = rects[0]
         maxx = rects[-1]
 
-        rects = sorted(self.others, cmp=lambda a, b: cmp(a.ur.y, b.ll.y))
+        rects = sorted(self.others,
+            cmp=lambda a, b: cmp(a.pos.y + a.size.height, b.pos.y))
         miny = rects[0]
         maxy = rects[-1]
 
-        x = (minx.ur.x + maxx.ll.x) / 2.0
-        y = (miny.ur.y + maxy.ll.y) / 2.0
+        x = (minx.pos.x + minx.size.width + maxx.pos.x) / 2.0
+        y = (miny.pos.y + miny.size.height + maxy.pos.y) / 2.0
 
-        a = self.a
-        w, h = a.size
-        a.ll.x = x
-        a.ll.y = y
-        a.ur.x = a.ll.x + w
-        a.ur.y = a.ll.y + h
+        self.a.pos.x = x
+        self.a.pos.y = y
         return []
 
 

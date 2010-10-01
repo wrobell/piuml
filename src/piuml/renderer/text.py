@@ -27,6 +27,8 @@ import pangocairo
 
 from math import atan2
 
+from piuml.data import Pos
+
 # Horizontal align.
 ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 
@@ -128,10 +130,10 @@ def text_pos_at_line(size, line, style, align, outside=False):
     else: # ALIGN_CENTER
         p1, p2 = line_middle_segment(line)
 
-    x0 = (p1[0] + p2[0]) / 2.0
-    y0 = (p1[1] + p2[1]) / 2.0
-    dx = p2[0] - p1[0]
-    dy = p2[1] - p1[1]
+    x0 = (p1.x + p2.x) / 2.0
+    y0 = (p1.y + p2.y) / 2.0
+    dx = p2.x - p1.x
+    dy = p2.y - p1.y
 
     if abs(dx) < EPSILON:
         d1 = -1.0
@@ -150,9 +152,9 @@ def text_pos_at_line(size, line, style, align, outside=False):
         hint = w2 * d2
 
         if halign == ALIGN_LEFT:
-            x = p1[0] + pad.left
+            x = p1.x + pad.left
         elif halign == ALIGN_RIGHT:
-            x = p2[0] - width - pad.right
+            x = p2.x - width - pad.right
         else:
             x = x0 - w2
 
@@ -177,16 +179,16 @@ def text_pos_at_line(size, line, style, align, outside=False):
             hint = h2 / d2
 
         if halign == ALIGN_LEFT:
-            y = p1[1] + pad.top
+            y = p1.y + pad.top
         elif halign == ALIGN_RIGHT:
-            y = p2[1] - pad.bottom - height
+            y = p2.y - pad.bottom - height
         else:
             y = y0 - h2
 
         if valign == ALIGN_TOP:
-            x = p1[0] - width - pad.left
+            x = p1.x - width - pad.left
         elif valign == ALIGN_BOTTOM:
-            x = p1[0] + pad.right + hint
+            x = p1.x + pad.right + hint
         else:
             assert False
 
@@ -209,13 +211,13 @@ def line_center(edges):
     specified edges.
     """
     p1, p2 = line_middle_segment(edges)
-    pos = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
+    pos = Pos((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
     angle = atan2(p2.y - p1.y, p2.x - p1.x)
     return pos, angle
 
 
 def pango_layout(cr, text):
-    pcr = pangocairo.CairoContext(cr)
+    pcr = pangocairo.CairoContext(cr._cr)
     l = pcr.create_layout()
     l.set_font_description(pango.FontDescription('sans 10'))
     attrs, t, _ = pango.parse_markup(text)

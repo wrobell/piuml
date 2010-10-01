@@ -8,7 +8,8 @@ pp -i> pd
 pr -i> pd
 pl -i> pd
 
-align=center: pp pr pl
-align=middle: pr pd
+:layout:
+    center: pp pr pl
+    middle: pr pd
 
 # vim: sw=4:et:ai

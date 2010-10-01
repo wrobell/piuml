@@ -31,6 +31,7 @@ from cStringIO import StringIO
 from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
+import operator
 
 from piuml.data import Size, Pos, Style, Area, Node
 from piuml.renderer.text import *
@@ -142,7 +143,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
     def __init__(self):
         GenericASTTraversal.__init__(self, None)
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
-        self.cr = cairo.Context(self.surface)
+        self.cr = CairoBBContext(cairo.Context(self.surface))
 
 
     def calc(self, ast):
@@ -282,7 +283,7 @@ class CairoRenderer(GenericASTTraversal):
             skip_top += pad.top
             cr.move_to(x, y + skip_top)
             cr.line_to(x + width, y + skip_top)
-            skip_top += draw_text(cr._cr, parent.style.size, parent.style,
+            skip_top += draw_text(cr, parent.style.size, parent.style,
                     features, pos=(0, skip_top), align=(-1, -1))
             skip_top += pad.top
         return skip_top
@@ -344,7 +345,7 @@ class CairoRenderer(GenericASTTraversal):
             lskip = -(iw + pad.top) / 2.0
 
         name = _name(node, bold, underline)
-        draw_text(cr._cr, style.size, style,
+        draw_text(cr, style.size, style,
                 name,
                 lalign=lalign,
                 pos=(lskip, 0),
@@ -392,7 +393,7 @@ class CairoRenderer(GenericASTTraversal):
         # first draw lines to the middle of icon
         for l in n.data['lines']:
             i = -1 if l.head is n else 0
-            line = (l.style.edges[i], (x0, y0))
+            line = (l.style.edges[i], Pos(x0, y0))
             draw_line(cr, line)
 
         # then erase lines, so they touch only the icon shape
@@ -515,7 +516,7 @@ class CairoRenderer(GenericASTTraversal):
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
 
-        dt = partial(draw_text, self.cr._cr, edge.style.edges, edge.style, align_f=text_pos_at_line)
+        dt = partial(draw_text, self.cr, edge.style.edges, edge.style, align_f=text_pos_at_line)
         self._draw_association_end(dt, edge.data['tail'], -1)
         self._draw_association_end(dt, edge.data['head'], 1)
 
@@ -569,10 +570,10 @@ class CairoRenderer(GenericASTTraversal):
             y2 = y1 + h
             x = (x1 + x2) / 2.0
             y = (y1 + y2) / 2.0
-            return (x1, y), (x2, y), (x, y1), (x, y2)
+            return Pos(x1, y), Pos(x2, y), Pos(x, y1), Pos(x, y2)
 
         def shortest(t, h):
-            r = sorted(get_cp(t) + get_cp(h))
+            r = sorted(get_cp(t) + get_cp(h), key=operator.attrgetter('x'))
             return r[len(r) / 2 - 1], r[len(r) / 2]
 
         edges = shortest(t, h)
@@ -581,7 +582,7 @@ class CairoRenderer(GenericASTTraversal):
         name = _name(line)
         if name:
             segment = line_middle_segment(edges)
-            draw_text(self.cr._cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
+            draw_text(self.cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
 
 
     def n_diagram(self, n):

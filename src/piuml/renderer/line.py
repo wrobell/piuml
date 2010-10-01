@@ -31,9 +31,9 @@ def draw_line(cr, edges, draw_tail=None, draw_head=None, dash=None):
         draw_head = draw_head_none
 
     p0, p1 = edges[:2]
-    t_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
+    t_angle = atan2(p1.y - p0.y, p1.x - p0.x)
     p1, p0 = edges[-2:]
-    h_angle = atan2(p1[1] - p0[1], p1[0] - p0[0])
+    h_angle = atan2(p1.y - p0.y, p1.x - p0.x)
 
     cr.save()
     cr.set_line_join(cairo.LINE_JOIN_ROUND)
