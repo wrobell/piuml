@@ -444,8 +444,8 @@ class Between(Constraint):
         x = (minx.pos.x + minx.size.width + maxx.pos.x) / 2.0
         y = (miny.pos.y + miny.size.height + maxy.pos.y) / 2.0
 
-        self.a.pos.x = x
-        self.a.pos.y = y
+        self.a.pos.x = x - self.a.size.width / 2.0
+        self.a.pos.y = y - self.a.size.height / 2.0
         return []
 
 
