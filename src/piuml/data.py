@@ -152,7 +152,7 @@ class LineStyle(Style):
         Create line style information.
         """
         super(LineStyle, self).__init__()
-        self.min_length = 0
+        self.min_length = 100
         self.edges = (Pos(0, 0), Pos(0, 0))
 
 
