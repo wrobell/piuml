@@ -210,7 +210,7 @@ class CairoDimensionCalculator(GenericASTTraversal):
 
 
     def n_ielement(self, n):
-        n.style.size = Size(28, 28)
+        n.style.size = Size(36, 36)
 
 
     def _set_edge_len(self, edge, length=0):
@@ -368,8 +368,10 @@ class CairoRenderer(GenericASTTraversal):
     def n_ielement(self, n):
         cr = self.cr
         x, y = n.style.pos
-        x0 = x + 14 
-        y0 = y + 14
+        width, height = n.style.size
+        nose = 2
+        x0 = x + width / 2.0
+        y0 = y + height / 2.0
         angle = pi / 2.0
 
         is_assembly = n.data['assembly'] is not None
@@ -383,32 +385,22 @@ class CairoRenderer(GenericASTTraversal):
             if dep.tail is n:
                 angle = -angle
 
-        draw_provided = partial(cr.arc, x0, y0, 10, 0, pi * 2.0)
-        draw_required = partial(cr.arc, x0, y0, 14, angle, pi + angle)
-
         #
         # draw provided/required or assembly interface icons
         #
 
-        # first draw lines to the middle of icon
-        for l in n.data['lines']:
-            i = -1 if l.head is n else 0
-            line = (l.style.edges[i], Pos(x0, y0))
-            draw_line(cr, line)
+        # icon drawing functions
+        draw_provided = partial(cr.arc, x0, y0, width / 2.0 - nose * 3, 0, pi * 2.0)
+        draw_required = partial(cr.arc, x0, y0, height / 2.0 - nose, angle, pi + angle)
 
-        # then erase lines, so they touch only the icon shape
-        cr.save()
-        cr.set_operator(cairo.OPERATOR_CLEAR)
-        draw_provided()
-        cr.fill()
-        if is_assembly or is_usage:
-            draw_required()
-            cr.close_path()
-            cr.fill()
-        cr.restore()
+        # draw nose
+        cr.move_to(x, y0)
+        cr.line_to(x + nose, y0)
+        cr.move_to(x + width - nose * 3, y0)
+        cr.line_to(x + width, y0)
+        cr.stroke()
 
-        # finally, draw the shape
-        cr.save()
+        # draw icons
         if is_usage or is_assembly:
             cr.save()
             draw_required()
@@ -420,6 +412,7 @@ class CairoRenderer(GenericASTTraversal):
             cr.stroke()
             cr.restore()
 
+        # draw interface name
         draw_text(cr, n.style.size, n.style, n.name, align=(0, 1), outside=True)
 
 
