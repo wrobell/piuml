@@ -323,14 +323,29 @@ class Layout(object):
 
     def _ielement(self, node):
         nodes = []
+        left = None # find left node for hspan
+        l_len = 0 # left side length
+        right = None # find right node for hspan
+        r_len = 0 # right side length
+
+        # find nodes for alignment - the components in case of assembly
         for e in node.data['lines']:
-            p = lca(self.ast, e.tail, e.head)
-            dist = lsb(p, e.tail, e.head)
-            self.hspan(dist[0], dist[1])
-            if e.tail.cls != node.cls:
-                nodes.append(e.tail)
             if e.head.cls != node.cls:
+                if left is None:
+                    left = e.head
+                l_len = max(l_len, e.style.min_length)
                 nodes.append(e.head)
+            if e.tail.cls != node.cls:
+                if right is None:
+                    right = e.tail
+                r_len = max(r_len, e.style.min_length)
+                nodes.append(e.tail)
+
+        p = lca(self.ast, left, right)
+        left, right = lsb(p, left, right)
+        self.lines[left.id, right.id] = r_len + l_len
+        self.lines[right.id, left.id] = r_len + l_len
+
         self.between(node, nodes)
 
 
