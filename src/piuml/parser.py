@@ -274,7 +274,6 @@ class piUMLParser(GenericParser):
     def p_expr(self, args):
         """
         expr ::= expr comment
-        expr ::= stelement
         expr ::= element
         expr ::= attribute
         expr ::= operation
@@ -296,8 +295,14 @@ class piUMLParser(GenericParser):
     def p_element(self, args):
         """
         element ::= ELEMENT SPACE ID SPACE NAME
+        element ::= ELEMENT SPACE ID SPACE STEREOTYPE SPACE NAME
         """
         self._trim(args)
+
+        stereotypes = []
+        if args[2].type == 'STEREOTYPE':
+            stereotypes.extend(st_parse(args[2].value))
+            del args[2]
 
         cls = args[0].value.strip()
         indent = args[0].value.split(cls)[0]
@@ -306,6 +311,8 @@ class piUMLParser(GenericParser):
 
         n = Element(cls, name=name)
         n.id = id
+        if stereotypes:
+            n.stereotypes.extend(stereotypes)
 
         if cls in KEYWORDS:
             n.stereotypes.insert(0, cls)
@@ -370,15 +377,6 @@ class piUMLParser(GenericParser):
         return n
 
 
-    def p_stelement(self, args):
-        """
-        stelement ::= element SPACE STEREOTYPE
-        """
-        n = args[0]
-        n.stereotypes.extend(st_parse(args[2].value))
-        return n
-
-
     def _trim(self, args):
         """
         Remove whitespace from arguments.
@@ -417,18 +415,18 @@ class piUMLParser(GenericParser):
         """
         association ::= ID SPACE ASSOCIATION SPACE ID
         association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
-        association ::= ID SPACE ASSOCIATION SPACE NAME SPACE STEREOTYPE SPACE ID
+        association ::= ID SPACE ASSOCIATION SPACE STEREOTYPE SPACE NAME SPACE ID
         """
         self._trim(args)
-
-        name = None
-        if args[2].type == 'NAME':
-            name = args[2].value
-            del args[2]
 
         stereotypes = []
         if args[2].type == 'STEREOTYPE':
             stereotypes.extend(st_parse(args[2].value))
+            del args[2]
+
+        name = None
+        if args[2].type == 'NAME':
+            name = args[2].value
             del args[2]
 
         assert args[0].type == 'ID' and args[2].type == 'ID'

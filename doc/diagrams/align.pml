@@ -1,16 +1,16 @@
-class d1 'Default' <<align>>
+class d1 <<align>> 'Default'
     class dc1 'A'
     class dc2 'B'
         class dc3 'C'
         class dc4 'D'
 
-class t1 'Top' <<align>>
+class t1 <<align>> 'Top'
     class tc1 'A'
     class tc2 'B'
         class tc3 'C'
         class tc4 'D'
 
-class b1 'Bottom' <<align>>
+class b1 <<align>> 'Bottom'
     class bc1 'A'
     class bc2 'B'
         class bc3 'C'
@@ -22,7 +22,7 @@ class b1 'Bottom' <<align>>
 :layout:
     bottom: bc1 bc3
 
-class r1 'Right' <<align>>
+class r1 <<align>> 'Right'
     class rc1 'A'
 #    :<<align>>:
 #        : right = A C

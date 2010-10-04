@@ -1,11 +1,11 @@
 # the idea of piUML
 
-artifact f 'model.pml' <<piuml, source>>
+artifact f <<piuml, source>> 'model.pml'
 component c 'piUML'
     component cr 'Renderer'
     component cl 'Layout'
     component cp 'Parser'
-artifact m 'model.pdf' <<document>>
+artifact m <<document>> 'model.pdf'
 
 f <u- cp
 cr -> <<create>> m

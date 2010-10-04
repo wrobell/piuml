@@ -119,11 +119,11 @@ class StereotypesTestCase(unittest.TestCase):
     def test_st_parsing(self):
         """Test stereotype parsing
         """
-        f = StringIO('component a "A" <<test>>')
+        f = StringIO('component a <<test>> "A"')
         ast = parse(f)
         self.assertEquals(['component', 'test'], ast[0].stereotypes)
 
-        f = StringIO('component a "A" <<t1, t2>>')
+        f = StringIO('component a <<t1, t2>> "A"')
         ast = parse(f)
         self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
 
@@ -132,8 +132,8 @@ class StereotypesTestCase(unittest.TestCase):
         """Test dependency stereotype parsing
         """
         f = StringIO("""
-class a 'A' <<aaa>>
-class b 'B' <<bbb>>
+class a <<aaa>> 'A'
+class b <<bbb>> 'B'
 
 a -> <<test>> b
 """)
@@ -147,10 +147,10 @@ a -> <<test>> b
         """Test association stereotype parsing
         """
         f = StringIO("""
-class a 'A' <<aaa>>
-class b 'B' <<bbb>>
+class a <<aaa>> 'A'
+class b <<bbb>> 'B'
 
-a == 'a name' <<t1, t2>> b
+a == <<t1, t2>> 'a name' b
 """)
         ast = parse(f)
         assocs = [n for n in ast.unwind() if n.cls == 'association']
