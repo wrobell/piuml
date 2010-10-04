@@ -27,10 +27,11 @@ import cairo
 import unittest
 
 from piuml.data import Style, Pos, Area, Size
+from piuml.renderer.cr import CairoBBContext
 from piuml.renderer.text import draw_text, text_pos_at_line
 
 surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 600, 300)
-cr = cairo.Context(surface)
+cr = CairoBBContext(cairo.Context(surface))
 
 class BoxAlignTestCase(unittest.TestCase):
     """
@@ -102,11 +103,11 @@ class LineAlignTestCase(unittest.TestCase):
     """
     def _draw(self, name, line, pad):
         cr.move_to(*line[0])
-        cr.arc(line[0][0], line[0][1], 1.0, 0.0, 2.0 * pi)
+        cr.arc(line[0].x, line[0].y, 1.0, 0.0, 2.0 * pi)
         for p1, p2 in zip(line[:-1], line[1:]):
             cr.move_to(*p1)
             cr.line_to(*p2)
-            cr.arc(p2[0], p2[1], 1.0, 0.0, 2.0 * pi)
+            cr.arc(p2.x, p2.y, 1.0, 0.0, 2.0 * pi)
         cr.stroke()
 
         if any(pad):
@@ -115,10 +116,10 @@ class LineAlignTestCase(unittest.TestCase):
             cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
             p1 = line[0]
             p2 = line[-1]
-            cr.rectangle(p1[0] + pad[3],
-                    p1[1] + pad[0],
-                    p2[0] - p1[0] - (pad[1] + pad[3]),
-                    p2[1] - p1[1] - (pad[0] + pad[2]))
+            cr.rectangle(p1.x + pad[3],
+                    p1.x + pad[0],
+                    p2.x - p1.x - (pad[1] + pad[3]),
+                    p2.y - p1.y - (pad[0] + pad[2]))
             cr.stroke()
             cr.restore()
 
@@ -141,7 +142,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_halign(self):
         """Test text at horizontal line alignment
         """
-        line = tuple((x, 150) for x in (100, 250, 350, 500))
+        line = tuple(Pos(x, 150) for x in (100, 250, 350, 500))
         self._draw('line_align_h', line, (0, 0, 0, 0))
         self._draw('line_align_hp', line, (10, 5, 10, 5))
 
@@ -149,7 +150,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_valign(self):
         """Test text at vertical line alignment
         """
-        line = tuple((300, y) for y in (100, 125, 175, 200))
+        line = tuple(Pos(300, y) for y in (100, 125, 175, 200))
         self._draw('line_align_v', line, (0, 0, 0, 0))
         self._draw('line_align_vp', line, (10, 5, 10, 5))
 
@@ -157,7 +158,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_ahalign(self):
         """Test text at almost horizontal line alignment
         """
-        line = tuple(zip((100, 250, 400, 500), (150, 140, 160, 150)))
+        line = tuple(Pos(x, y) for x, y in zip((100, 250, 400, 500), (150, 140, 160, 150)))
         self._draw('line_align_ah', line, (0, 0, 0, 0))
         self._draw('line_align_ahp', line, (10, 5, 10, 5))
 
@@ -165,7 +166,7 @@ class LineAlignTestCase(unittest.TestCase):
     def test_avalign(self):
         """Test text at almost vertical line alignment
         """
-        line = tuple(zip((200, 190, 210, 200), (100, 125, 175, 200)))
+        line = tuple(Pos(x, y) for x, y in zip((200, 190, 210, 200), (100, 125, 175, 200)))
         self._draw('line_align_av', line, (0, 0, 0, 0))
         self._draw('line_align_avp', line, (10, 5, 10, 5))
 
