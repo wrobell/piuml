@@ -348,6 +348,8 @@ class piUMLParser(GenericParser):
             while i > level:
                 i = istack.pop()[0]
             if i < level:
+                if __debug__:
+                    print node.id, node.name, i, level, istack
                 raise ParseError('Inconsistent indentation')
             istack.append((level, node))
 
@@ -628,7 +630,7 @@ class piUMLParser(GenericParser):
         return n
 
 
-    def _feature(self, feature, value):
+    def _feature(self, feature, value, title=False):
         """
         Create feature node. 
 
@@ -637,9 +639,14 @@ class piUMLParser(GenericParser):
             Feature type, i.e. attribute, operation.
          value
             Name assigned to feature node.
+         title
+            If ``True`` then feature is title of features to follow, i.e.
+            stereotype name of stereotype attributes.
         """
-        indent = value.split(':')[0]
-        txt = value.strip()[1:].strip()
+        indent, txt = value.split(':', 1)
+        if title:
+            txt = txt[:-1] # get rid of ending ':' from title
+        txt = txt.strip()
 
         parent = self._istack[-1][1]
 
@@ -686,7 +693,7 @@ class piUMLParser(GenericParser):
         """
         stattributes ::= STATTRIBUTES
         """
-        n = self._feature('stattributes', args[0].value[1:-1])
+        n = self._feature('stattributes', args[0].value, title=True)
         n.name = st_parse(n.name)[0]
         return n
 

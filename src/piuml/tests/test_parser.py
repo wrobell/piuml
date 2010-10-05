@@ -191,14 +191,31 @@ class c1 "A"
         : y: int
 """)
         ast = parse(f)
-        ast.id = 'diagram'
-        data = dict((n.id, n) for n in ast.unwind())
-        cls = data['c1']
+        cls = ast.cache['c1']
         self.assertEquals(1, len(cls))
         self.assertEquals(2, len(cls[0]))
         self.assertEquals('tt', cls[0].name)
         self.assertEquals('x: int', cls[0][0].name)
         self.assertEquals('y: int', cls[0][1].name)
+
+
+    def test_st_attributes_with_packaging(self):
+        """Test adding stereotype attributes with packaging
+        """
+        f = StringIO("""
+class c1 'A'
+    class c2 'B'
+    : <<tt>> :
+        : x: int
+        : y: int
+""")
+        ast = parse(f)
+        cls = ast.cache['c1']
+        self.assertEquals(2, len(cls)) # stereotype <<tt>> attributes and inner class c2
+        self.assertEquals(2, len(cls[1]))
+        self.assertEquals('tt', cls[1].name)
+        self.assertEquals('x: int', cls[1][0].name)
+        self.assertEquals('y: int', cls[1][1].name)
 
 
     def test_association_ends(self):
