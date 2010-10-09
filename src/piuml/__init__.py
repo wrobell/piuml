@@ -50,7 +50,7 @@ def generate(f, fout, filetype='pdf'):
     renderer.output = fout
 
     ast = parse(f)
-    renderer.constraint(ast)
+    renderer.measure(ast)
     graph.layout(ast)
     renderer.render(ast)
 

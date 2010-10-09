@@ -263,10 +263,31 @@ class CairoRenderer(GenericASTTraversal):
         self.output = None
         self.filetype = 'pdf'
 
-    def constraint(self, ast):
+
+    def measure(self, ast):
+        """
+        Calculate minimal size of all diagram nodes.
+
+        :Parameters:
+         ast
+            Diagram start node.
+        """
         self.calc.calc(ast)
 
+
     def render(self, ast):
+        """
+        Render diagram as graphical file.
+
+        :Parameters:
+         ast
+            Diagram start node.
+
+        .. seealso::
+            CairoRenderer.output
+            CairoRenderer.filetype
+            
+        """
         self.preorder(ast)
 
 
