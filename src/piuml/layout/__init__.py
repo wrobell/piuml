@@ -18,5 +18,6 @@
 #
 
 from piuml.layout.cl import ConstraintLayout as Layout
+from piuml.layout.router import Router
 
 # vim: sw=4:et:ai

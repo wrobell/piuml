@@ -31,7 +31,6 @@ from cStringIO import StringIO
 from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
-import operator
 
 from piuml.data import Size, Pos, Style, Area, Node
 from piuml.renderer.text import *
@@ -40,13 +39,14 @@ from piuml.renderer.line import *
 from piuml.renderer.util import st_fmt
 
 
-def _name(node, bold=True, underline=False):
+def _name(node, bold=True, underline=False, fmt='%s'):
     texts = []
     if node.stereotypes:
         texts.append('<span size="small">%s</span>' \
                 % st_fmt(node.stereotypes))
     name = node.name.replace('\\n', '\n')
     if name:
+        name = fmt % name
         if bold:
             name = '<b>%s</b>' % name
         if underline:
@@ -574,28 +574,11 @@ class CairoRenderer(GenericASTTraversal):
          name_fmt
             String format used to format name of an edge.
         """
-        #edges = line.style.edges
-        # FIXME: code cleanup
-        t, h = line.tail, line.head
-        def get_cp(node):
-            x1, y1 = node.style.pos
-            w, h = node.style.size
-            x2 = x1 + w
-            y2 = y1 + h
-            x = (x1 + x2) / 2.0
-            y = (y1 + y2) / 2.0
-            return Pos(x1, y), Pos(x2, y), Pos(x, y1), Pos(x, y2)
+        draw_line(self.cr, line.style.edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        def shortest(t, h):
-            r = sorted(get_cp(t) + get_cp(h), key=operator.attrgetter('x'))
-            return r[len(r) / 2 - 1], r[len(r) / 2]
-
-        edges = shortest(t, h)
-        draw_line(self.cr, edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
-
-        name = _name(line)
+        name = _name(line, fmt=name_fmt)
         if name:
-            segment = line_middle_segment(edges)
+            segment = line_middle_segment(line.style.edges)
             draw_text(self.cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
 
 

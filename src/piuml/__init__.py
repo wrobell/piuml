@@ -27,7 +27,7 @@ layout.
 """
 
 from piuml.parser import parse
-from piuml.layout import Layout
+from piuml.layout import Layout, Router
 from piuml.renderer import Renderer
 
 __version__ = '0.1.0'
@@ -46,12 +46,15 @@ def generate(f, fout, filetype='pdf'):
     """
     graph = Layout()
     renderer = Renderer()
+    router = Router()
+
     renderer.filetype = filetype
     renderer.output = fout
 
     ast = parse(f)
     renderer.measure(ast)
     graph.layout(ast)
+    router.route(ast)
     renderer.render(ast)
 
 
