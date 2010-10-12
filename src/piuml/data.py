@@ -54,6 +54,9 @@ class Pos(object):
     def __iter__(self):
         return iter((self.x, self.y))
 
+    def __str__(self):
+        return '(%s, %s)' % (self.x, self.y)
+
 
 class Size(object):
     __slots__ = 'width', 'height'
@@ -64,6 +67,9 @@ class Size(object):
 
     def __iter__(self):
         return iter((self.width, self.height))
+
+    def __str__(self):
+        return '%s, %s' % (self.width, self.height)
 
 
 class Area(object):
