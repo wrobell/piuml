@@ -17,6 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Layout (alignment, span matrix, etc) tests.
+"""
+
 from cStringIO import StringIO
 import unittest
 
@@ -220,7 +224,7 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 class LayoutTestCase(unittest.TestCase):
     """
-    Alignment tests.
+    Layout tests.
     """
     def test_default_simple(self):
         """Test default, simple alignment
