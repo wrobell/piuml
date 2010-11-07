@@ -57,6 +57,9 @@ class Pos(object):
     def __str__(self):
         return '(%s, %s)' % (self.x, self.y)
 
+    def __eq__(self, p):
+        return self.x == p.x and self.y == p.y
+
 
 class Size(object):
     __slots__ = 'width', 'height'
