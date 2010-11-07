@@ -1,3 +1,7 @@
+#
+# piUML data model
+#
+
 class n "Node: list"
 #    : parent: Node = None
     : type: str
@@ -9,47 +13,30 @@ class n "Node: list"
     : is_packaging(): bool
 
 class e "Element"
-class f "Feature"
-class ie "IElement"
-class st "Section"
-class d "Diagram"
-class an "Align"
 
 class l "Line"
-    : tail: Node
-    : head: Node
+    : tail: Node [1]
+    : head: Node [1]
 
-class style "Style"
-    : pos: Pos
-    : size: Size
-    : edges: Pos[*]
-    : padding: Area
-    : margin: Area
-    : inner: Area
+class i "IElement"
 
-class a "Area: tuple"
-    : top: float
-    : right: float
-    : bottom: float
-    : left: float
+class s "Style"
 
-class p "Pos: tuple"
-    : x: float
-    : y: float
-
-class s "Size: tuple"
-    : width: float
-    : height: float
-
+e => n
 l => n
-#n -> style <<AAAA>>
-n =>=> 'has style' style
+i => n
+
+n =>=> 'has style' s
     : [1]
     : style [1]
-#n ==> n # parent
-#n ==> n # 0..* children
+
+#n =>=> n
+#    : parent [1]
+#    : items [0..*]
 
 :layout:
-    center: n l
+    top: e l i
+    center: l n
+    middle: n s
 
 # vim: sw=4:et:ai
