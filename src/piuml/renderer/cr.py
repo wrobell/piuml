@@ -602,8 +602,8 @@ class CairoRenderer(GenericASTTraversal):
 
         x1, y1, x2, y2 = self.cr.bbox
         x1, y1, x2, y2 = map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2)))
-        w = abs(x2 - x1) * scale
-        h = abs(y2 - y1) * scale
+        w = int(ceil(abs(x2 - x1) * scale))
+        h = int(ceil(abs(y2 - y1) * scale))
 
         if self.filetype == 'png':
             s = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
