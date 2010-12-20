@@ -59,18 +59,19 @@ Generalization
 
 Layout
 ------
-Default layout middle.
-
-Horizontal alignment
+Horizontal alignment operators
     top
     center
     bottom
 
-Vertical alignment
+Vertical alignment operators
     left
     middle
     right
 
+Default layout alignment is middle.
+
+Examples::
 
     a b c
     center: b c
@@ -94,6 +95,17 @@ Vertical alignment
     b   e
 
 
+The operators change current layout alignment. It is possible to change 
+it few times, for example::
+
+    a b c
+    center: b c
+    top: c b    # overrides usage of 'center' operator above
+
+    a c b
+
+The purpose of above is to allow to override default alignment, i.e. when
+a diagram is imported by new diagram.
 
 Errors
 ------
