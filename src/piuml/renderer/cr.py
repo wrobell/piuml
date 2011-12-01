@@ -323,7 +323,8 @@ class CairoRenderer(GenericASTTraversal):
         underline = False
         lalign = pango.ALIGN_CENTER
         bold = True
-        lskip = 0
+        xskip = 0
+        yskip = 0
 
         cr = self.cr
         cr.save()
@@ -331,6 +332,7 @@ class CairoRenderer(GenericASTTraversal):
             draw_box3d(cr, pos, size)
         elif node.cls in ('package', 'profile'):
             draw_tabbed_box(cr, pos, size)
+            yskip = 20
         elif node.cls == 'usecase':
             align = (0, 0)
 
@@ -363,13 +365,13 @@ class CairoRenderer(GenericASTTraversal):
                 draw_artifact(cr, (x0, y0), (iw, ih))
             else:
                 draw_component(cr, (x0, y0), (iw, ih))
-            lskip = -(iw + pad.top) / 2.0
+            xskip = -(iw + pad.top) / 2.0
 
         name = _name(node, bold, underline)
         draw_text(cr, style.size, style,
                 name,
                 lalign=lalign,
-                pos=(lskip, 0),
+                pos=(xskip, yskip),
                 align=align, outside=outside)
 
         k = len(style.compartment) - 1

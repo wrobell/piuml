@@ -64,13 +64,12 @@ def draw_tabbed_box(cr, pos, size, tab=(50, 20)):
      tab
         Size of the tab.
     """
-    x = pos.x + tab[0]
-    y = pos.y - tab[1]
-    cr.rectangle(pos.x, pos.y, size.width, size.height)
-    cr.move_to(pos.x, pos.y)
-    cr.line_to(pos.x, y)
-    cr.line_to(x, y)
-    cr.line_to(x, pos.y)
+    y = pos.y + tab[1]
+    cr.rectangle(pos.x, y, size.width, size.height - tab[1])
+    cr.move_to(pos.x, y)
+    cr.rel_line_to(0, -tab[1])
+    cr.rel_line_to(tab[0], 0)
+    cr.rel_line_to(0, tab[1])
     cr.stroke()
 
 

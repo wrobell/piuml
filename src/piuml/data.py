@@ -221,6 +221,8 @@ class Node(list):
         if cls == 'actor':
             self.style.padding = Area(0, 0, 0, 0)
             self.style.size = Size(40, 60)
+        elif cls in ('package', 'profile'):
+            self.style.size = Size(80, 60)
         elif cls == 'association':
             self.style.padding = Area(3, 18, 3, 18)
         elif cls in ('artifact', 'component'):
