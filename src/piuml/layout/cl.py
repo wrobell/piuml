@@ -23,6 +23,8 @@ from piuml.data import Area, Node
 
 from collections import namedtuple
 
+import logging
+log = logging.getLogger('piuml.layout.cl')
 
 DefinedAlign = namedtuple('DefinedAlign', 'cls align span')
 
@@ -357,6 +359,7 @@ class Layout(object):
          line
             Edge to constraint.
         """
+        log.debug('set line length constraint for {}'.format(line.cls))
         t, h = line.tail, line.head
 
         # find siblings

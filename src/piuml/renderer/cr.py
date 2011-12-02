@@ -227,6 +227,14 @@ class CairoDimensionCalculator(GenericASTTraversal):
         n.style.size = Size(36, 36)
 
 
+    def n_line(self, n):
+        t = '_' + n.cls
+        if n.cls == 'extension':
+            t = '_association'
+        f = getattr(self, t)
+        f(n)
+
+
     def _set_edge_len(self, edge, length=0):
         """
         Calculate and set minimal length of an edge.
@@ -238,30 +246,34 @@ class CairoDimensionCalculator(GenericASTTraversal):
             Additional length to be added to calculated length.
         """
         cr = self.cr
-        lens = [text_size(cr, edge.name, FONT)[0] + length]
+        lens = [text_size(cr, edge.name)[0] + length]
         if edge.stereotypes:
-            lens.append(text_size(cr, st_fmt(edge.stereotypes), FONT)[0])
-        l = max(75, 2 * sum(lens))
-        edge.style.size = Size(l, 0)
+            lens.append(text_size(cr, st_fmt(edge.stereotypes))[0])
+        edge.style.min_length = max(75, 2 * sum(lens))
         return sum(lens)
 
 
-    def n_dependency(self, edge):
+    def _dependency(self, edge):
         """
         Calculate minimal length of a dependency line.
         """
         self._set_edge_len(edge)
 
-    n_commentline = n_connector = n_generalization = n_dependency
+    _commentline = _connector = _generalization = _dependency
 
-    def n_association(self, edge):
+    def _association(self, edge):
         """
         Calculate minimal length of an association line.
         """
         te = edge.data['tail']
         he = edge.data['head']
+
+        # name length taken into account in _set_edge_len
         txt = ''.join(t for t in te[:3] + he[:3] if t)
-        self._set_edge_len(edge, text_size(self.cr, txt, FONT)[0])
+        w = text_size(self.cr, txt)[0]
+
+        log.debug('calculate size of association "{}": {}'.format(txt, w))
+        self._set_edge_len(edge, w)
 
 
 
