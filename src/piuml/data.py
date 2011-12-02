@@ -60,6 +60,9 @@ class Pos(object):
     def __eq__(self, p):
         return self.x == p.x and self.y == p.y
 
+    def __repr__(self):
+        return 'Pos({},{})'.format(self.x, self.y)
+
 
 class Size(object):
     __slots__ = 'width', 'height'
