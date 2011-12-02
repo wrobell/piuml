@@ -38,6 +38,8 @@ from piuml.renderer.shape import *
 from piuml.renderer.line import *
 from piuml.renderer.util import st_fmt
 
+import logging
+log = logging.getLogger('piuml.renderer.cr')
 
 def _name(node, bold=True, underline=False, fmt='%s'):
     texts = []
@@ -53,6 +55,18 @@ def _name(node, bold=True, underline=False, fmt='%s'):
             name = '<u>%s</u>' % name
         texts.append(name)
     return '\n'.join(texts)
+
+
+def _features(node, cls):
+    return '\n'.join(f.name for f in node if f.cls == cls)
+
+
+def _head_size(style):
+    ph = style.padding.top + style.padding.bottom
+    height = style.size.height
+
+    k = len(style.compartment) - 1
+    return height - k * ph - sum(style.compartment[1:])
 
 
 class CairoBBContext(object):
@@ -180,8 +194,8 @@ class CairoDimensionCalculator(GenericASTTraversal):
         sizes.append(Size(nw, nh))
 
         compartments = []
-        attrs = '\n'.join(f.name for f in node if f.cls == 'attribute')
-        opers = '\n'.join(f.name for f in node if f.cls == 'operation')
+        attrs = _features(node, 'attribute')
+        opers = _features(node, 'operation')
         if attrs:
             w, h = text_size(cr, attrs)
             sizes.append(Size(w, h))
@@ -291,23 +305,19 @@ class CairoRenderer(GenericASTTraversal):
         self.preorder(ast)
 
 
-    def _compartment(self, parent, node, filter, skip_top, title=None):
+    def _compartment(self, parent, features, y0, title=None):
         cr = self.cr
         pos = x, y = parent.style.pos
         size = width, height = parent.style.size
         pad = parent.style.padding
 
-        features = '\n'.join(f.name for f in node if filter(f))
         if title:
             features = title + features
         if features:
-            skip_top += pad.top
-            cr.move_to(x, y + skip_top)
-            cr.line_to(x + width, y + skip_top)
-            skip_top += draw_text(cr, parent.style.size, parent.style,
-                    features, pos=(0, skip_top), align=(-1, -1))
-            skip_top += pad.top
-        return skip_top
+            cr.move_to(x, y + y0)
+            cr.line_to(x + width, y + y0)
+            draw_text(cr, parent.style.size, parent.style,
+                    features, pos=(0, y0), align=(-1, -1))
 
 
     def n_element(self, node):
@@ -318,7 +328,7 @@ class CairoRenderer(GenericASTTraversal):
         pad = style.padding
         iw, ih = style.icon_size
 
-        align = (0, -1)
+        align = (0, 0)
         outside = False
         underline = False
         lalign = pango.ALIGN_CENTER
@@ -368,22 +378,37 @@ class CairoRenderer(GenericASTTraversal):
             xskip = -(iw + pad.top) / 2.0
 
         name = _name(node, bold, underline)
-        draw_text(cr, style.size, style,
+
+        # calculate height of name from compartment data
+        tskip = _head_size(style)
+        log.debug('element {} allocated head height {}'.format(name, tskip))
+
+        draw_text(cr, (width, tskip), style,
                 name,
                 lalign=lalign,
                 pos=(xskip, yskip),
                 align=align, outside=outside)
 
-        k = len(style.compartment) - 1
-        comps = sum(style.compartment[1:]) if k else 0 # height of compartments
-        tskip = height - k * (pad.top + pad.bottom) - comps
+        nc = 1
+        attrs = _features(node, 'attribute')
+        if attrs:
+            self._compartment(node, attrs, tskip)
+            tskip += style.compartment[nc] + pad.top + pad.bottom
+            nc += 1
 
-        tskip = self._compartment(node, node, lambda f: f.cls == 'attribute', tskip)
-        tskip = self._compartment(node, node, lambda f: f.cls == 'operation', tskip)
+        opers = _features(node, 'operation')
+        if opers:
+            self._compartment(node, opers, tskip)
+            tskip += style.compartment[nc] + pad.top + pad.bottom
+            nc += 1
+
         st_attrs = (f for f in node if f.cls == 'stattributes')
         for f in st_attrs:
             title = st_fmt([f.name]) + '\n' 
-            tskip = self._compartment(node, f, lambda f: f.cls == 'attribute', tskip, title)
+            attrs = '\n'.join(a.name for a in f)
+            self._compartment(node, attrs, tskip, title)
+            tskip += style.compartment[nc] + pad.top + pad.bottom
+            nc += 1
 
         cr.restore()
 
