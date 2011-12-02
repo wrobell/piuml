@@ -560,9 +560,9 @@ class CairoRenderer(GenericASTTraversal):
         dt = TEND[edge.data['tail'][-1]]
         dh = HEND[edge.data['head'][-1]]
 
-        dir = edge.data['direction']
+        assert isinstance(edge.head, Node)
         name_fmt = '%s'
-        if dir and dir == 'head':
+        if edge.data['direction'] is edge.head:
             name_fmt = u'%s \u25b6'
         else:
             name_fmt = u'\u25c0  %s'
