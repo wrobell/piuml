@@ -350,6 +350,10 @@ class CairoRenderer(GenericASTTraversal):
 
         cr = self.cr
         cr.save()
+
+        if node.is_packaging():
+            align = (0, -1)
+
         if node.cls in ('node', 'device'):
             draw_box3d(cr, pos, size)
         elif node.cls in ('package', 'profile'):
