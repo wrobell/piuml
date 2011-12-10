@@ -22,7 +22,7 @@ piUML language parser tests.
 """
 
 import unittest
-from cStringIO import StringIO
+from io import StringIO
 
 from piuml.parser import parse, ParseError, UMLError, st_parse
 

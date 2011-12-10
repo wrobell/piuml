@@ -112,7 +112,7 @@ class Solver(object):
             self.count += 1
             if self.count > kill:
                 if __debug__:
-                    print 'Unsolved: %s' % unsolved
+                    print('Unsolved: %s' % unsolved)
                 raise SolverError('Could not find a solution;' \
                     ' unsolved={0} after {1} iterations' \
                     .format(len(unsolved), self.count))
@@ -124,7 +124,7 @@ class Solver(object):
         k = len(self._constraints)
         fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
         if __debug__:
-            print fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1)
+            print(fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1))
 
 
 

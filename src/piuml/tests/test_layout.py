@@ -21,7 +21,7 @@
 Layout (alignment, span matrix, etc) tests.
 """
 
-from cStringIO import StringIO
+from io import StringIO
 import unittest
 
 from piuml.layout.cl import Layout, SpanMatrix

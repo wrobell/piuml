@@ -64,7 +64,7 @@ class Router(object):
 
         router.route()
 
-        for l, c in lcache.items():
+        for l, c in list(lcache.items()):
             l.style.edges = tuple(Pos(*p) for p in reversed(router.edges(c)))
 
 

@@ -34,19 +34,19 @@ class StereotypeTestCase(unittest.TestCase):
     def test_single(self):
         """Test single stereotype rendering
         """
-        self.assertEquals(u'\xabt1\xbb', st_fmt(['t1']))
+        self.assertEquals('\xabt1\xbb', st_fmt(['t1']))
 
 
     def test_multiple(self):
         """Test multiple stereotype rendering
         """
-        self.assertEquals(u'\xabt1, t2, t3\xbb', st_fmt(['t1', 't2', 't3']))
+        self.assertEquals('\xabt1, t2, t3\xbb', st_fmt(['t1', 't2', 't3']))
 
 
     def test_keywords(self):
         """Test stereotypes rendering with keywords
         """
-        self.assertEquals(u'\xabinterface\xbb \xabt1, t2, t3\xbb',
+        self.assertEquals('\xabinterface\xbb \xabt1, t2, t3\xbb',
             st_fmt(['t1', 'interface', 't2', 't3']))
 
 

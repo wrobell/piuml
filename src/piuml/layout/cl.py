@@ -71,11 +71,13 @@ class SpanMatrix(object):
             self.data = []
 
 
-    def __getitem__(self, (col, row)):
+    def __getitem__(self, xxx_todo_changeme):
+        (col, row) = xxx_todo_changeme
         return self.data[col][row]
 
 
-    def __setitem__(self, (col, row), value):
+    def __setitem__(self, xxx_todo_changeme1, value):
+        (col, row) = xxx_todo_changeme1
         self.data[col][row] = value
 
 
@@ -272,7 +274,7 @@ class Layout(object):
             'right': sm.vspan,
         }
         for a in align:
-            assert a.cls in span_f.keys(), 'Unknown alignment type'
+            assert a.cls in list(span_f.keys()), 'Unknown alignment type'
             for k1, k2 in zip(a.span[:-1], a.span[1:]):
                 span_f[a.cls](k1, k2)
                 if k2 in nodes:

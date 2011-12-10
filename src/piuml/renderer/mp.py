@@ -99,7 +99,7 @@ def save(fout, data):
         cmd('mptopdf', fn, cwd=tmpdir)
         #cmd('mpost', '-interaction', 'batchmode', fn, tmpdir=tmpdir)
         #cmd('epstopdf', tmpdir + '/' + fbase + '.1', '-o', fout)
-        print tmpdir + '/' + fbase + '-1.pdf', fout
+        print(tmpdir + '/' + fbase + '-1.pdf', fout)
         shutil.move(tmpdir + '/' + fbase + '-1.pdf', fout)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
@@ -414,8 +414,8 @@ draw {id}.ne - (15, 0) -- {id}.ne - (15, 15) -- {id}.ne - (0, 15);
          node
             piUML language node instance representing the element.
         """
-        print node.style.ll.x, node.style.ll.y
-        print node.style.size
+        print(node.style.ll.x, node.style.ll.y)
+        print(node.style.size)
         pos = node.style.ll
         self._draw("""
 path pp, pr;
@@ -451,7 +451,7 @@ draw ({pos.x} + 7, {pos.y}) -- ({pos.x} + 10, {pos.y});
         }
         f = F.get(line.cls)
         if not f:
-            print 'WARN: no rendering for line', line.cls
+            print('WARN: no rendering for line', line.cls)
             return
 
         f(line)
@@ -589,13 +589,13 @@ path {id}Shape;
         cids = (c for c in string.uppercase)
         data = []
         if attrs:
-            data.append(Compartment(cids.next(), '', self._comp_s(attrs)))
+            data.append(Compartment(next(cids), '', self._comp_s(attrs)))
         if opers:
-            data.append(Compartment(cids.next(), '', self._comp_s(opers)))
+            data.append(Compartment(next(cids), '', self._comp_s(opers)))
         for sta in st_attrs:
             attrs = [f.name for f in sta]
             title = st_fmt([sta.name])
-            c = Compartment(cids.next(), title, self._comp_s(attrs, title=title))
+            c = Compartment(next(cids), title, self._comp_s(attrs, title=title))
             data.append(c)
         return data
 
@@ -630,8 +630,8 @@ path {id}Shape;
             iface = ''
             tp = 'c'
             hp = 'c'
-            print line.tail.cls, line.tail.data
-            print line.head.cls, line.head.data
+            print(line.tail.cls, line.tail.data)
+            print(line.head.cls, line.head.data)
             if t.cls == 'fdiface':
                 tp = 'provided' if t.data['symbol'] == '(o' else 'required'
                 iface = t.name

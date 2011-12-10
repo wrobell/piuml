@@ -27,7 +27,7 @@ import cairo
 import pango
 
 import sys
-from cStringIO import StringIO
+from io import StringIO
 from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
@@ -78,7 +78,7 @@ class CairoBBContext(object):
 
     def __init__(self, cr):
         self._cr = cr
-        self.bbox = (sys.maxint, sys.maxint, 0, 0)
+        self.bbox = (sys.maxsize, sys.maxsize, 0, 0)
 
     def __getattr__(self, key):
         return getattr(self._cr, key)
@@ -567,9 +567,9 @@ class CairoRenderer(GenericASTTraversal):
         assert isinstance(edge.head, Node)
         name_fmt = '%s'
         if edge.data['direction'] is edge.head:
-            name_fmt = u'%s \u25b6'
+            name_fmt = '%s \u25b6'
         else:
-            name_fmt = u'\u25c0  %s'
+            name_fmt = '\u25c0  %s'
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
 
@@ -648,7 +648,7 @@ class CairoRenderer(GenericASTTraversal):
         self.cr.restore()
 
         x1, y1, x2, y2 = self.cr.bbox
-        x1, y1, x2, y2 = map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2)))
+        x1, y1, x2, y2 = list(map(int, (floor(x1), floor(y1), ceil(x2), ceil(y2))))
         w = int(ceil(abs(x2 - x1) * scale))
         h = int(ceil(abs(y2 - y1) * scale))
 

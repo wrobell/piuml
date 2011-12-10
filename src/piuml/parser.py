@@ -186,8 +186,8 @@ class piUMLScanner(GenericScanner):
     Divides lines into tokens ready for more advanced interpretation.
     """
     def __init__(self):
-        for name, data in TOKENS.items():
-            if isinstance(data, basestring):
+        for name, data in list(TOKENS.items()):
+            if isinstance(data, str):
                 f = lambda d: d
             else:
                 data, f = data
@@ -349,7 +349,7 @@ class piUMLParser(GenericParser):
                 i = istack.pop()[0]
             if i < level:
                 if __debug__:
-                    print node.id, node.name, i, level, istack
+                    print(node.id, node.name, i, level, istack)
                 raise ParseError('Inconsistent indentation')
             istack.append((level, node))
 
