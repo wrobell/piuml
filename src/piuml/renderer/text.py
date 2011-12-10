@@ -22,8 +22,8 @@ Renderer text routines.
 """
 
 import cairo
-import pango
-import pangocairo
+from gi.repository import Pango as pango
+from gi.repository import PangoCairo
 
 from math import atan2
 
@@ -231,7 +231,7 @@ def pango_size(layout):
 
 
 def draw_text(cr, shape, style, text,
-        lalign=pango.ALIGN_LEFT,
+        lalign=pango.Alignment.LEFT,
         pos=(0, 0),
         align=(0, -1),
         outside=False,

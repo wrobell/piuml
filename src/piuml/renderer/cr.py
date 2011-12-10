@@ -24,7 +24,7 @@ Drawing routines are adapted from Gaphas and Gaphor source code.
 """
 
 import cairo
-import pango
+from gi.repository import Pango
 
 import sys
 from io import StringIO
