@@ -521,17 +521,15 @@ def named(cls):
     return f
 
 
-def packaging(cls):
+def packaging(args):
     """
     Factory to create packaging element.
     """
-    def f(args):
-        parent, *children = args
-        parent.children = [k[0] for k in children]
-        for k in parent.children:
-            k.parent = parent
-        return parent
-    return f
+    parent, *children = args
+    parent.children = [k[0] for k in children]
+    for k in parent.children:
+        k.parent = parent
+    return parent
 
 
 def create_parser():
@@ -555,8 +553,8 @@ def create_parser():
         & ~Token('>>') > list
     eparams = space & id & space & stereotypes[0:1] & space[0:] & string
 
-    nelement = joinl(NELEMENTS) & eparams > named(Element)
-    pelement = joinl(PELEMENTS) & eparams > named(PackagingElement)
+    nelement = joinl(NELEMENTS) & eparams
+    pelement = joinl(PELEMENTS) & eparams
 
     association = id & space & Token('==') & space & id
     dependency = id & space & (Token('\->') | Token('<\-')) & space & id
@@ -567,9 +565,10 @@ def create_parser():
 
     empty = P.Line(P.Empty(), indent=False)
     rline = P.Line(relationship)
-    nline = P.Line(nelement)
-    pline = P.Line(pelement)
-    block = pline & P.Block(statement[1:]) > packaging(PackagingElement)
+    nline = P.Line(nelement) > named(Element)
+    pline = P.Line(pelement) > named(PackagingElement)
+    block = (P.Line(pelement) > named(PackagingElement)) \
+            & P.Block(statement[1:]) > packaging
 
     statement += (block | pline | nline | rline | empty) > list
     program = statement[:]

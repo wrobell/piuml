@@ -103,9 +103,22 @@ component c2 "B"
 
 
 class StereotypesTestCase(unittest.TestCase):
-    def test_st_parsing(self):
+    def test_element_st_parsing(self):
         """
-        Test stereotype parsing
+        Test element stereotype parsing
+        """
+        f = 'interface a <<test>> "A"'
+        n = parse(f)
+        self.assertEquals(['interface', 'test'], n[0].stereotypes)
+
+        f = 'interface a <<t1, t2>> "A"'
+        n = parse(f)
+        self.assertEquals(['interface', 't1', 't2'], n[0].stereotypes)
+
+
+    def test_pelement_st_parsing(self):
+        """
+        Test packaging element stereotype parsing
         """
         f = 'component a <<test>> "A"'
         n = parse(f)
