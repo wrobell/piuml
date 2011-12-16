@@ -28,10 +28,41 @@ from piuml.parser import parse, ParseError, UMLError
 from piuml.data import unwind
 
 
+class ParserTestCase(unittest.TestCase):
+    """
+    Basic parser tests.
+    """
+    def test_string(self):
+        """
+        Test string parsing.
+        """
+        f = "class a 'A1'"
+        n = parse(f)
+        self.assertEquals('A1', n.children[0].name)
+
+        f = 'class a "A2"'
+        n = parse(f)
+        self.assertEquals('A2', n.children[0].name)
+
+
 class PackagingTestCase(unittest.TestCase):
     """
     Element packaging test case.
     """
+    def test_empty(self):
+        """
+        Test packaging elements without children
+        """
+        # note empty line after class definition
+        f = """
+class a <<aaa>> 'A'
+
+"""
+        n = parse(f)
+        cls = [k for k in unwind(n) if k.cls == 'class']
+        self.assertEquals(1, len(cls))
+
+
     def test_simple(self):
         """
         Test simple packaging
@@ -130,14 +161,15 @@ class StereotypesTestCase(unittest.TestCase):
 
 
     def test_dependency_stereotypes(self):
-        """Test dependency stereotype parsing
         """
-        f = StringIO("""
+        Test dependency stereotype parsing
+        """
+        f = """
 class a <<aaa>> 'A'
 class b <<bbb>> 'B'
 
 a -> <<test>> b
-""")
+"""
         ast = parse(f)
         deps = [n for n in ast.unwind() if n.cls == 'dependency']
         dep = deps[0]

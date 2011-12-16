@@ -24,9 +24,12 @@ piUML language parser.
 import lepl as P
 
 import re
+import logging
 
 from piuml.data import Diagram, Element, PackagingElement, Feature, IElement, Line, \
     Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
+
+log = logging.getLogger('piuml.parser')
 
 class ParseError(Exception):
     """
@@ -525,8 +528,9 @@ def packaging(args):
     """
     Factory to create packaging element.
     """
+    log.debug('packaging {}'.format(args))
     parent, *children = args
-    parent.children = [k[0] for k in children]
+    parent.children = [k[0] for k in children if k]
     for k in parent.children:
         k.parent = parent
     return parent
@@ -544,7 +548,7 @@ def create_parser():
     space =  ~Token(' +')
     #string = Token(r""""(([^"]|\")+)"|'(([^']|\')+)'""")
     #string = ~Token('"') + Token('[^"]+') + ~Token('"')
-    string = Token('"[^"]+"')
+    string = Token('"[^"]+"') | Token("'[^']+'")
     id = Token('[a-zA-Z][a-zA-Z0-9_]*')
     stereotype = Token('[a-zA-Z0-9]+')
     stereotypes = ~Token('<<') \
