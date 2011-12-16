@@ -466,7 +466,9 @@ def f_named(cls):
         if c in KEYWORDS:
             stereotypes.insert(0, c)
 
-        return cls(cls=c, id=id, stereotypes=stereotypes, name=name)
+        n = cls(cls=c, id=id, stereotypes=stereotypes, name=name)
+        __cache[n.id] = n
+        return n
     return f
 
 
@@ -480,6 +482,16 @@ def f_packaging(args):
     for k in parent.children:
         k.parent = parent
     return parent
+
+
+def _relationship(cls, tail, head, stereotypes=None, name=None):
+    """
+    Factory to create a relationship.
+    """
+    return Relationship(cls,
+            __cache[tail], __cache[head],
+            stereotypes=stereotypes,
+            name=name)
 
 
 def f_dependency(args):
@@ -508,9 +520,7 @@ def f_dependency(args):
 
     #assert args[0].type == 'ID' and args[2].type == 'ID'
 
-    #e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
-    e = Relationship('dependency', args[0], args[-1],
-            stereotypes=stereotypes)
+    e = _relationship('dependency', args[0], args[-1], stereotypes=stereotypes)
     e.data['supplier'] = e.tail if v[0] == '<' else e.head
 
     if dt and dt in 'ime':
@@ -539,6 +549,8 @@ def f_dependency(args):
 
 
 def create_parser():
+    global __cache
+    __cache = {}
 
     Token = P.Token
     Or = P.Or

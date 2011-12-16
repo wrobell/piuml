@@ -405,33 +405,32 @@ package p2 "P2"
 p1 -m> p2
 p1 -i> p2
 """
-        ast = parse(f)
-        deps = [n for n in ast.unwind() if n.cls == 'dependency']
-        self.assertEquals(['merge'], deps[0].stereotypes)
-        self.assertEquals(['import'], deps[1].stereotypes)
+        n = parse(f)
+        self.assertEquals(['merge'], n[2].stereotypes)
+        self.assertEquals(['import'], n[3].stereotypes)
 
 
     def test_package_merge_error(self):
         """Test package merge error
         """
-        f = StringIO("""
+        f = """
 package p1 "P1"
 class p2 "P2"
 
 p1 -m> p2
-""")
+"""
         self.assertRaises(UMLError, parse, f)
 
 
     def test_package_import_error(self):
         """Test package import error
         """
-        f = StringIO("""
+        f = """
 package p1 "P1"
 class p2 "P2"
 
 p1 -i> p2
-""")
+"""
         self.assertRaises(UMLError, parse, f)
 
 
