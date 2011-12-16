@@ -24,35 +24,38 @@ piUML language parser tests.
 import unittest
 from io import StringIO
 
-from piuml.parser import parse, ParseError, UMLError, st_parse
+from piuml.parser import parse, ParseError, UMLError
+from piuml.data import unwind
 
 
-class GroupingTestCase(unittest.TestCase):
+class PackagingTestCase(unittest.TestCase):
     """
-    Element grouping test case.
+    Element packaging test case.
     """
     def test_simple(self):
-        """Test simple grouping
         """
-        f = StringIO("""
+        Test simple packaging
+        """
+        f = """
 component c1 "A"
 component c2 "B"
     class cls1 "B1"
-""")
-        ast = parse(f)
-        ast.id = 'diagram'
-        data = dict((n.id, n.parent.id) for n in ast.unwind() if n.parent)
+"""
+        n = parse(f)
+        data = dict((k.id, k.parent.id) for k in unwind(n) if k.parent)
         self.assertEquals('diagram', data['c1'])
         self.assertEquals('diagram', data['c2'])
         self.assertEquals('c2', data['cls1'])
 
 
     def test_complex(self):
-        """Test complex grouping
         """
-        f = StringIO("""
+        Test complex packaging
+        """
+        f = """
 component c1 "A"
 component c2 "B"
+component c3 "C"
     class cls1 "B1"
     class cls2 "B2"
         class cls3 "B21"
@@ -62,70 +65,55 @@ component c2 "B"
         class cls7 "B23"
     class cls8 "B4"
 class cls9 "C"
-""")
+"""
 
-        ast = parse(f)
-        ast.id = 'diagram'
+        n = parse(f)
 
-        data = dict((n.id, n.parent.id) for n in ast.unwind() if n.parent)
+        data = dict((k.id, k.parent.id) for k in unwind(n) if k.parent)
 
         self.assertEquals('diagram', data['c1'])
         self.assertEquals('diagram', data['c2'])
+        self.assertEquals('diagram', data['c3'])
         self.assertEquals('diagram', data['cls9'])
 
-        self.assertEquals('c2', data['cls1'])
-        self.assertEquals('c2', data['cls2'])
+        self.assertEquals('c3', data['cls1'])
+        self.assertEquals('c3', data['cls2'])
 
         self.assertEquals('cls2', data['cls3'])
         self.assertEquals('cls2', data['cls4'])
 
         self.assertEquals('cls4', data['cls5'])
 
-        self.assertEquals('c2', data['cls6'])
+        self.assertEquals('c3', data['cls6'])
         self.assertEquals('cls6', data['cls7'])
-        self.assertEquals('c2', data['cls8'])
+        self.assertEquals('c3', data['cls8'])
 
 
     def test_wrong_indentation(self):
         """Test inconsistent indentation
         """
-        f = StringIO("""
+        f = """
 component c1 "A"
 component c2 "B"
     class cls1 "B1"
-  class cls2 "B1"
-""")
+  artifact a1 "A1"
+"""
         self.assertRaises(ParseError, parse, f)
 
 
 
 class StereotypesTestCase(unittest.TestCase):
-    def test_single(self):
-        """Test single stereotype parsing
-        """
-        self.assertEquals(('test',), st_parse('<<test>>'))
-        self.assertEquals(('test',), st_parse('<< test >>'))
-
-
-    def test_multiple(self):
-        """Test multiple stereotypes parsing
-        """
-        self.assertEquals(('t1', 't2'), st_parse('<<t1, t2>>'))
-        self.assertEquals(('t1', 't2'), st_parse('<<t1,t2>>'))
-        self.assertEquals(('t1', 't2'), st_parse('<< t1,t2>>'))
-        self.assertEquals(('t1', 't2'), st_parse('<< t1   ,   t2   >>'))
-
-
     def test_st_parsing(self):
-        """Test stereotype parsing
         """
-        f = StringIO('component a <<test>> "A"')
-        ast = parse(f)
-        self.assertEquals(['component', 'test'], ast[0].stereotypes)
+        Test stereotype parsing
+        """
+        f = 'component a <<test>> "A"'
+        n = parse(f)
+        self.assertEquals(['component', 'test'], n[0].stereotypes)
 
-        f = StringIO('component a <<t1, t2>> "A"')
-        ast = parse(f)
-        self.assertEquals(['component', 't1', 't2'], ast[0].stereotypes)
+        f = 'component a <<t1, t2>> "A"'
+        n = parse(f)
+        self.assertEquals(['component', 't1', 't2'], n[0].stereotypes)
 
 
     def test_dependency_stereotypes(self):

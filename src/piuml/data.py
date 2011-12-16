@@ -24,7 +24,7 @@ Screen oriented coordinate system is assumed (x-axis leftward, y-axis
 downard), which is aligned with Cairo.
 """
 
-from collections import namedtuple, MutableSequence
+from collections import namedtuple, MutableSequence, Iterable
 from uuid import uuid4 as uuid
 
 
@@ -369,11 +369,55 @@ class Align(Node):
         self.nodes = []
 
 
-@ntype
-class Dummy(Node):
-    """
-    Non-important part of piUML language like comment or whitespace.
-    """
+class Stereotype(object):
+    def __init__(self, name):
+        self.name = name
+    def __repr__(self):
+        return 'Stereotype({})'.format(self.name)
+
+
+class Element(object):
+    def __init__(self, cls=None, id=None, stereotypes=None, name=None):
+        self.cls = cls
+        self.id = id
+        self.name = name
+        self.stereotypes = stereotypes
+        self.parent = None
+
+
+    def __repr__(self):
+        return '{} {} {} {}'.format(self.cls, self.id, self.name,
+                self.stereotypes)
+
+
+
+class PackagingElement(Element):
+    def __init__(self, *args, **kw):
+        super(PackagingElement, self).__init__(*args, **kw)
+        self.children = []
+
+
+    def __getitem__(self, k):
+        return self.children[k]
+
+
+    def __iter__(self):
+        return iter(self.children)
+
+
+    def __repr__(self):
+        return super(PackagingElement, self).__repr__() \
+                + ' {}'.format(self.children)
+
+
+
+class Diagram(PackagingElement):
+    def __init__(self, children):
+        super(Diagram, self).__init__(cls='diagram', id='diagram')
+        self.children = list(children)
+        for k in self.children:
+            k.parent = self
+
 
 
 def lca(ast, *args):
@@ -413,5 +457,15 @@ def lsb(parent, *kids):
             siblings.append(k)
     return siblings
 
+
+def unwind(n):
+    yield n
+
+    if not isinstance(n, Iterable):
+        return
+    for k1 in n:
+        if isinstance(k1, Iterable):
+            for k2 in unwind(k1):
+                yield k2
 
 # vim: sw=4:et:ai
