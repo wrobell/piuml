@@ -26,8 +26,9 @@ import lepl as P
 import re
 import logging
 
-from piuml.data import Diagram, Element, PackagingElement, Feature, IElement, Line, \
-    Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
+from piuml.data import Diagram, Element, PackagingElement, Feature, \
+        IElement, Relationship, \
+        Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
 
 log = logging.getLogger('piuml.parser')
 
@@ -214,61 +215,6 @@ def p_association(self, args):
     t = e.tail.cls, e.head.cls
     if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
         e.cls = 'extension'
-
-    return e
-
-
-def p_dependency(self, args):
-    """
-    dependency ::= ID SPACE DEPENDENCY SPACE ID
-    dependency ::= ID SPACE DEPENDENCY SPACE STEREOTYPE SPACE ID
-    """
-    self._trim(args)
-    TYPE = {
-        'u': 'use',
-        'r': 'realization',
-        'i': 'import/include', # only between packages or use cases
-        'm': 'merge',  # only between packages
-        'e': 'extend', # only between use cases
-    }
-    v = args[1].value
-    dt = v[1] # dependency type
-
-    s = TYPE.get(dt) # get default stereotype
-    if s:
-        stereotypes = [s]
-    else:
-        stereotypes = []
-    if args[2].type == 'STEREOTYPE':
-        stereotypes.extend(st_parse(args[2].value))
-        del args[2]
-
-    assert args[0].type == 'ID' and args[2].type == 'ID'
-
-    e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
-    e.data['supplier'] = e.tail if v[0] == '<' else e.head
-
-    if dt and dt in 'ime':
-        t = e.tail.cls, e.head.cls
-        t_p = 'package', 'package'
-        t_u = 'usecase', 'usecase'
-
-        # fix the stereotype
-        if dt == 'i' and t == t_p:
-            e.stereotypes[0] = 'import'
-        elif dt == 'i' and t == t_u:
-            e.stereotypes[0] = 'include'
-
-        if dt == 'i' and (t != t_p and t != t_u):
-            raise UMLError('Dependency -i> (package import or use case' \
-                ' inclusion) can be specified only' \
-                ' between two packages or two use cases')
-        elif dt == 'm' and t != t_p:
-            raise UMLError('Dependency -m> (package merge) can be' \
-                ' specified only between two packages')
-        elif dt == 'e' and t != t_u:
-            raise UMLError('Dependency -e> (use case extension) can be' \
-                ' specified only between two use cases')
 
     return e
 
@@ -505,7 +451,7 @@ def p_align(self, args):
 ### expr ::= empty
 ###
 
-def named(cls):
+def f_named(cls):
     """
     Factory to create named element.
     """
@@ -524,7 +470,7 @@ def named(cls):
     return f
 
 
-def packaging(args):
+def f_packaging(args):
     """
     Factory to create packaging element.
     """
@@ -534,6 +480,62 @@ def packaging(args):
     for k in parent.children:
         k.parent = parent
     return parent
+
+
+def f_dependency(args):
+    """
+    Factory to create dependency.
+    """
+    log.debug(args)
+    TYPE = {
+        'u': 'use',
+        'r': 'realization',
+        'i': 'import/include', # only between packages or use cases
+        'm': 'merge',  # only between packages
+        'e': 'extend', # only between use cases
+    }
+    v = args[1]
+    dt = v[1] # dependency type
+
+    s = TYPE.get(dt) # get default stereotype
+    if s:
+        stereotypes = [s]
+    else:
+        stereotypes = []
+    if len(args) == 4:
+        stereotypes.extend(args[2])
+        del args[2]
+
+    #assert args[0].type == 'ID' and args[2].type == 'ID'
+
+    #e = self._line('dependency', *self._get_ends(args), stereotypes=stereotypes)
+    e = Relationship('dependency', args[0], args[-1],
+            stereotypes=stereotypes)
+    e.data['supplier'] = e.tail if v[0] == '<' else e.head
+
+    if dt and dt in 'ime':
+        t = e.tail.cls, e.head.cls
+        t_p = 'package', 'package'
+        t_u = 'usecase', 'usecase'
+
+        # fix the stereotype
+        if dt == 'i' and t == t_p:
+            e.stereotypes[0] = 'import'
+        elif dt == 'i' and t == t_u:
+            e.stereotypes[0] = 'include'
+
+        if dt == 'i' and (t != t_p and t != t_u):
+            raise UMLError('Dependency -i> (package import or use case' \
+                ' inclusion) can be specified only' \
+                ' between two packages or two use cases')
+        elif dt == 'm' and t != t_p:
+            raise UMLError('Dependency -m> (package merge) can be' \
+                ' specified only between two packages')
+        elif dt == 'e' and t != t_u:
+            raise UMLError('Dependency -e> (use case extension) can be' \
+                ' specified only between two use cases')
+
+    return e
 
 
 def create_parser():
@@ -555,13 +557,15 @@ def create_parser():
         & stereotype \
         & (~Token(' *, *') & stereotype)[0:] \
         & ~Token('>>') > list
-    eparams = space & id & space & stereotypes[0:1] & space[0:] & string
+    eparams = space & id & (space & stereotypes)[0:1] & space & string
 
     nelement = joinl(NELEMENTS) & eparams
     pelement = joinl(PELEMENTS) & eparams
 
     association = id & space & Token('==') & space & id
-    dependency = id & space & (Token('\->') | Token('<\-')) & space & id
+    dependency = id & space \
+            & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
+            & (space & stereotypes)[0:1] & space & id > f_dependency
     comment = id & space & Token('\-\-') & space & id
     relationship = association | dependency | comment
         
@@ -569,10 +573,10 @@ def create_parser():
 
     empty = P.Line(P.Empty(), indent=False)
     rline = P.Line(relationship)
-    nline = P.Line(nelement) > named(Element)
-    pline = P.Line(pelement) > named(PackagingElement)
-    block = (P.Line(pelement) > named(PackagingElement)) \
-            & P.Block(statement[1:]) > packaging
+    nline = P.Line(nelement) > f_named(Element)
+    pline = P.Line(pelement) > f_named(PackagingElement)
+    block = (P.Line(pelement) > f_named(PackagingElement)) \
+            & P.Block(statement[1:]) > f_packaging
 
     statement += (block | pline | nline | rline | empty) > list
     program = statement[:]

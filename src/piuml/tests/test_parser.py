@@ -170,10 +170,8 @@ class b <<bbb>> 'B'
 
 a -> <<test>> b
 """
-        ast = parse(f)
-        deps = [n for n in ast.unwind() if n.cls == 'dependency']
-        dep = deps[0]
-        self.assertEquals(['test'], dep.stereotypes)
+        n = parse(f)
+        self.assertEquals(['test'], n[2].stereotypes)
 
 
     def test_association_stereotypes(self):
@@ -376,20 +374,37 @@ c1 c2 o) "A" c3 cls
 
 
 
-class LinesTestCase(unittest.TestCase):
+class RelationshipsTestCase(unittest.TestCase):
     """
-    Line elements tests.
+    Relationships tests.
     """
-    def test_package_merge_import(self):
-        """Test package merge and package import
+    def test_dependency(self):
         """
-        f = StringIO("""
+        Test dependency creation.
+        """
+        f = """
+package p1 "P1"
+package p2 "P2"
+
+p1 -> p2
+p1 <- p2
+"""
+        n = parse(f)
+        self.assertEquals('dependency', n[2].cls)
+        self.assertEquals('dependency', n[3].cls)
+
+
+    def test_package_merge_import(self):
+        """
+        Test package merge and package import
+        """
+        f = """
 package p1 "P1"
 package p2 "P2"
 
 p1 -m> p2
 p1 -i> p2
-""")
+"""
         ast = parse(f)
         deps = [n for n in ast.unwind() if n.cls == 'dependency']
         self.assertEquals(['merge'], deps[0].stereotypes)

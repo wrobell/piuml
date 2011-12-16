@@ -26,6 +26,9 @@ downard), which is aligned with Cairo.
 
 from collections import namedtuple, MutableSequence, Iterable
 from uuid import uuid4 as uuid
+import logging
+
+log = logging.getLogger('piuml.data')
 
 
 # packaging elements
@@ -412,11 +415,45 @@ class PackagingElement(Element):
 
 
 class Diagram(PackagingElement):
+    """
+    UML diagram instance.
+
+    :Attributes:
+     children
+        Diagram elements.
+    """
     def __init__(self, children):
+        """
+        Create UML diagram instance.
+        """
         super(Diagram, self).__init__(cls='diagram', id='diagram')
+
         self.children = list(children)
+
+        log.debug('diagram children {}'.format(self.children))
         for k in self.children:
             k.parent = self
+
+
+class Relationship(Element):
+    """
+    Representation of UML relationship like association, dependency,
+    comment line, etc.
+
+    :Attributes:
+     tail
+        Tail node.
+     head
+        Head node. 
+    """
+    def __init__(self, cls, tail, head, stereotypes=None, name='', data={}):
+        super(Relationship, self).__init__(cls=cls,
+                stereotypes=stereotypes, name=name)
+        self.data = {}
+        self.style = LineStyle()
+        self.tail = tail
+        self.head = head
+        self.style.padding = Area(3, 10, 3, 10)
 
 
 
