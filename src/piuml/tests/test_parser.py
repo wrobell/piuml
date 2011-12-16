@@ -411,7 +411,8 @@ p1 -i> p2
 
 
     def test_package_merge_error(self):
-        """Test package merge error
+        """
+        Test package merge error
         """
         f = """
 package p1 "P1"
@@ -423,7 +424,8 @@ p1 -m> p2
 
 
     def test_package_import_error(self):
-        """Test package import error
+        """
+        Test package import error
         """
         f = """
 package p1 "P1"
@@ -435,42 +437,44 @@ p1 -i> p2
 
 
     def test_usecase_include_extend(self):
-        """Test use case inclusion and extension dependencies
         """
-        f = StringIO("""
+        Test use case inclusion and extension dependencies
+        """
+        f = """
 usecase u1 "U1"
 usecase u2 "U2"
 
 u1 -i> u2
 u1 -e> u2
-""")
-        ast = parse(f)
-        deps = [n for n in ast.unwind() if n.cls == 'dependency']
-        self.assertEquals(['include'], deps[0].stereotypes)
-        self.assertEquals(['extend'], deps[1].stereotypes)
+"""
+        n = parse(f)
+        self.assertEquals(['include'], n[2].stereotypes)
+        self.assertEquals(['extend'], n[3].stereotypes)
 
 
     def test_usecase_include_error(self):
-        """Test use case inclusion error
         """
-        f = StringIO("""
+        Test use case inclusion error
+        """
+        f = """
 usecase u1 "U1"
 class u2 "U2"
 
 u1 -i> u2
-""")
+"""
         self.assertRaises(UMLError, parse, f)
 
 
     def test_usecase_extend_error(self):
-        """Test use case extension error
         """
-        f = StringIO("""
+        Test use case extension error
+        """
+        f = """
 usecase u1 "U1"
 class u2 "U2"
 
 u1 -e> u2
-""")
+"""
         self.assertRaises(UMLError, parse, f)
 
 
