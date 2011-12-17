@@ -163,62 +163,6 @@ def _line(self, cls, tail, head, stereotypes=None, data=None):
     return line
 
 
-def _get_ends(self, args):
-    nodes = self.ast.cache
-    head = nodes[args[0].value]
-    tail = nodes[args[2].value]
-    return head, tail
-
-
-def p_association(self, args):
-    """
-    association ::= ID SPACE ASSOCIATION SPACE ID
-    association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
-    association ::= ID SPACE ASSOCIATION SPACE STEREOTYPE SPACE NAME SPACE ID
-    """
-    self._trim(args)
-
-    stereotypes = []
-    if args[2].type == 'STEREOTYPE':
-        stereotypes.extend(st_parse(args[2].value))
-        del args[2]
-
-    name = None
-    if args[2].type == 'NAME':
-        name = args[2].value
-        del args[2]
-
-    assert args[0].type == 'ID' and args[2].type == 'ID'
-
-    AEND = {
-        'x': 'none',
-        'O': 'shared',
-        '*': 'composite',
-        '<': 'navigable',
-        '>': 'navigable',
-        '=': 'unknown',
-    }
-    t, h = self._get_ends(args)
-    v = args[1].value
-    data = {
-        'name': name,
-        'tail': (None, None, None, AEND[v[0]]),
-        'head': (None, None, None, AEND[v[-1]]),
-        'direction': h if '=>=' in v \
-                else t if '=<=' in v \
-                else None,
-    }
-    e = self._line('association', t, h, data=data, stereotypes=stereotypes)
-    if name:
-        e.name = name
-
-    t = e.tail.cls, e.head.cls
-    if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
-        e.cls = 'extension'
-
-    return e
-
-
 def p_generalization(self, args):
     """
     generalization ::= ID SPACE GENERALIZATION SPACE ID
@@ -484,14 +428,62 @@ def f_packaging(args):
     return parent
 
 
-def _relationship(cls, tail, head, stereotypes=None, name=None):
+def _relationship(cls, tail, head, stereotypes=None, name=None, data=None):
     """
     Factory to create a relationship.
     """
     return Relationship(cls,
             __cache[tail], __cache[head],
             stereotypes=stereotypes,
-            name=name)
+            name=name,
+            data=data)
+
+
+def f_association(args):
+    """
+    Factory to create an association.
+    """
+    log.debug('association {}'.format(args))
+
+    stereotypes = []
+    if isinstance(args[2], list):
+        stereotypes.extend(args[2])
+        del args[2]
+
+    name = None
+    if len(args) == 4:
+        name = name_dequote(args[2])
+        del args[2]
+
+    assert len(args) == 3
+    #assert args[0].type == 'ID' and args[2].type == 'ID'
+
+    AEND = {
+        'x': 'none',
+        'O': 'shared',
+        '*': 'composite',
+        '<': 'navigable',
+        '>': 'navigable',
+        '=': 'unknown',
+    }
+    t, h = __cache[args[0]], __cache[args[2]]
+    v = args[1]
+    data = {
+        'name': name,
+        'tail': (None, None, None, AEND[v[0]]),
+        'head': (None, None, None, AEND[v[-1]]),
+        'direction': h if '=>=' in v \
+                else t if '=<=' in v \
+                else None,
+    }
+    e = _relationship('association', args[0], args[-1], stereotypes=stereotypes,
+            name=name, data=data)
+
+    t = e.tail.cls, e.head.cls
+    if t == ('stereotype', 'metaclass') or t == ('metaclass', 'stereotype'):
+        e.cls = 'extension'
+
+    return e
 
 
 def f_dependency(args):
@@ -574,12 +566,23 @@ def create_parser():
     nelement = joinl(NELEMENTS) & eparams
     pelement = joinl(PELEMENTS) & eparams
 
-    association = id & space & Token('==') & space & id
+    #association ::= ID SPACE ASSOCIATION SPACE ID
+    #association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
+    #association ::= ID SPACE ASSOCIATION SPACE STEREOTYPE SPACE NAME SPACE ID
+    #    'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
+    association = id & space \
+            & Token('=[<>]?=') \
+            & (space & string)[0:1] \
+            & (space & stereotypes)[0:1] \
+            & space & id > f_association
+
     dependency = id & space \
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
             & (space & stereotypes)[0:1] & space & id > f_dependency
-    comment = id & space & Token('\-\-') & space & id
-    relationship = association | dependency | comment
+
+    commentline = id & space & Token('\-\-') & space & id
+
+    relationship = association | dependency | commentline
         
     statement = P.Delayed()
 

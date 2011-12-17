@@ -174,22 +174,6 @@ a -> <<test>> b
         self.assertEquals(['test'], n[2].stereotypes)
 
 
-    def test_association_stereotypes(self):
-        """Test association stereotype parsing
-        """
-        f = StringIO("""
-class a <<aaa>> 'A'
-class b <<bbb>> 'B'
-
-a == <<t1, t2>> 'a name' b
-""")
-        ast = parse(f)
-        assocs = [n for n in ast.unwind() if n.cls == 'association']
-        assoc = assocs[0]
-        self.assertEquals('a name', assoc.name)
-        self.assertEquals(['t1', 't2'], assoc.stereotypes)
-
-
 
 class FeatureTestCase(unittest.TestCase):
     """
@@ -374,13 +358,13 @@ c1 c2 o) "A" c3 cls
 
 
 
-class RelationshipsTestCase(unittest.TestCase):
+class DependencyTestCase(unittest.TestCase):
     """
-    Relationships tests.
+    Dependency tests.
     """
     def test_dependency(self):
         """
-        Test dependency creation.
+        Test dependency creation
         """
         f = """
 package p1 "P1"
@@ -478,10 +462,29 @@ u1 -e> u2
         self.assertRaises(UMLError, parse, f)
 
 
-    def test_association_dir(self):
-        """Test association direction
+class AssociationTestCase(unittest.TestCase):
+    """
+    Association tests.
+    """
+    def test_association(self):
         """
-        f = StringIO("""
+        Test association creation
+        """
+        f = """
+package p1 "P1"
+package p2 "P2"
+
+p1 == p2
+"""
+        n = parse(f)
+        self.assertEquals('association', n[2].cls)
+
+
+    def test_association_dir(self):
+        """
+        Test association direction
+        """
+        f = """
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
@@ -489,27 +492,41 @@ class c3 "C3"
 c1 =>= c2
 c2 =<= c3
 c3 == c1
-""")
-        ast = parse(f)
-        dirs = [n.data['direction'] for n in ast.unwind() \
-            if n.cls == 'association']
-        self.assertEquals('c2', dirs[0].id)
-        self.assertEquals('c2', dirs[1].id)
-        self.assertFalse(dirs[2])
+"""
+        n = parse(f)
+        self.assertEquals('c2', n[3].data['direction'].id)
+        self.assertEquals('c2', n[4].data['direction'].id)
+        self.assertTrue(n[5].data['direction'] is None)
 
 
     def test_association_name(self):
-        """Test association name
         """
-        f = StringIO("""
+        Test association name
+        """
+        f = """
 class c1 "C1"
 class c2 "C2"
 
 c1 == "An association" c2
-""")
-        ast = parse(f)
-        names = [n.name for n in ast.unwind() if n.cls == 'association']
-        self.assertEquals(['An association'], names)
+"""
+        n = parse(f)
+        self.assertEquals('An association', n[2].name)
+
+
+    def test_association_stereotypes(self):
+        """
+        Test association stereotype parsing
+        """
+        f = """
+class a <<aaa>> 'A'
+class b <<bbb>> 'B'
+
+a == <<t1, t2>> 'a name' b
+a == <<t1, t2>> b
+"""
+        n = parse(f)
+        self.assertEquals('a name', n[2].name)
+        self.assertEquals(['t1', 't2'], n[2].stereotypes)
 
 
     def test_association_ends_error(self):

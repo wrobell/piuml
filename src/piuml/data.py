@@ -446,10 +446,11 @@ class Relationship(Element):
      head
         Head node. 
     """
-    def __init__(self, cls, tail, head, stereotypes=None, name='', data={}):
+    def __init__(self, cls, tail, head, stereotypes=None, name='',
+            data=None):
         super(Relationship, self).__init__(cls=cls,
                 stereotypes=stereotypes, name=name)
-        self.data = {}
+        self.data = {} if data is None else data
         self.style = LineStyle()
         self.tail = tail
         self.head = head
