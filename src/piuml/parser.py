@@ -572,8 +572,8 @@ def create_parser():
     #    'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
     association = id & space \
             & Token('=[<>]?=') \
-            & (space & string)[0:1] \
             & (space & stereotypes)[0:1] \
+            & (space & string)[0:1] \
             & space & id > f_association
 
     dependency = id & space \

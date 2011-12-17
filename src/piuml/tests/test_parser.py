@@ -521,12 +521,13 @@ c1 == "An association" c2
 class a <<aaa>> 'A'
 class b <<bbb>> 'B'
 
-a == <<t1, t2>> 'a name' b
 a == <<t1, t2>> b
+a == <<t1, t2, t3>> 'a name' b
 """
         n = parse(f)
-        self.assertEquals('a name', n[2].name)
         self.assertEquals(['t1', 't2'], n[2].stereotypes)
+        self.assertEquals('a name', n[3].name)
+        self.assertEquals(['t1', 't2', 't3'], n[3].stereotypes)
 
 
     def test_association_ends_error(self):
