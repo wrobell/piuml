@@ -530,7 +530,8 @@ a == <<t1, t2>> b
 
 
     def test_association_ends_error(self):
-        """Test association with too many ends
+        """
+        Test association with too many ends
         """
         f = StringIO("""
 class c1 "C1"
@@ -564,17 +565,17 @@ c1 == "An association" c2
 
 
     def test_profile_extension(self):
-        """Test profile extension
         """
-        f = StringIO("""
+        Test profile extension
+        """
+        f = """
 stereotype s "S"
 metaclass m "M"
 
 s == m
-""")
-        ast = parse(f)
-        exts = [n for n in ast.unwind() if n.cls == 'extension']
-        self.assertEquals(1, len(exts))
+"""
+        n = parse(f)
+        self.assertEquals('extension', n[2].cls)
 
 
 # vim: sw=4:et:ai
