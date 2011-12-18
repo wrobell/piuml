@@ -566,12 +566,8 @@ def create_parser():
     nelement = joinl(NELEMENTS) & eparams
     pelement = joinl(PELEMENTS) & eparams
 
-    #association ::= ID SPACE ASSOCIATION SPACE ID
-    #association ::= ID SPACE ASSOCIATION SPACE NAME SPACE ID
-    #association ::= ID SPACE ASSOCIATION SPACE STEREOTYPE SPACE NAME SPACE ID
-    #    'ASSOCIATION': r'[xO*<]?=(<|>)?=[xO*>]?',
     association = id & space \
-            & Token('=[<>]?=') \
+            & Token('[xO\*<]?=[<>]?=[xO\*>]?') \
             & (space & stereotypes)[0:1] \
             & (space & string)[0:1] \
             & space & id > f_association

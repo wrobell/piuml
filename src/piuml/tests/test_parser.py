@@ -530,6 +530,69 @@ a == <<t1, t2, t3>> 'a name' b
         self.assertEquals(['t1', 't2', 't3'], n[3].stereotypes)
 
 
+    def test_association_navigability(self):
+        """
+        Test association navigability parsing
+        """
+        f = """
+class a <<aaa>> 'A'
+class b <<bbb>> 'B'
+
+a == b
+a ==> b
+a <== b
+a <==> b
+a ==x b
+a x== b
+a x==x b
+"""
+        n = parse(f)
+        self.assertEquals('unknown', n[2].data['tail'][3])
+        self.assertEquals('unknown', n[2].data['head'][3])
+        self.assertEquals('unknown', n[3].data['tail'][3])
+        self.assertEquals('navigable', n[3].data['head'][3])
+        self.assertEquals('navigable', n[4].data['tail'][3])
+        self.assertEquals('unknown', n[4].data['head'][3])
+        self.assertEquals('navigable', n[5].data['tail'][3])
+        self.assertEquals('navigable', n[5].data['head'][3])
+        self.assertEquals('unknown', n[6].data['tail'][3])
+        self.assertEquals('none', n[6].data['head'][3])
+        self.assertEquals('none', n[7].data['tail'][3])
+        self.assertEquals('unknown', n[7].data['head'][3])
+        self.assertEquals('none', n[8].data['tail'][3])
+        self.assertEquals('none', n[8].data['head'][3])
+
+
+    def test_association_aggregation(self):
+        """
+        Test association aggregation parsing
+        """
+        f = """
+class a <<aaa>> 'A'
+class b <<bbb>> 'B'
+
+a ==O b
+a O== b
+a O==O b
+a ==* b
+a *== b
+a *==* b
+"""
+        n = parse(f)
+        self.assertEquals('unknown', n[2].data['tail'][3])
+        self.assertEquals('shared', n[2].data['head'][3])
+        self.assertEquals('shared', n[3].data['tail'][3])
+        self.assertEquals('unknown', n[3].data['head'][3])
+        self.assertEquals('shared', n[4].data['tail'][3])
+        self.assertEquals('shared', n[4].data['head'][3])
+        self.assertEquals('unknown', n[5].data['tail'][3])
+        self.assertEquals('composite', n[5].data['head'][3])
+        self.assertEquals('composite', n[6].data['tail'][3])
+        self.assertEquals('unknown', n[6].data['head'][3])
+        self.assertEquals('composite', n[7].data['tail'][3])
+        self.assertEquals('composite', n[7].data['head'][3])
+
+
     def test_association_ends_error(self):
         """
         Test association with too many ends
