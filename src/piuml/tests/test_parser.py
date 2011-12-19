@@ -547,20 +547,20 @@ a x== b
 a x==x b
 """
         n = parse(f)
-        self.assertEquals('unknown', n[2].data['tail'][3])
-        self.assertEquals('unknown', n[2].data['head'][3])
-        self.assertEquals('unknown', n[3].data['tail'][3])
-        self.assertEquals('navigable', n[3].data['head'][3])
-        self.assertEquals('navigable', n[4].data['tail'][3])
-        self.assertEquals('unknown', n[4].data['head'][3])
-        self.assertEquals('navigable', n[5].data['tail'][3])
-        self.assertEquals('navigable', n[5].data['head'][3])
-        self.assertEquals('unknown', n[6].data['tail'][3])
-        self.assertEquals('none', n[6].data['head'][3])
-        self.assertEquals('none', n[7].data['tail'][3])
-        self.assertEquals('unknown', n[7].data['head'][3])
-        self.assertEquals('none', n[8].data['tail'][3])
-        self.assertEquals('none', n[8].data['head'][3])
+        self.assertEquals('unknown', n[2].data['tail'][2])
+        self.assertEquals('unknown', n[2].data['head'][2])
+        self.assertEquals('unknown', n[3].data['tail'][2])
+        self.assertEquals('navigable', n[3].data['head'][2])
+        self.assertEquals('navigable', n[4].data['tail'][2])
+        self.assertEquals('unknown', n[4].data['head'][2])
+        self.assertEquals('navigable', n[5].data['tail'][2])
+        self.assertEquals('navigable', n[5].data['head'][2])
+        self.assertEquals('unknown', n[6].data['tail'][2])
+        self.assertEquals('none', n[6].data['head'][2])
+        self.assertEquals('none', n[7].data['tail'][2])
+        self.assertEquals('unknown', n[7].data['head'][2])
+        self.assertEquals('none', n[8].data['tail'][2])
+        self.assertEquals('none', n[8].data['head'][2])
 
 
     def test_association_aggregation(self):
@@ -579,34 +579,38 @@ a *== b
 a *==* b
 """
         n = parse(f)
-        self.assertEquals('unknown', n[2].data['tail'][3])
-        self.assertEquals('shared', n[2].data['head'][3])
-        self.assertEquals('shared', n[3].data['tail'][3])
-        self.assertEquals('unknown', n[3].data['head'][3])
-        self.assertEquals('shared', n[4].data['tail'][3])
-        self.assertEquals('shared', n[4].data['head'][3])
-        self.assertEquals('unknown', n[5].data['tail'][3])
-        self.assertEquals('composite', n[5].data['head'][3])
-        self.assertEquals('composite', n[6].data['tail'][3])
-        self.assertEquals('unknown', n[6].data['head'][3])
-        self.assertEquals('composite', n[7].data['tail'][3])
-        self.assertEquals('composite', n[7].data['head'][3])
+        self.assertEquals('unknown', n[2].data['tail'][2])
+        self.assertEquals('shared', n[2].data['head'][2])
+        self.assertEquals('shared', n[3].data['tail'][2])
+        self.assertEquals('unknown', n[3].data['head'][2])
+        self.assertEquals('shared', n[4].data['tail'][2])
+        self.assertEquals('shared', n[4].data['head'][2])
+        self.assertEquals('unknown', n[5].data['tail'][2])
+        self.assertEquals('composite', n[5].data['head'][2])
+        self.assertEquals('composite', n[6].data['tail'][2])
+        self.assertEquals('unknown', n[6].data['head'][2])
+        self.assertEquals('composite', n[7].data['tail'][2])
+        self.assertEquals('composite', n[7].data['head'][2])
 
 
-    def test_association_ends_error(self):
+    def test_association_ends(self):
         """
-        Test association with too many ends
+        Test association ends
         """
-        f = StringIO("""
+        f = """
 class c1 "C1"
 class c2 "C2"
 
-c1 =>= c2
-    : a
-    : b
-    : c
-""")
-        self.assertRaises(UMLError, parse, f)
+c1 == "An association" c2
+    : tail-attr [1..n]
+    : head-attr [0..n]
+"""
+        n = parse(f)
+        data = n[2].data
+        self.assertEquals('tail-attr', data['tail'][1].name)
+        self.assertEquals('head-attr', data['head'][1].name)
+        self.assertEquals('[1..n]', str(data['tail'][1].mult))
+        self.assertEquals('[0..n]', str(data['head'][1].mult))
 
 
     def test_association_head_only(self):
@@ -626,6 +630,22 @@ c1 == "An association" c2
         self.assertEquals(0, len(assoc))
         self.assertEquals((None, None, None, 'unknown'), assoc.data['tail'])
         self.assertEquals((None, 'head', '0..n', 'unknown'), assoc.data['head'])
+
+
+    def test_association_ends_error(self):
+        """
+        Test association with too many ends
+        """
+        f = """
+class c1 "C1"
+class c2 "C2"
+
+c1 =>= c2
+    : a
+    : b
+    : c
+"""
+        self.assertRaises(UMLError, parse, f)
 
 
     def test_profile_extension(self):

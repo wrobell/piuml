@@ -458,6 +458,57 @@ class Relationship(Element):
 
 
 
+class Mult(object):
+    """
+    Attribute multiplicity.
+    """
+    def __init__(self, lower=None, upper=None):
+        """
+        Create multiplicity instance.
+        """
+        self.lower = lower
+        self.upper = upper
+
+        if lower is None:
+            self.lower = '0'
+        if upper is None:
+            self.upper = '*'
+
+
+    def __str__(self):
+        """
+        Convert multiplicity into string.
+        """
+        if self.lower == self.upper:
+            return '[{}]'.format(self.lower)
+        else:
+            return '[{}..{}]'.format(self.lower, self.upper)
+
+
+
+class Feature(object):
+    """
+    UML feature (attribute, operation) representation.
+    """
+
+
+
+class Attribute(Feature):
+    """
+    UML attribute representation.
+    """
+    def __init__(self, name, mult):
+        super(Attribute, self).__init__()
+        self.name = name
+        self.mult = mult
+
+    def __repr__(self):
+        """
+        Return UML attribute string representation.
+        """
+        return '{} {}'.format(self.name, self.mult)
+
+
 def lca(ast, *args):
     """
     Find lowest common ancestor for specified nodes.

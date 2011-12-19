@@ -26,8 +26,8 @@ import lepl as P
 import re
 import logging
 
-from piuml.data import Diagram, Element, PackagingElement, Feature, \
-        IElement, Relationship, \
+from piuml.data import Diagram, Element, PackagingElement, \
+        IElement, Relationship, Mult, Attribute, \
         Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
 
 log = logging.getLogger('piuml.parser')
@@ -446,9 +446,20 @@ def f_association(args):
     log.debug('association {}'.format(args))
 
     stereotypes = []
+    tail_attr = None
+    head_attr = None
+
     if isinstance(args[2], list):
         stereotypes.extend(args[2])
         del args[2]
+
+    if isinstance(args[-1], Attribute):
+        head_attr = args[-1]
+        del args[-1]
+
+    if isinstance(args[-1], Attribute):
+        tail_attr = args[-1]
+        del args[-1]
 
     name = None
     if len(args) == 4:
@@ -470,8 +481,8 @@ def f_association(args):
     v = args[1]
     data = {
         'name': name,
-        'tail': (None, None, None, AEND[v[0]]),
-        'head': (None, None, None, AEND[v[-1]]),
+        'tail': (None, tail_attr, AEND[v[0]]),
+        'head': (None, head_attr, AEND[v[-1]]),
         'direction': h if '=>=' in v \
                 else t if '=<=' in v \
                 else None,
@@ -540,6 +551,14 @@ def f_dependency(args):
     return e
 
 
+def f_attribute(args):
+    """
+    Factory to create attribute multiplicity.
+    """
+    log.debug('attribute {}'.format(args))
+    return Attribute(args[0], Mult(args[1], args[2]))
+
+
 def create_parser():
     global __cache
     __cache = {}
@@ -566,11 +585,21 @@ def create_parser():
     nelement = joinl(NELEMENTS) & eparams
     pelement = joinl(PELEMENTS) & eparams
 
+    mnum = Token('[a-zA-Z0-9\*]+')
+    aword = Token('[a-zA-Z0-9\-]+')
+    mult = ~Token('\[') & mnum \
+            & (space[0:1] & ~Token('\.\.') & space[0:1] & mnum)[0:1] \
+            & ~Token('\]')
+    attribute = ~Token(':') & space & aword \
+            & (space[0:1] & mult)[0:1] > f_attribute
+
     association = id & space \
             & Token('[xO\*<]?=[<>]?=[xO\*>]?') \
             & (space & stereotypes)[0:1] \
             & (space & string)[0:1] \
-            & space & id > f_association
+            & space & id
+    ablock = P.Line(association) \
+            & P.Block(P.Line(attribute)[0:2]) > f_association
 
     dependency = id & space \
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
@@ -578,7 +607,7 @@ def create_parser():
 
     commentline = id & space & Token('\-\-') & space & id
 
-    relationship = association | dependency | commentline
+    relationship = dependency | commentline
         
     statement = P.Delayed()
 
@@ -589,7 +618,7 @@ def create_parser():
     block = (P.Line(pelement) > f_named(PackagingElement)) \
             & P.Block(statement[1:]) > f_packaging
 
-    statement += (block | pline | nline | rline | empty) > list
+    statement += (ablock | block | pline | nline | rline | empty) > list
     program = statement[:]
 
     program.config.lines(block_policy=P.constant_indent(4))
