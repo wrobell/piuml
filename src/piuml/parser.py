@@ -453,11 +453,11 @@ def f_association(args):
         stereotypes.extend(args[2])
         del args[2]
 
-    if isinstance(args[-1], Attribute):
+    if isinstance(args[-1], Attribute) or args[-1] is None:
         head_attr = args[-1]
         del args[-1]
 
-    if isinstance(args[-1], Attribute):
+    if isinstance(args[-1], Attribute) or args[-1] is None:
         tail_attr = args[-1]
         del args[-1]
 
@@ -551,12 +551,15 @@ def f_dependency(args):
     return e
 
 
-def f_attribute(args):
+def f_aend(args):
     """
-    Factory to create attribute multiplicity.
+    Factory to create association end.
     """
     log.debug('attribute {}'.format(args))
-    return Attribute(args[0], Mult(args[1], args[2]))
+    attr = None
+    if len(args) == 3:
+        attr = Attribute(args[0], Mult(args[1], args[2]))
+    return attr
 
 
 def create_parser():
@@ -590,8 +593,8 @@ def create_parser():
     mult = ~Token('\[') & mnum \
             & (space[0:1] & ~Token('\.\.') & space[0:1] & mnum)[0:1] \
             & ~Token('\]')
-    attribute = ~Token(':') & space & aword \
-            & (space[0:1] & mult)[0:1] > f_attribute
+    aend = ~Token(':') & (space & aword)[0:1] \
+            & (space[0:1] & mult)[0:1] > f_aend
 
     association = id & space \
             & Token('[xO\*<]?=[<>]?=[xO\*>]?') \
@@ -599,7 +602,7 @@ def create_parser():
             & (space & string)[0:1] \
             & space & id
     ablock = P.Line(association) \
-            & P.Block(P.Line(attribute)[0:2]) > f_association
+            & P.Block(P.Line(aend))[0:2] > f_association
 
     dependency = id & space \
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \

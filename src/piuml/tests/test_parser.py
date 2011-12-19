@@ -614,22 +614,22 @@ c1 == "An association" c2
 
 
     def test_association_head_only(self):
-        """Test association with association end at head only
         """
-        f = StringIO("""
+        Test association with association end at head only
+        """
+        f = """
 class c1 "C1"
 class c2 "C2"
 
 c1 == "An association" c2
-    :: head [0..n]
-""")
-        ast = parse(f)
-        assocs = [n for n in ast.unwind() if n.cls == 'association']
-        self.assertEquals(['An association'], [n.name for n in assocs])
-        assoc = assocs[0]
-        self.assertEquals(0, len(assoc))
-        self.assertEquals((None, None, None, 'unknown'), assoc.data['tail'])
-        self.assertEquals((None, 'head', '0..n', 'unknown'), assoc.data['head'])
+    :
+    : head [0..n]
+"""
+        n = parse(f)
+        data = n[2].data
+        self.assertTrue(data['tail'][1] is None, '{}'.format(data))
+        self.assertEquals('head', data['head'][1].name)
+        self.assertEquals('[0..n]', str(data['head'][1].mult))
 
 
     def test_association_ends_error(self):
@@ -645,7 +645,7 @@ c1 =>= c2
     : b
     : c
 """
-        self.assertRaises(UMLError, parse, f)
+        self.assertRaises(ParseError, parse, f)
 
 
     def test_profile_extension(self):
