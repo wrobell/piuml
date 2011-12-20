@@ -163,19 +163,6 @@ def _line(self, cls, tail, head, stereotypes=None, data=None):
     return line
 
 
-def p_commentline(self, args):
-    """
-    commentline ::= ID SPACE COMMENTLINE SPACE ID
-    """
-    self._trim(args)
-    tail, head = self._get_ends(args)
-    # one of ends shall be comment
-    if not (tail.cls == 'comment') ^ (head.cls == 'comment'):
-        raise UMLError('One of comment line ends shall be comment')
-    n = self._line('commentline', tail, head)
-    return n
-
-
 def p_assembly(self, args):
     """
     assembly ::= ID SPACE fdiface SPACE ID
@@ -562,6 +549,19 @@ def f_generalization(args):
     return n
 
 
+def f_commentline(args):
+    """
+    Factory to create comment line relationship.
+    """
+    log.debug('commentline {}'.format(args))
+    n = _relationship('commentline', args[0], args[-1])
+    # tail or head shall be comment
+    tail, head = n.tail, n.head
+    if not (tail.cls == 'comment') ^ (head.cls == 'comment'):
+        raise UMLError('One of comment line ends shall be comment')
+    return n
+
+
 def f_mult(args):
     """
     Factory to create attribute multiplicity.
@@ -645,7 +645,7 @@ def create_parser():
 
     generalization = id & space & (Token('<=') | Token('=>')) & space & id > f_generalization
 
-    commentline = id & space & Token('\-\-') & space & id
+    commentline = id & space & Token('\-\-') & space & id > f_commentline
 
     relationship = dependency | generalization | commentline
 

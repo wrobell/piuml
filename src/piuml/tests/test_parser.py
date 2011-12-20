@@ -812,4 +812,36 @@ p1 <= p2
 
 
 
+class CommentLineTestCase(unittest.TestCase):
+    """
+    Comment line tests.
+    """
+    def test_commentline(self):
+        """
+        Test comment line creation
+        """
+        f = """
+package p1 "P1"
+comment c2 "a comment"
+
+p1 -- c2
+"""
+        n = parse(f)
+        self.assertEquals('commentline', n[2].cls)
+
+
+    def test_commentline_error(self):
+        """
+        Test comment line creation error
+        """
+        f = """
+package p1 "P1"
+package c2 "a comment"
+
+p1 -- c2
+"""
+        self.assertRaises(UMLError, parse, f)
+
+
+
 # vim: sw=4:et:ai
