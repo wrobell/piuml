@@ -521,6 +521,38 @@ class Operation(Feature):
         self.name = name
 
 
+def preorder(n, f):
+    """
+    Traverse a tree in preorder.
+
+    :Parameters:
+     n
+        Tree root.
+     f
+        Function to execute on a node when traversing.
+    """
+    f(n)
+    if isinstance(n, Iterable):
+        for k in n:
+            preorder(k, f)
+
+
+def postorder(n, f):
+    """
+    Traverse a tree in postorder.
+
+    :Parameters:
+     n
+        Tree root.
+     f
+        Function to execute on a node when traversing.
+    """
+    if isinstance(n, Iterable):
+        for k in n:
+            postorder(k, f)
+    f(n)
+
+
 def lca(ast, *args):
     """
     Find lowest common ancestor for specified nodes.
@@ -557,6 +589,25 @@ def lsb(parent, *kids):
         else:
             siblings.append(k)
     return siblings
+
+
+class MWalker(object):
+    """
+    Walk a tree and execute a method on each traversed node.
+    """
+    def preorder(self, n):
+        preorder(n, self)
+
+
+    def postorder(self, n):
+        postorder(n, self)
+
+
+    def __call__(self, n):
+        fn = 'v_{}'.format(n.__class__.__name__.lower())
+        print('w', fn)
+        f = getattr(self, fn)
+        f(n)
 
 
 def unwind(n):

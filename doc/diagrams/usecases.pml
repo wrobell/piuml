@@ -16,9 +16,9 @@ w ==> wd
 m -e> wd
 doc -- c
 
-:layout:
-    center: pu doc
-    middle: doc c
-    middle: w pu
+#:layout:
+#    center: pu doc
+#    middle: doc c
+#    middle: w pu
 
 # vim: sw=4:et:ai

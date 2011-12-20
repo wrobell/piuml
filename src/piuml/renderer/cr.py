@@ -28,10 +28,10 @@ from gi.repository import Pango
 
 import sys
 from io import StringIO
-from spark import GenericASTTraversal
 from math import ceil, floor, pi
 from functools import partial
 
+from piuml.data import MWalker
 from piuml.data import Size, Pos, Style, Area, Node
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
@@ -150,21 +150,21 @@ class CairoBBContext(object):
         cr.show_text(txt)
 
 
-class CairoDimensionCalculator(GenericASTTraversal):
+class CairoDimensionCalculator(MWalker):
     """
     Node dimension calculator using Cairo.
     """
     def __init__(self):
-        GenericASTTraversal.__init__(self, None)
+        super(CairoDimensionCalculator, self).__init__()
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
         self.cr = CairoBBContext(cairo.Context(self.surface))
 
 
-    def calc(self, ast):
-        self.postorder(ast)
+    def calc(self, n):
+        self.postorder(n)
 
 
-    def n_element(self, node):
+    def v_element(self, node):
         """
         Calculate minimal size of an element.
 
@@ -223,11 +223,11 @@ class CairoDimensionCalculator(GenericASTTraversal):
         style.min_size.height = max(height, style.min_size.height)
 
 
-    def n_ielement(self, n):
+    def v_ielement(self, n):
         n.style.size = Size(36, 36)
 
 
-    def n_line(self, n):
+    def v_relationship(self, n):
         t = '_' + n.cls
         if n.cls == 'extension':
             t = '_association'
@@ -277,12 +277,12 @@ class CairoDimensionCalculator(GenericASTTraversal):
 
 
 
-class CairoRenderer(GenericASTTraversal):
+class CairoRenderer(MWalker):
     """
     Node renderer using Cairo.
     """
     def __init__(self):
-        GenericASTTraversal.__init__(self, None)
+        super(CairoRenderer, self).__init__()
         self.calc = CairoDimensionCalculator()
         self.surface = None
         self.cr = None
