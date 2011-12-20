@@ -688,7 +688,7 @@ def create_parser():
     program = statement[:]
 
     program.config.lines(block_policy=P.constant_indent(4))
-    return program.parse
+    return program
 
 
 def parse(f):
@@ -699,7 +699,11 @@ def parse(f):
     """
     parser = create_parser()
     try:
-        nodes = parser(f)
+        if isinstance(f, str):
+            nodes = parser.parse(f)
+        else:
+            # parse_file is causing problems at the moment
+            nodes = parser.parse(''.join(f))
     except P.FullFirstMatchException as ex:
         raise ParseError(str(ex))
 

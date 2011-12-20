@@ -45,6 +45,14 @@ class ParserTestCase(unittest.TestCase):
         self.assertEquals('A2', n.children[0].name)
 
 
+    def test_input_file(self):
+        """
+        Test parsing data from file
+        """
+        f = StringIO("class a 'A1'")
+        n = parse(f)
+
+
 class PackagingTestCase(unittest.TestCase):
     """
     Element packaging test case.
