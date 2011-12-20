@@ -163,17 +163,6 @@ def _line(self, cls, tail, head, stereotypes=None, data=None):
     return line
 
 
-def p_generalization(self, args):
-    """
-    generalization ::= ID SPACE GENERALIZATION SPACE ID
-    """
-    self._trim(args)
-    v = args[1].value
-    n = self._line('generalization', *self._get_ends(args))
-    n.data['supplier'] = n.tail if v == '<=' else n.head
-    return n
-
-
 def p_commentline(self, args):
     """
     commentline ::= ID SPACE COMMENTLINE SPACE ID
@@ -355,8 +344,6 @@ def p_align(self, args):
 
 
 ###
-### expr ::= stattributes
-### expr ::= generalization
 ### expr ::= fdifacedep
 ### expr ::= assembly
 ### expr ::= comment
@@ -512,7 +499,7 @@ def f_association(args):
 
 def f_dependency(args):
     """
-    Factory to create dependency.
+    Factory to create dependency relationship.
     """
     log.debug(args)
     TYPE = {
@@ -562,6 +549,17 @@ def f_dependency(args):
                 ' specified only between two use cases')
 
     return e
+
+
+def f_generalization(args):
+    """
+    Factory to create generalization relationship.
+    """
+    log.debug('generalization {}'.format(args))
+    v = args[1]
+    n = _relationship('generalization', args[0], args[-1])
+    n.data['supplier'] = n.tail if v == '<=' else n.head
+    return n
 
 
 def f_mult(args):
@@ -645,9 +643,11 @@ def create_parser():
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
             & (space & stereotypes)[0:1] & space & id > f_dependency
 
+    generalization = id & space & (Token('<=') | Token('=>')) & space & id > f_generalization
+
     commentline = id & space & Token('\-\-') & space & id
 
-    relationship = dependency | commentline
+    relationship = dependency | generalization | commentline
 
     mnum = Token('[a-zA-Z0-9\*]+')
     aword = Token('[a-zA-Z0-9\-]+')

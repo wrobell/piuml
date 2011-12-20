@@ -34,7 +34,7 @@ class ParserTestCase(unittest.TestCase):
     """
     def test_string(self):
         """
-        Test string parsing.
+        Test string parsing
         """
         f = "class a 'A1'"
         n = parse(f)
@@ -786,6 +786,30 @@ s == m
 """
         n = parse(f)
         self.assertEquals('extension', n[2].cls)
+
+
+
+class GeneralizationTestCase(unittest.TestCase):
+    """
+    Generalization tests.
+    """
+    def test_generalization(self):
+        """
+        Test generalization creation
+        """
+        f = """
+package p1 "P1"
+package p2 "P2"
+
+p1 => p2
+p1 <= p2
+"""
+        n = parse(f)
+        self.assertEquals('generalization', n[2].cls)
+        self.assertEquals('p2', n[2].data['supplier'].id)
+        self.assertEquals('generalization', n[3].cls)
+        self.assertEquals('p1', n[3].data['supplier'].id)
+
 
 
 # vim: sw=4:et:ai
