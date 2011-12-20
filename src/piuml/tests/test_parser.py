@@ -319,43 +319,67 @@ package p1 "P1"
 
 class StereotypeAttributesTestCase(unittest.TestCase):
     """
-    Adding stereotype attributes to elements.
+    Stereotype attributes tests.
     """
-    def test_st_attributes(self):
-        """Test adding stereotype attributes
+    def test_n_st_attributes(self):
         """
-        f = StringIO("""
+        Test adding stereotype attributes
+        """
+        f = """
 class c1 "A"
     : <<tt>> :
         : x: int
         : y: int
-""")
-        ast = parse(f)
-        cls = ast.cache['c1']
-        self.assertEquals(1, len(cls))
-        self.assertEquals(2, len(cls[0]))
-        self.assertEquals('tt', cls[0].name)
-        self.assertEquals('x: int', cls[0][0].name)
-        self.assertEquals('y: int', cls[0][1].name)
+"""
+        n = parse(f)
+        stattrs = n[0].data['stattrs']
+        self.assertEquals(1, len(stattrs))
+        self.assertEquals('tt', stattrs[0][0])
+        self.assertEquals('x', str(stattrs[0][1][0].name))
+        self.assertEquals('y', str(stattrs[0][1][1].name))
 
 
-    def test_st_attributes_with_packaging(self):
-        """Test adding stereotype attributes with packaging
+    def test_mult_st_attributes(self):
         """
-        f = StringIO("""
-class c1 'A'
-    class c2 'B'
-    : <<tt>> :
+        Test adding multiple stereotype attributes
+        """
+        f = """
+class c1 "A"
+    : <<tt1>> :
         : x: int
         : y: int
-""")
-        ast = parse(f)
-        cls = ast.cache['c1']
-        self.assertEquals(2, len(cls)) # stereotype <<tt>> attributes and inner class c2
-        self.assertEquals(2, len(cls[1]))
-        self.assertEquals('tt', cls[1].name)
-        self.assertEquals('x: int', cls[1][0].name)
-        self.assertEquals('y: int', cls[1][1].name)
+    : <<tt2>> :
+        : x: int
+        : y: int
+"""
+        n = parse(f)
+        stattrs = n[0].data['stattrs']
+        self.assertEquals(2, len(stattrs))
+        self.assertEquals('tt1', stattrs[0][0])
+        self.assertEquals('x', str(stattrs[0][1][0].name))
+        self.assertEquals('y', str(stattrs[0][1][1].name))
+        self.assertEquals('tt2', stattrs[1][0])
+        self.assertEquals('x', str(stattrs[1][1][0].name))
+        self.assertEquals('y', str(stattrs[1][1][1].name))
+
+
+    def test_p_st_attributes(self):
+        """
+        Test adding stereotype attributes to packaging element 
+        """
+        f = """
+class c1 'A'
+    class c2 'B'
+        : <<tt>> :
+            : x: int
+            : y: int
+"""
+        n = parse(f)
+        stattrs = n[0][0].data['stattrs']
+        self.assertEquals(1, len(stattrs))
+        self.assertEquals('tt', stattrs[0][0])
+        self.assertEquals('x', str(stattrs[0][1][0].name))
+        self.assertEquals('y', str(stattrs[0][1][1].name))
 
 
 

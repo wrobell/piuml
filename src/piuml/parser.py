@@ -321,29 +321,6 @@ def _feature(self, feature, value, title=False):
         return n
 
 
-def p_attribute(self, args):
-    """
-    attribute ::= ATTRIBUTE
-    """
-    return self._feature('attribute', args[0].value)
-
-
-def p_operation(self, args):
-    """
-    operation ::= OPERATION
-    """
-    return self._feature('operation', args[0].value)
-
-
-def p_stattributes(self, args):
-    """
-    stattributes ::= STATTRIBUTES
-    """
-    n = self._feature('stattributes', args[0].value, title=True)
-    n.name = st_parse(n.name)[0]
-    return n
-
-
 def p_layout(self, args):
     """
     layout ::= LAYOUT
@@ -378,7 +355,6 @@ def p_align(self, args):
 
 
 ###
-### expr ::= operation
 ### expr ::= stattributes
 ### expr ::= generalization
 ### expr ::= fdifacedep
@@ -428,6 +404,10 @@ def f_named(cls):
         if isinstance(args[2], List) and args[2].name == 'stereotypes':
             stereotypes.extend(args[2])
             del args[2]
+
+        if isinstance(args[-1], List) and args[-1].name == 'stattrs':
+            data['stattrs'] = list(args[-1])
+            del args[-1]
 
         if isinstance(args[-1], List) and args[-1].name == 'operations':
             data['operations'] = list(args[-1])
@@ -684,9 +664,13 @@ def create_parser():
             & (space[0:1] & mult > f_mult)[0:1] > f_attribute
     operation = ~Token(':') & space \
             & Token('[a-zA-Z_][a-zA-Z0-9_]*\(.*\).*') > f_operation
+    stattrs = P.Line(~Token(':') & space & ~Token('<<') \
+                & stereotype & ~Token('>>') & space & ~Token(':')) \
+            & P.Block(P.Line(attribute)[1:] > f_list('attributes')) > tuple
 
     features = (P.Line(attribute)[0:] > f_list('attributes')) \
-            & (P.Line(operation)[0:] > f_list('operations'))
+            & (P.Line(operation)[0:] > f_list('operations')) \
+            & (stattrs[0:] > f_list('stattrs'))
 
     statement = P.Delayed()
 
