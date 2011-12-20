@@ -409,9 +409,10 @@ class c1 "Test2" # note duplicated id
 
 
     def test_line_interleave(self):
-        """Test an edge to an undefined id
         """
-        f = StringIO("""
+        Test elements and line interleaving
+        """
+        f = """
 class c1 "Test1"
     class c2 "Test2"
 
@@ -421,21 +422,22 @@ class c3 "Test3"
     class c4 "Test4"
 
 c2 == c3
-""")
-        ast = parse(f)
-        data = [n.parent.type for n in ast.unwind() if n.cls == 'class']
-        self.assertEquals(['diagram', 'element'] * 2, data)
+"""
+        n = parse(f)
+        cls = [k.cls for k in n]
+        self.assertEquals(['class', 'association'] * 2, cls)
 
 
     def test_invalid_layout_spec(self):
-        """Test parsing of invalid layout specification
         """
-        f = StringIO("""
+        Test parsing of invalid layout specification
+        """
+        f = """
 class c1 "C1"
 class c2 "C2"
 
     center: c1 c2
-""")
+"""
         self.assertRaises(ParseError, parse, f)
 
 
