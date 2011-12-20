@@ -512,6 +512,15 @@ class Attribute(Feature):
         return '{} {} {}'.format(self.name, self.type, self.mult)
 
 
+class Operation(Feature):
+    """
+    UML operation representation.
+    """
+    def __init__(self, name):
+        super(Operation, self).__init__()
+        self.name = name
+
+
 def lca(ast, *args):
     """
     Find lowest common ancestor for specified nodes.

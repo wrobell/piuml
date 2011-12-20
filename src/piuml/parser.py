@@ -27,7 +27,7 @@ import re
 import logging
 
 from piuml.data import Diagram, Element, PackagingElement, \
-        IElement, Relationship, Mult, Attribute, \
+        IElement, Relationship, Mult, Attribute, Operation, \
         Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
 
 log = logging.getLogger('piuml.parser')
@@ -429,6 +429,10 @@ def f_named(cls):
             stereotypes.extend(args[2])
             del args[2]
 
+        if isinstance(args[-1], List) and args[-1].name == 'operations':
+            data['operations'] = list(args[-1])
+            del args[-1]
+
         if isinstance(args[-1], List) and args[-1].name == 'attributes':
             data['attributes'] = list(args[-1])
             del args[-1]
@@ -617,6 +621,14 @@ def f_attribute(args):
     return attr
 
 
+def f_operation(args):
+    """
+    Factory to create an operation.
+    """
+    log.debug('operation {}'.format(args))
+    return Operation(args[0].strip())
+
+
 def create_parser():
     global __cache
     __cache = {}
@@ -670,15 +682,18 @@ def create_parser():
     attribute = ~Token(':') & space & field \
             & (space[0:1] & ~Token(':') & aword)[0:1] \
             & (space[0:1] & mult > f_mult)[0:1] > f_attribute
+    operation = ~Token(':') & space \
+            & Token('[a-zA-Z_][a-zA-Z0-9_]*\(.*\).*') > f_operation
 
-    features = P.Block(P.Line(attribute)[0:]) > f_list('attributes')
+    features = (P.Line(attribute)[0:] > f_list('attributes')) \
+            & (P.Line(operation)[0:] > f_list('operations'))
 
     statement = P.Delayed()
 
     empty = P.Line(P.Empty(), indent=False)
     rline = P.Line(relationship)
-    nblock = P.Line(nelement) & features[0:1] > f_named(Element)
-    pblock = P.Line(pelement) & features[0:1] > f_named(PackagingElement)
+    nblock = P.Line(nelement) & P.Block(features)[0:1] > f_named(Element)
+    pblock = P.Line(pelement) & P.Block(features)[0:1] > f_named(PackagingElement)
 
     block = (P.Line(pelement) > f_named(PackagingElement)) \
             & P.Block(statement[1:]) > f_packaging

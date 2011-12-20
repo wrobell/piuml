@@ -175,9 +175,9 @@ a -> <<test>> b
 
 
 
-class FeatureTestCase(unittest.TestCase):
+class AttributesTestCase(unittest.TestCase):
     """
-    Adding features (i.e. attributes) to elements.
+    Adding attributes to elements.
     """
     def test_n_attribute(self):
         """
@@ -249,6 +249,78 @@ package p1 "P1"
         self.assertEquals('float', attrs[1].type)
 
 
+
+class OperationsTestCase(unittest.TestCase):
+    """
+    Adding operations to elements.
+    """
+    def test_n_operation(self):
+        """
+        Test adding an operation to normal element
+        """
+        f = """
+interface c1 "A"
+    : abc()
+    : cdef(x, y): int
+"""
+        n = parse(f)
+        opers = n[0].data['operations']
+        self.assertEquals('abc()', opers[0].name)
+        self.assertEquals('cdef(x, y): int', opers[1].name)
+
+
+    def test_p_operation(self):
+        """
+        Test adding an operation to packaging element
+        """
+        f = """
+class c1 "A"
+    : abc()
+    : cdef(x, y): int
+"""
+        n = parse(f)
+        opers = n[0].data['operations']
+        self.assertEquals('abc()', opers[0].name)
+        self.assertEquals('cdef(x, y): int', opers[1].name)
+
+
+    def test_n_operation_packaged(self):
+        """
+        Test adding an operation to normal, packaged element
+        """
+        f = """
+package p1 "P1"
+    interface c1 "A"
+        : abc()
+        : cdef(x, y): int
+"""
+        n = parse(f)
+        opers = n[0][0].data['operations']
+        self.assertEquals('abc()', opers[0].name)
+        self.assertEquals('cdef(x, y): int', opers[1].name)
+
+
+    def test_p_operation_packaged(self):
+        """
+        Test adding an operation to packaging, packaged element
+        """
+        f = """
+package p1 "P1"
+    interface c1 "A"
+        : abc()
+        : cdef(x, y): int
+"""
+        n = parse(f)
+        opers = n[0][0].data['operations']
+        self.assertEquals('abc()', opers[0].name)
+        self.assertEquals('cdef(x, y): int', opers[1].name)
+
+
+
+class StereotypeAttributesTestCase(unittest.TestCase):
+    """
+    Adding stereotype attributes to elements.
+    """
     def test_st_attributes(self):
         """Test adding stereotype attributes
         """
