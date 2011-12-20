@@ -380,12 +380,13 @@ class Stereotype(object):
 
 
 class Element(object):
-    def __init__(self, cls=None, id=None, stereotypes=None, name=None):
+    def __init__(self, cls=None, id=None, stereotypes=None, name=None, data=None):
         self.cls = cls
         self.id = id
         self.name = name
         self.stereotypes = stereotypes
         self.parent = None
+        self.data = {} if data is None else data
 
 
     def __repr__(self):
@@ -497,16 +498,18 @@ class Attribute(Feature):
     """
     UML attribute representation.
     """
-    def __init__(self, name, mult):
+    def __init__(self, name, type, mult):
         super(Attribute, self).__init__()
         self.name = name
+        self.type = type
         self.mult = mult
+
 
     def __repr__(self):
         """
         Return UML attribute string representation.
         """
-        return '{} {}'.format(self.name, self.mult)
+        return '{} {} {}'.format(self.name, self.type, self.mult)
 
 
 def lca(ast, *args):

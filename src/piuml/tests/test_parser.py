@@ -179,21 +179,74 @@ class FeatureTestCase(unittest.TestCase):
     """
     Adding features (i.e. attributes) to elements.
     """
-    def test_attribute(self):
-        """Test adding an attribute
+    def test_n_attribute(self):
         """
-        f = StringIO("""
+        Test adding an attribute to normal element
+        """
+        f = """
+interface c1 "A"
+    : x: int
+    : y: float
+"""
+        n = parse(f)
+        attrs = n[0].data['attributes']
+        self.assertEquals('x', attrs[0].name)
+        self.assertEquals('int', attrs[0].type)
+        self.assertEquals('y', attrs[1].name)
+        self.assertEquals('float', attrs[1].type)
+
+
+    def test_p_attribute(self):
+        """
+        Test adding an attribute to packaging element
+        """
+        f = """
 class c1 "A"
     : x: int
-    : y: int
-""")
-        ast = parse(f)
-        ast.id = 'diagram'
-        data = dict((n.id, n) for n in ast.unwind())
-        cls = data['c1']
-        self.assertEquals(2, len(cls))
-        self.assertEquals('x: int', cls[0].name)
-        self.assertEquals('y: int', cls[1].name)
+    : y: float
+"""
+        n = parse(f)
+        attrs = n[0].data['attributes']
+        self.assertEquals('x', attrs[0].name)
+        self.assertEquals('int', attrs[0].type)
+        self.assertEquals('y', attrs[1].name)
+        self.assertEquals('float', attrs[1].type)
+
+
+    def test_n_attribute_packaged(self):
+        """
+        Test adding an attribute to normal, packaged element
+        """
+        f = """
+package p1 "P1"
+    interface c1 "A"
+        : x: int
+        : y: float
+"""
+        n = parse(f)
+        attrs = n[0][0].data['attributes']
+        self.assertEquals('x', attrs[0].name)
+        self.assertEquals('int', attrs[0].type)
+        self.assertEquals('y', attrs[1].name)
+        self.assertEquals('float', attrs[1].type)
+
+
+    def test_p_attribute_packaged(self):
+        """
+        Test adding an attribute to packaging, packaged element
+        """
+        f = """
+package p1 "P1"
+    interface c1 "A"
+        : x: int
+        : y: float
+"""
+        n = parse(f)
+        attrs = n[0][0].data['attributes']
+        self.assertEquals('x', attrs[0].name)
+        self.assertEquals('int', attrs[0].type)
+        self.assertEquals('y', attrs[1].name)
+        self.assertEquals('float', attrs[1].type)
 
 
     def test_st_attributes(self):
@@ -232,29 +285,6 @@ class c1 'A'
         self.assertEquals('x: int', cls[1][0].name)
         self.assertEquals('y: int', cls[1][1].name)
 
-
-    def test_association_ends(self):
-        """Test adding an association end
-        """
-        f = StringIO("""
-class c1 "A"
-class c2 "B"
-
-c1 == c2
-    : one [0..1]
-    : two
-""")
-        ast = parse(f)
-        ast.id = 'diagram'
-        assocs = [n for n in ast.unwind() if n.cls == 'association']
-        self.assertEquals(1, len(assocs))
-
-        assoc = assocs[0]
-        self.assertEquals(0, len(assoc))
-        self.assertEquals('one', assoc.data['tail'][1])
-        self.assertEquals('0..1', assoc.data['tail'][2])
-        self.assertEquals('two', assoc.data['head'][1])
-        self.assertEquals(None, assoc.data['head'][2])
 
 
 class GeneralLanguageTestCase(unittest.TestCase):

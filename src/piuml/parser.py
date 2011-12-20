@@ -378,39 +378,68 @@ def p_align(self, args):
 
 
 ###
-### expr ::= expr comment
-### expr ::= element
-### expr ::= attribute
 ### expr ::= operation
 ### expr ::= stattributes
-### expr ::= association
 ### expr ::= generalization
-### expr ::= commentline
-### expr ::= dependency
 ### expr ::= fdifacedep
 ### expr ::= assembly
 ### expr ::= comment
 ### expr ::= layout
 ### expr ::= align
-### expr ::= empty
 ###
+
+class List(list):
+    """
+    Named list of parsed items.
+    """
+    def __init__(self, name):
+        self.name = name
+
+
+    def __repr__(self):
+        return '{}:{}'.format(self.name, super(List, self).__repr__())
+
+
+
+def f_list(name):
+    """
+    Create a named list of parsed items.
+
+    :Parameters:
+     name
+        Name of a list.
+    """
+    def f(args):
+        l = List(name)
+        l.extend(args)
+        return l
+    return f
+
 
 def f_named(cls):
     """
     Factory to create named element.
     """
     def f(args):
+        log.debug('named({}): {}'.format(cls, args))
         stereotypes = []
-        if len(args) == 4:
+        data = {}
+
+        if isinstance(args[2], List) and args[2].name == 'stereotypes':
             stereotypes.extend(args[2])
             del args[2]
+
+        if isinstance(args[-1], List) and args[-1].name == 'attributes':
+            data['attributes'] = list(args[-1])
+            del args[-1]
+
         c, id, name = args
         name = name_dequote(name)
 
         if c in KEYWORDS:
             stereotypes.insert(0, c)
 
-        n = cls(cls=c, id=id, stereotypes=stereotypes, name=name)
+        n = cls(cls=c, id=id, stereotypes=stereotypes, name=name, data=data)
         __cache[n.id] = n
         return n
     return f
@@ -551,14 +580,40 @@ def f_dependency(args):
     return e
 
 
-def f_aend(args):
+def f_mult(args):
     """
-    Factory to create association end.
+    Factory to create attribute multiplicity.
+    """
+    log.debug('multiplicity {}'.format(args))
+    lower = args[0]
+    upper = None if len(args) == 1 else args[1]
+    return Mult(lower, upper)
+
+
+def f_attribute(args):
+    """
+    Factory to create an attribute.
     """
     log.debug('attribute {}'.format(args))
     attr = None
-    if len(args) == 3:
-        attr = Attribute(args[0], Mult(args[1], args[2]))
+    if len(args) > 0:
+        name = None
+        atype = None
+        mult = None
+
+        t = [type(v) for v in args]
+        try:
+            k = t.index(Mult)
+            mult = args[k]
+            del args[k]
+        except ValueError:
+            pass
+
+        name = args[0]
+        if len(args) == 2:
+            atype = args[1]
+
+        attr = Attribute(name, atype, mult)
     return attr
 
 
@@ -582,27 +637,17 @@ def create_parser():
     stereotypes = ~Token('<<') \
         & stereotype \
         & (~Token(' *, *') & stereotype)[0:] \
-        & ~Token('>>') > list
+        & ~Token('>>') > f_list('stereotypes')
     eparams = space & id & (space & stereotypes)[0:1] & space & string
 
     nelement = joinl(NELEMENTS) & eparams
     pelement = joinl(PELEMENTS) & eparams
-
-    mnum = Token('[a-zA-Z0-9\*]+')
-    aword = Token('[a-zA-Z0-9\-]+')
-    mult = ~Token('\[') & mnum \
-            & (space[0:1] & ~Token('\.\.') & space[0:1] & mnum)[0:1] \
-            & ~Token('\]')
-    aend = ~Token(':') & (space & aword)[0:1] \
-            & (space[0:1] & mult)[0:1] > f_aend
 
     association = id & space \
             & Token('[xO\*<]?=[<>]?=[xO\*>]?') \
             & (space & stereotypes)[0:1] \
             & (space & string)[0:1] \
             & space & id
-    ablock = P.Line(association) \
-            & P.Block(P.Line(aend))[0:2] > f_association
 
     dependency = id & space \
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
@@ -611,17 +656,36 @@ def create_parser():
     commentline = id & space & Token('\-\-') & space & id
 
     relationship = dependency | commentline
-        
+
+    mnum = Token('[a-zA-Z0-9\*]+')
+    aword = Token('[a-zA-Z0-9\-]+')
+    mult = ~Token('\[') & mnum \
+            & (space[0:1] & ~Token('\.\.') & space[0:1] & mnum)[0:1] \
+            & ~Token('\]')
+
+    aend = ~Token(':') & (space[0:1] & aword)[0:1] \
+            & (space[0:1] & mult > f_mult)[0:1] > f_attribute
+
+    field = aword & (space[0:1] & ~Token(':') & space[0:1] & aword)[0:1]
+    attribute = ~Token(':') & space & field \
+            & (space[0:1] & ~Token(':') & aword)[0:1] \
+            & (space[0:1] & mult > f_mult)[0:1] > f_attribute
+
+    features = P.Block(P.Line(attribute)[0:]) > f_list('attributes')
+
     statement = P.Delayed()
 
     empty = P.Line(P.Empty(), indent=False)
     rline = P.Line(relationship)
-    nline = P.Line(nelement) > f_named(Element)
-    pline = P.Line(pelement) > f_named(PackagingElement)
+    nblock = P.Line(nelement) & features[0:1] > f_named(Element)
+    pblock = P.Line(pelement) & features[0:1] > f_named(PackagingElement)
+
     block = (P.Line(pelement) > f_named(PackagingElement)) \
             & P.Block(statement[1:]) > f_packaging
+    ablock = P.Line(association) \
+            & P.Block(P.Line(aend))[0:2] > f_association
 
-    statement += (ablock | block | pline | nline | rline | empty) > list
+    statement += (block | ablock | nblock | pblock | rline | empty) > list
     program = statement[:]
 
     program.config.lines(block_policy=P.constant_indent(4))
