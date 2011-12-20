@@ -53,6 +53,17 @@ class ParserTestCase(unittest.TestCase):
         n = parse(f)
 
 
+    def test_comment(self):
+        """
+        Test parsing of commented lines
+        """
+        f = """
+# check
+class a 'A1'
+"""
+        n = parse(f)
+
+
 class PackagingTestCase(unittest.TestCase):
     """
     Element packaging test case.

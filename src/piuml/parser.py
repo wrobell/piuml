@@ -643,7 +643,9 @@ def create_parser():
             & (Token('\-[urime]?>') | Token('<[urime]?\-')) \
             & (space & stereotypes)[0:1] & space & id > f_dependency
 
-    generalization = id & space & (Token('<=') | Token('=>')) & space & id > f_generalization
+    generalization = id & space \
+            & (Token('<=') | Token('=>')) \
+            & space & id > f_generalization
 
     commentline = id & space & Token('\-\-') & space & id > f_commentline
 
@@ -675,6 +677,7 @@ def create_parser():
     statement = P.Delayed()
 
     empty = P.Line(P.Empty(), indent=False)
+    comment = P.Line(Token('#.*'), indent=False)
     rline = P.Line(relationship)
     nblock = P.Line(nelement) & P.Block(features)[0:1] > f_named(Element)
     pblock = P.Line(pelement) & P.Block(features)[0:1] > f_named(PackagingElement)
@@ -684,7 +687,7 @@ def create_parser():
     ablock = P.Line(association) \
             & P.Block(P.Line(aend))[0:2] > f_association
 
-    statement += (block | ablock | nblock | pblock | rline | empty) > list
+    statement += (block | ablock | nblock | pblock | rline | ~comment | empty) > list
     program = statement[:]
 
     program.config.lines(block_policy=P.constant_indent(4))
