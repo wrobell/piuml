@@ -228,11 +228,13 @@ class CairoDimensionCalculator(MWalker):
 
 
     def v_relationship(self, n):
-        t = '_' + n.cls
-        if n.cls == 'extension':
-            t = '_association'
-        f = getattr(self, t)
-        f(n)
+        """
+        Calculate length of UML relationship.
+        """
+        if n.cls in ('association', 'extension'):
+            self._association(n)
+        else:
+            self._set_edge_len(n)
 
 
     def _set_edge_len(self, edge, length=0):
@@ -252,14 +254,6 @@ class CairoDimensionCalculator(MWalker):
         edge.style.min_length = max(75, 2 * sum(lens))
         return sum(lens)
 
-
-    def _dependency(self, edge):
-        """
-        Calculate minimal length of a dependency line.
-        """
-        self._set_edge_len(edge)
-
-    _commentline = _connector = _generalization = _dependency
 
     def _association(self, edge):
         """
