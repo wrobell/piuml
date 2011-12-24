@@ -25,7 +25,7 @@ ARouter library is used for line routing.
 
 import itertools
 
-from piuml.data import Pos
+from piuml.style import Pos
 
 import arouter
 

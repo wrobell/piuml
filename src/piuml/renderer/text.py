@@ -27,7 +27,7 @@ from gi.repository import PangoCairo
 
 from math import atan2
 
-from piuml.data import Pos
+from piuml.style import Pos
 
 # Horizontal align.
 ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1

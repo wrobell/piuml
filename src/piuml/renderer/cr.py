@@ -31,8 +31,8 @@ from io import StringIO
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import MWalker
-from piuml.data import Size, Pos, Style, Area, Node
+from piuml.data import MWalker, Node
+from piuml.style import Size, Pos, Style, Area
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
 from piuml.renderer.line import *

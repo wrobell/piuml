@@ -24,7 +24,7 @@ Screen oriented coordinate system is assumed (x-axis leftward, y-axis
 downard), which is aligned with Cairo.
 """
 
-from collections import namedtuple, MutableSequence, Iterable
+from collections import Iterable
 from uuid import uuid4 as uuid
 import logging
 
@@ -46,54 +46,6 @@ KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
 
 
-
-class Pos(object):
-    __slots__ = 'x', 'y'
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __iter__(self):
-        return iter((self.x, self.y))
-
-    def __str__(self):
-        return '(%s, %s)' % (self.x, self.y)
-
-    def __eq__(self, p):
-        return self.x == p.x and self.y == p.y
-
-    def __repr__(self):
-        return 'Pos({},{})'.format(self.x, self.y)
-
-
-class Size(object):
-    __slots__ = 'width', 'height'
-
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-    def __iter__(self):
-        return iter((self.width, self.height))
-
-    def __str__(self):
-        return '%s, %s' % (self.width, self.height)
-
-
-class Area(object):
-    __slots__ = 'top', 'right', 'bottom', 'left'
-
-    def __init__(self, top, right, bottom, left):
-        self.top = top
-        self.right = right
-        self.bottom = bottom
-        self.left = left
-
-    def __iter__(self):
-        return iter((self.top, self.right, self.bottom, self.left))
-
-
 def ntype(cls):
     """
     Set type of parsed piUML language AST node, so it can be recognized by
@@ -101,75 +53,6 @@ def ntype(cls):
     """
     cls.type = cls.__name__.lower()
     return cls
-
-
-
-class Style(object):
-    """
-    Base style class for boxes and lines.
-    """
-    def __init__(self):
-        self.margin = Area(10, 10, 10, 10)
-        self.padding = Area(5, 10, 5, 10)
-
-
-
-class BoxStyle(Style):
-    """
-    Box style information.
-
-    Rectangle of the box is defined by its position and size.
-
-    Box has compartments. There is at least one compartment containing
-    information like UML stereotypes, name of UML named element or simply
-    other boxes.
-
-    Box may have an icon, which is displayed in top right corner of the
-    box, i.e. UML artifact or UML component icon.
-
-    :Attributes:
-     pos
-        Box position.
-     size
-        Current size of the box.
-     min_size
-        Minimum size of the box.
-     compartment
-        Height of each compartment.
-     icon_size
-        Icon size.
-    """
-    def __init__(self):
-        """
-        Create box style information.
-        """
-        super(BoxStyle, self).__init__()
-
-        # box specific
-        self.pos = Pos(0, 0)
-        self.size = Size(80, 40)
-        self.icon_size = Size(0, 0)
-        self.min_size = Size(80, 40)
-        self.compartment = [0]
-
-
-
-class LineStyle(Style):
-    """
-    Line style.
-
-    :Attributes:
-     edges
-        List of line points. 
-    """
-    def __init__(self):
-        """
-        Create line style information.
-        """
-        super(LineStyle, self).__init__()
-        self.min_length = 100
-        self.edges = (Pos(0, 0), Pos(0, 0))
-
 
 
 class Node(list):
@@ -373,13 +256,28 @@ class Align(Node):
 
 
 class Stereotype(object):
+    """
+    Stereotype information.
+
+    :Attributes:
+     name
+        Name of stereotype.
+    """
+    is_keyword = property(lambda s: s.name in KEYWORDS)
+
     def __init__(self, name):
         self.name = name
+
+
     def __repr__(self):
         return 'Stereotype({})'.format(self.name)
 
 
+
 class Element(object):
+    """
+    Basic representation of UML element like interface, action, etc.
+    """
     def __init__(self, cls=None, id=None, stereotypes=None, name=None, data=None):
         self.cls = cls
         self.id = id
@@ -396,16 +294,33 @@ class Element(object):
 
 
 class PackagingElement(Element):
+    """
+    Packaging UML element like package, component, etc.
+
+    :Attributes:
+     children
+        Elements packaged by the element.
+    """
     def __init__(self, *args, **kw):
         super(PackagingElement, self).__init__(*args, **kw)
         self.children = []
 
 
     def __getitem__(self, k):
+        """
+        Get packaged element.
+
+        :Parameters:
+         k
+            Index of packaged element.
+        """
         return self.children[k]
 
 
     def __iter__(self):
+        """
+        Iterate over packaged elements.
+        """
         return iter(self.children)
 
 
@@ -450,12 +365,13 @@ class Relationship(Element):
     def __init__(self, cls, tail, head, stereotypes=None, name='',
             data=None):
         super(Relationship, self).__init__(cls=cls,
-                stereotypes=stereotypes, name=name)
-        self.data = {} if data is None else data
-        self.style = LineStyle()
+                stereotypes=stereotypes,
+                name=name,
+                data=data)
         self.tail = tail
         self.head = head
-        self.style.padding = Area(3, 10, 3, 10)
+        #self.style = LineStyle()
+        #self.style.padding = Area(3, 10, 3, 10)
 
 
 

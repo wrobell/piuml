@@ -19,7 +19,7 @@
 
 from piuml.data import lca, lsb
 from piuml.layout.solver import *
-from piuml.data import Area, Node
+from piuml.style import Area
 
 from collections import namedtuple
 
