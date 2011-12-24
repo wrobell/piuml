@@ -694,19 +694,21 @@ def create_parser():
     return program
 
 
+__parser = create_parser()
+
+
 def parse(f):
     """
     :Parameters:
      f
         File to load diagram description from.
     """
-    parser = create_parser()
     try:
         if isinstance(f, str):
-            nodes = parser.parse(f)
+            nodes = __parser.parse(f)
         else:
             # parse_file is causing problems at the moment
-            nodes = parser.parse(''.join(f))
+            nodes = __parser.parse(''.join(f))
     except P.FullFirstMatchException as ex:
         raise ParseError(str(ex))
 
