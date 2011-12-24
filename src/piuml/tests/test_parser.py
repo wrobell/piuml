@@ -407,7 +407,8 @@ class GeneralLanguageTestCase(unittest.TestCase):
     General piUML language tests.
     """
     def test_undefined_id(self):
-        """Test an edge to an undefined id
+        """
+        Test an edge to an undefined id
         """
         f = StringIO("""
 class c1 "Test1"
@@ -418,7 +419,8 @@ c1 -- cx
 
 
     def test_duplicate_id(self):
-        """Test duplicate id specification
+        """
+        Test duplicate id specification
         """
         f = StringIO("""
 class c1 "Test1"
