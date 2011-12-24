@@ -21,6 +21,8 @@
 Style information of rendered UML diagram items.
 """
 
+from piuml.data import Element, Relationship
+
 import logging
 log = logging.getLogger('piuml.renderer.style')
 
@@ -155,5 +157,33 @@ class LineStyle(Style):
         self.min_length = 100
         self.edges = (Pos(0, 0), Pos(0, 0))
 
+
+
+class StyleDescriptor(object):
+    """
+    Injects style information into UML diagram items.
+
+    :Attributes:
+     cls
+        Class for a diagram item.
+     data
+        Style information per UML diagram item.
+    """
+    def __init__(self, cls):
+        super(StyleDescriptor, self).__init__()
+        self.cls = cls
+        self.data = {}
+
+    def __get__(self, obj, cls=None):
+        """
+        Get style information for an object.
+        """
+        if obj not in self.data:
+            self.data[obj] = self.cls()
+        return self.data[obj]
+
+
+Element.style = StyleDescriptor(BoxStyle)
+Relationship.style = StyleDescriptor(LineStyle)
 
 # vim: sw=4:et:ai
