@@ -217,17 +217,17 @@ def line_center(edges):
 
 
 def pango_layout(cr, text):
-    pcr = pangocairo.CairoContext(cr._cr)
-    l = pcr.create_layout()
+    l = PangoCairo.create_layout(cr._cr)
     l.set_font_description(pango.FontDescription('sans 10'))
-    attrs, t, _ = pango.parse_markup(text)
+    _, attrs, _, _ = pango.parse_markup(text, -1, '\0')
     l.set_attributes(attrs)
-    l.set_text(t)
-    return pcr, l
+    l.set_text(text, -1)
+    return l
 
 
 def pango_size(layout):
-    return layout.get_pixel_extents()[1][2:]
+    r = layout.get_pixel_extents()[1]
+    return r.width, r.height
 
 
 def draw_text(cr, shape, style, text,
@@ -237,7 +237,7 @@ def draw_text(cr, shape, style, text,
         outside=False,
         align_f=text_pos_at_box):
 
-    pcr, l = pango_layout(cr, text)
+    l = pango_layout(cr, text)
     size = pango_size(l)
     l.set_alignment(lalign)
 
@@ -246,7 +246,7 @@ def draw_text(cr, shape, style, text,
 
     cr.save()
     cr.move_to(x + x0, y + y0)
-    pcr.show_layout(l)
+    l.show(l)
     cr.restore()
 
     return size[1]
@@ -256,7 +256,7 @@ def text_size(cr, text):
     """
     Calculate total size of a multiline text.
     """
-    _, l = pango_layout(cr, text)
+    l = pango_layout(cr, text)
     return pango_size(l)
 
 
