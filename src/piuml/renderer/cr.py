@@ -31,7 +31,7 @@ from io import StringIO
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import MWalker, Node
+from piuml.data import MWalker, Node, PackagingElement
 from piuml.style import Size, Pos, Style, Area
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
@@ -57,8 +57,8 @@ def _name(node, bold=True, underline=False, fmt='%s'):
     return '\n'.join(texts)
 
 
-def _features(node, cls):
-    return '\n'.join(f.name for f in node if f.cls == cls)
+def _features(node, ft):
+    return '\n'.join(f.name for f in node.data[ft])
 
 
 def _head_size(style):
@@ -194,8 +194,8 @@ class CairoDimensionCalculator(MWalker):
         sizes.append(Size(nw, nh))
 
         compartments = []
-        attrs = _features(node, 'attribute')
-        opers = _features(node, 'operation')
+        attrs = _features(node, 'attributes')
+        opers = _features(node, 'operations')
         if attrs:
             w, h = text_size(cr, attrs)
             sizes.append(Size(w, h))
@@ -204,8 +204,8 @@ class CairoDimensionCalculator(MWalker):
             w, h = text_size(cr, opers)
             sizes.append(Size(w, h))
             style.compartment.append(h)
-        st_attrs = (f for f in node if f.cls == 'stattributes')
-        for f in st_attrs:
+
+        for f in node.data['stattrs']:
             title = '<small>%s</small>\n' % st_fmt([f.name])
             attrs = title + '\n'.join(a.name for a in f)
             w, h = text_size(cr, attrs)
@@ -213,7 +213,7 @@ class CairoDimensionCalculator(MWalker):
             style.compartment.append(h)
 
         k = len(style.compartment)
-        if node.is_packaging():
+        if isinstance(node, PackagingElement):
             k += 1
 
         width = max(w for w, h in sizes) + pad.left + pad.right
@@ -235,6 +235,9 @@ class CairoDimensionCalculator(MWalker):
             self._association(n)
         else:
             self._set_edge_len(n)
+
+
+    v_packagingelement = v_diagram = v_element
 
 
     def _set_edge_len(self, edge, length=0):
@@ -400,19 +403,19 @@ class CairoRenderer(MWalker):
                 align=align, outside=outside)
 
         nc = 1
-        attrs = _features(node, 'attribute')
+        attrs = _features(node, 'attributes')
         if attrs:
             self._compartment(node, attrs, tskip)
             tskip += style.compartment[nc] + pad.top + pad.bottom
             nc += 1
 
-        opers = _features(node, 'operation')
+        opers = _features(node, 'operations')
         if opers:
             self._compartment(node, opers, tskip)
             tskip += style.compartment[nc] + pad.top + pad.bottom
             nc += 1
 
-        st_attrs = (f for f in node if f.cls == 'stattributes')
+        st_attrs = (f for f in node if f.cls == 'stattrs')
         for f in st_attrs:
             title = st_fmt([f.name]) + '\n' 
             attrs = '\n'.join(a.name for a in f)
@@ -619,7 +622,7 @@ class CairoRenderer(MWalker):
             draw_text(self.cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
 
 
-    def n_diagram(self, n):
+    def v_diagram(self, n):
         w, h = n.style.size
         w = int(ceil(w))
         h = int(ceil(h))
@@ -629,7 +632,7 @@ class CairoRenderer(MWalker):
         self.cr.save()
 
 
-    def n_diagram_exit(self, n):
+    def v_diagram_exit(self, n):
         """
         Generate PDF, SVG or PNG file with UML diagram.
         """

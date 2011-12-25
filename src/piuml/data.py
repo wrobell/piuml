@@ -281,10 +281,13 @@ class Element(object):
     def __init__(self, cls=None, id=None, stereotypes=None, name=None, data=None):
         self.cls = cls
         self.id = id
-        self.name = name
+        self.name = '' if name is None else name
         self.stereotypes = stereotypes
         self.parent = None
         self.data = {} if data is None else data
+        self.data['attributes'] = []
+        self.data['operations'] = []
+        self.data['stattrs'] = []
 
 
     def __repr__(self):
