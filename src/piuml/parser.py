@@ -104,14 +104,14 @@ def name_dequote(n):
     return n
 
 
-RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
-RE_COMMENT = r'\s*(?<!\\)\#.*'
-RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
-RE_OPERATION = r'^\s+:\s*\w\w*\(.*\).*$'
-RE_STATTRIBUTES = r'^\s+:\s*<<\w+>>\s*:$'
-RE_LAYOUT = r'^:layout:$'
-RE_ALIGN = r'^\s+(top|right|bottom|left|middle|center)\s*:\s*'
 
+
+###
+### expr ::= fdifacedep
+### expr ::= assembly
+###
+RE_NAME = r""""(([^"]|\")+)"|'(([^']|\')+)'"""
+RE_ATTRIBUTE = r'^\s+::?\s*[^:](\w+|\[(\w+|\w+\.\.\w+)\])\s*($|:.+?$|=.+?$|\[(\w+|\w+\.\.\w+)\]$)'
 RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
     ($
         | \[(?P<mult>\w+|\w+\.\.\w+)\] # multiplicity, i.e. [0], [n], [n..m]
@@ -297,46 +297,6 @@ def _feature(self, feature, value, title=False):
         return n
 
 
-def p_layout(self, args):
-    """
-    layout ::= LAYOUT
-    """
-    n = Section('layout')
-    self._set_parent('', n)
-    return n
-
-
-def p_align(self, args):
-    """
-    align ::= ALIGN ID SPACE ID
-    align ::= align SPACE ID
-    """
-    parent = self._istack[-1][1]
-
-    if parent.type != 'section' and parent.cls != 'layout' \
-            and parent.type != 'align':
-        raise ParseError('Alignment specification outside layout group')
-
-    self._trim(args)
-    if args[0].type == 'ALIGN':
-        align = args[0].value.strip()[:-1]
-        n = Align(align)
-        n.nodes.append(self.ast.cache[args[1].value])
-        n.nodes.append(self.ast.cache[args[2].value])
-        self._set_parent('', n)
-    else:
-        n = args[0]
-        n.nodes.append(self.ast.cache[args[1].value])
-    return n
-
-
-###
-### expr ::= fdifacedep
-### expr ::= assembly
-### expr ::= comment
-### expr ::= layout
-### expr ::= align
-###
 
 class List(list):
     """
@@ -607,6 +567,20 @@ def f_operation(args):
     return Operation(args[0].strip())
 
 
+def f_layout(args):
+    """
+    Factory to create diagram alignment information.
+    """
+    log.debug('layout {}'.format(args))
+    s = Section('layout')
+    for p in args[1:]:
+        a = Align(p[0])
+        for id in p[1:]:
+            a.children.append(__cache[id])
+        s.children.append(a)
+    return s
+
+
 def create_parser():
     global __cache
     __cache = {}
@@ -674,6 +648,12 @@ def create_parser():
             & (P.Line(operation)[0:] > f_list('operations')) \
             & (stattrs[0:] > f_list('stattrs'))
 
+    layout = ~Token(':') & Token('layout') & ~Token(':')
+    align  = (Token('top') | Token('right') | Token('bottom') \
+                | Token('left') | Token('middle') | Token('center')) \
+            & ~ Token(':') \
+            & space[0:] & id & (space & id)[1:] > list
+
     statement = P.Delayed()
 
     empty = P.Line(P.Empty(), indent=False)
@@ -687,7 +667,10 @@ def create_parser():
     ablock = P.Line(association) \
             & P.Block(P.Line(aend))[0:2] > f_association
 
-    statement += (block | ablock | nblock | pblock | rline | ~comment | empty) > list
+    lblock = P.Line(layout) & P.Block(P.Line(align)[1:]) > f_layout
+
+    statement += (block | ablock | nblock | pblock | lblock \
+            | rline | ~comment | empty) > list
     program = statement[:]
 
     program.config.lines(block_policy=P.constant_indent(4))

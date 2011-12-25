@@ -440,6 +440,33 @@ class Operation(Feature):
         self.name = name
 
 
+
+class Section(PackagingElement):
+    """
+    Section in a diagram written in piUML language.
+
+    There is only one section currently specified - 'layout'.
+    """
+
+
+class Align(PackagingElement):
+    """
+    Alignment definition information.
+
+    Alignment type may be one of:
+    - left
+    - right
+    - top
+    - bottom
+    - center
+    - middle
+
+    :Attributes:
+     cls
+        Alignment type.
+    """
+
+
 def preorder(n, f):
     """
     Traverse a tree in preorder.

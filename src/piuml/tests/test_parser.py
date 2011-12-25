@@ -867,4 +867,44 @@ p1 -- c2
 
 
 
+class AlignmentTestCase(unittest.TestCase):
+    """
+    Alignment information parsing test.
+    """
+    def test_alignment(self):
+        """
+        Test alignment parsing
+        """
+        f = """
+package p1 "P1"
+comment c2 "a comment"
+class c3 "C1"
+
+:layout:
+    left: c3 p1
+    center: p1 c2
+    right: p1 c2 c3
+    top: p1 c2
+    middle: p1 c2
+    bottom: p1 c2
+"""
+        n = parse(f)
+        s = n[3]
+        self.assertEquals('layout', s.cls)
+        self.assertEquals('left', s[0].cls)
+        self.assertEquals('c3', s[0][0].id)
+        self.assertEquals('p1', s[0][1].id)
+
+        self.assertEquals('center', s[1].cls)
+
+        self.assertEquals('right', s[2].cls)
+        self.assertEquals('p1', s[2][0].id)
+        self.assertEquals('c2', s[2][1].id)
+        self.assertEquals('c3', s[2][2].id)
+
+        self.assertEquals('top', s[3].cls)
+        self.assertEquals('middle', s[4].cls)
+        self.assertEquals('bottom', s[5].cls)
+
+
 # vim: sw=4:et:ai
