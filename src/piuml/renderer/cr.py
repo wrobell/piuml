@@ -27,7 +27,7 @@ import cairo
 from gi.repository import Pango
 
 import sys
-from io import StringIO
+from io import BytesIO
 from math import ceil, floor, pi
 from functools import partial
 
@@ -635,7 +635,7 @@ class CairoRenderer(MWalker):
         w, h = n.style.size
         w = int(ceil(w))
         h = int(ceil(h))
-        self.surface = cairo.PDFSurface(StringIO(), w * 2, h * 2)
+        self.surface = cairo.PDFSurface(BytesIO(), w * 2, h * 2)
         self.cr = CairoBBContext(cairo.Context(self.surface))
         self.cr.translate(int(w / 4), int(h / 4))
         self.cr.save()
@@ -674,6 +674,7 @@ class CairoRenderer(MWalker):
             s.write_to_png(self.output)
 
         self.surface.flush()
+        self.surface.finish()
 
         s.flush()
         s.finish()
