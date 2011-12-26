@@ -284,10 +284,12 @@ class Element(object):
         self.name = '' if name is None else name
         self.stereotypes = stereotypes
         self.parent = None
-        self.data = {} if data is None else data
-        self.data['attributes'] = []
-        self.data['operations'] = []
-        self.data['stattrs'] = []
+        _data = {
+            'attributes': [],
+            'operations': [],
+            'stattrs': [], 
+        }
+        self.data = _data if data is None else data
 
 
     def __repr__(self):
