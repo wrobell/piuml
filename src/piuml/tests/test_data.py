@@ -19,7 +19,8 @@
 
 import unittest
 
-from piuml.data import Diagram, PackagingElement, Element, lca, lsb, unwind
+from piuml.data import Diagram, PackagingElement, Element, \
+        MWalker, lca, lsb, preorder, unwind
 
 """
 piUML language parser data model routines tests.
@@ -99,6 +100,58 @@ class TreeTestCase(unittest.TestCase):
 
         siblings = lsb(n1, n3, n4)
         self.assertEquals([n3, n2], siblings)
+
+
+    def test_preorder(self):
+        """
+        Test preorder traversing
+        """
+        def f(n):
+            f.t += 1
+        f.t = 0
+
+        n1 = Diagram()
+        n1.id = 'n1'
+
+        n2 = PackagingElement('a', id='n2')
+        n3 = PackagingElement('a', id='n3')
+        n4 = Element('a', id='n4')
+
+        n1.children.extend((n2, n3))
+        n2.children.append(n4)
+
+        preorder(n1, f)
+        self.assertEquals(4, f.t)
+
+
+    def test_mwalker(self):
+        """
+        Test method walker
+        """
+        class MW(MWalker):
+            def __init__(self):
+                self.walked = []
+
+            def visit(self, n):
+                self.walked.append(n)
+
+            v_diagram = v_packagingelement = v_element = visit
+
+
+        mw = MW()
+
+        n1 = Diagram()
+        n1.id = 'n1'
+
+        n2 = PackagingElement('a', id='n2')
+        n3 = PackagingElement('a', id='n3')
+        n4 = Element('a', id='n4')
+
+        n1.children.extend((n2, n3))
+        n2.children.append(n4)
+
+        mw.preorder(n1)
+        self.assertEquals([n1, n2, n4, n3], mw.walked)
 
 
     def test_unwind(self):

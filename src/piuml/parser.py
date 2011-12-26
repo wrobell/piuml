@@ -576,8 +576,8 @@ def f_layout(args):
     for p in args[1:]:
         a = Align(p[0])
         for id in p[1:]:
-            a.children.append(__cache[id])
-        s.children.append(a)
+            a.nodes.append(__cache[id])
+        s.data.append(a)
     return s
 
 

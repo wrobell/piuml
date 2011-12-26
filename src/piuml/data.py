@@ -462,15 +462,18 @@ class Operation(Feature):
 
 
 
-class Section(PackagingElement):
+class Section(object):
     """
     Section in a diagram written in piUML language.
 
     There is only one section currently specified - 'layout'.
     """
+    def __init__(self, name):
+        self.name = name
+        self.data = []
 
 
-class Align(PackagingElement):
+class Align(object):
     """
     Alignment definition information.
 
@@ -483,9 +486,12 @@ class Align(PackagingElement):
     - middle
 
     :Attributes:
-     cls
+     type
         Alignment type.
     """
+    def __init__(self, type):
+        self.type = type
+        self.nodes = []
 
 
 def preorder(n, f, reverse=False):
@@ -575,8 +581,11 @@ class MWalker(object):
 
     def __call__(self, n):
         fn = 'v_{}'.format(n.__class__.__name__.lower())
-        f = getattr(self, fn)
-        f(n)
+        if hasattr(self, fn):
+            f = getattr(self, fn)
+            f(n)
+        else:
+            log.debug('no visitor method {}'.format(fn))
 
 
 def unwind(n):

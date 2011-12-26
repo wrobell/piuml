@@ -238,11 +238,6 @@ class CairoDimensionCalculator(MWalker):
 
     v_packagingelement = v_diagram = v_element
 
-    def v_align(self, n):
-        pass
-
-    v_section = v_align
-
     def _set_edge_len(self, edge, length=0):
         """
         Calculate and set minimal length of an edge.
@@ -334,7 +329,8 @@ class CairoRenderer(MWalker):
 
 
     def v_element(self, node):
-
+        if node.parent.cls == 'align':
+            return
         style = node.style
         pos = x, y = style.pos
         width, height = size = style.size
@@ -487,11 +483,6 @@ class CairoRenderer(MWalker):
             t = '_association'
         f = getattr(self, t)
         f(n)
-
-
-    def v_align(self, n): pass
-
-    v_section = v_align
 
 
     def _connector(self, n):

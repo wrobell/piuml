@@ -169,8 +169,11 @@ class SpanMatrix(object):
         """
         Get list of rows.
         """
-        m = len(self.data[0])
-        return [[d[i] for d in self.data] for i in range(m)]
+        if len(self.data) > 0:
+            m = len(self.data[0])
+            return [[d[i] for d in self.data] for i in range(m)]
+        else:
+            return []
 
 
     def __str__(self):
@@ -215,21 +218,21 @@ class Layout(MWalker):
         # all alignment is defined at this stage, therefore align
         # information can be assigned to appropriate nodes and
         # postprocessed to simplify layout constraints assignment
-        align = (k for n in ast if n.cls == 'layout' for k in n)
+        align = (k for n in ast if n.name == 'layout' for k in n.data)
 
         # find
         # - common parent of nodes to align
         # - to level the nodes to align
-        for n in align:
-            p = lca(self.ast, *n)
+        for a in align:
+            p = lca(self.ast, *a.nodes)
 
             if 'align' in p.data:
                 data = p.data['align']
             else:
                 data = p.data['align'] = []
 
-            dist = lsb(p, *n)
-            data.append(DefinedAlign(n.cls, list(n), dist))
+            dist = lsb(p, *a.nodes)
+            data.append(DefinedAlign(a.type, list(a.nodes), dist))
 
 
     def _span_matrix(self, node, align=[]):
@@ -308,11 +311,6 @@ class Layout(MWalker):
                 self.vspan(*nodes)
 
     v_diagram = v_packagingelement = v_element
-
-    def v_align(self, n):
-        pass
-
-    v_section = v_align
 
     def v_ielement(self, node):
         nodes = []
