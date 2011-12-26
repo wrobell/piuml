@@ -31,7 +31,7 @@ from io import StringIO
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import MWalker, Node, PackagingElement
+from piuml.data import MWalker, Element, PackagingElement
 from piuml.style import Size, Pos, Style, Area
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
@@ -236,9 +236,12 @@ class CairoDimensionCalculator(MWalker):
         else:
             self._set_edge_len(n)
 
-
     v_packagingelement = v_diagram = v_element
 
+    def v_align(self, n):
+        pass
+
+    v_section = v_align
 
     def _set_edge_len(self, edge, length=0):
         """
@@ -312,6 +315,7 @@ class CairoRenderer(MWalker):
             
         """
         self.preorder(ast)
+        self.save_diagram(ast)
 
 
     def _compartment(self, parent, features, y0, title=None):
@@ -329,7 +333,7 @@ class CairoRenderer(MWalker):
                     features, pos=(0, y0), align=(-1, -1))
 
 
-    def n_element(self, node):
+    def v_element(self, node):
 
         style = node.style
         pos = x, y = style.pos
@@ -340,7 +344,7 @@ class CairoRenderer(MWalker):
         align = (0, 0)
         outside = False
         underline = False
-        lalign = pango.ALIGN_CENTER
+        lalign = pango.Alignment.CENTER
         bold = True
         xskip = 0
         yskip = 0
@@ -348,7 +352,7 @@ class CairoRenderer(MWalker):
         cr = self.cr
         cr.save()
 
-        if node.is_packaging():
+        if isinstance(node, PackagingElement):
             align = (0, -1)
 
         if node.cls in ('node', 'device'):
@@ -370,7 +374,7 @@ class CairoRenderer(MWalker):
             draw_human(cr, pos, size)
         elif node.cls == 'comment':
             draw_note(cr, pos, size)
-            lalign = pango.ALIGN_LEFT
+            lalign = pango.Alignment.LEFT
             bold = False
         elif node.cls in ('instance', 'artifact'):
             underline = True
@@ -415,8 +419,7 @@ class CairoRenderer(MWalker):
             tskip += style.compartment[nc] + pad.top + pad.bottom
             nc += 1
 
-        st_attrs = (f for f in node if f.cls == 'stattrs')
-        for f in st_attrs:
+        for f in node.data['stattrs']:
             title = st_fmt([f.name]) + '\n' 
             attrs = '\n'.join(a.name for a in f)
             self._compartment(node, attrs, tskip, title)
@@ -425,8 +428,9 @@ class CairoRenderer(MWalker):
 
         cr.restore()
 
+    v_packagingelement = v_element
 
-    def n_ielement(self, n):
+    def v_ielement(self, n):
         cr = self.cr
         x, y = n.style.pos
         width, height = n.style.size
@@ -477,12 +481,17 @@ class CairoRenderer(MWalker):
         draw_text(cr, n.style.size, n.style, n.name, align=(0, 1), outside=True)
 
 
-    def n_line(self, n):
+    def v_relationship(self, n):
         t = '_' + n.cls
         if n.cls == 'extension':
             t = '_association'
         f = getattr(self, t)
         f(n)
+
+
+    def v_align(self, n): pass
+
+    v_section = v_align
 
 
     def _connector(self, n):
@@ -561,7 +570,7 @@ class CairoRenderer(MWalker):
         dt = TEND[edge.data['tail'][-1]]
         dh = HEND[edge.data['head'][-1]]
 
-        assert isinstance(edge.head, Node)
+        assert isinstance(edge.head, Element)
         name_fmt = '%s'
         if edge.data['direction'] is edge.head:
             name_fmt = '%s \u25b6'
@@ -587,11 +596,11 @@ class CairoRenderer(MWalker):
          halign
             Horizontal alignment of the association end.
         """
-        c, n, m, _ = end
-        if n:
-            dt(n, align=(halign, -1))
-        if m:
-            dt(m, align=(halign, 1))
+        attr = end[1]
+        if attr and attr.name:
+            dt(attr.name, align=(halign, -1))
+        if attr and attr.mult:
+            dt(attr.mult, align=(halign, 1))
 
 
     def _draw_line(self,
@@ -632,7 +641,7 @@ class CairoRenderer(MWalker):
         self.cr.save()
 
 
-    def v_diagram_exit(self, n):
+    def save_diagram(self, n):
         """
         Generate PDF, SVG or PNG file with UML diagram.
         """
@@ -665,7 +674,6 @@ class CairoRenderer(MWalker):
             s.write_to_png(self.output)
 
         self.surface.flush()
-        self.surface.finish()
 
         s.flush()
         s.finish()

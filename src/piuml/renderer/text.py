@@ -172,7 +172,7 @@ def text_pos_at_line(size, line, style, align, outside=False):
         # determine quadrant, we are interested in 1 or 3 and 2 or 4
         # see hint tuples below
         h2 = height / 2.0
-        q = cmp(d1, 0)
+        q = (d1 > 0) - (d1 < 0) # cmp(d1, 0)
         if abs(dx) < EPSILON:
             hint = 0
         else:
@@ -200,7 +200,7 @@ def line_middle_segment(edges):
     Get positions of middle segment of a line represented by specified
     edges.
     """
-    med = len(edges) / 2
+    med = len(edges) // 2
     p1, p2 = edges[med - 1: med + 1]
     return p1, p2
 
@@ -217,12 +217,12 @@ def line_center(edges):
 
 
 def pango_layout(cr, text):
-    l = PangoCairo.create_layout(cr._cr)
-    l.set_font_description(pango.FontDescription('sans 10'))
-    _, attrs, _, _ = pango.parse_markup(text, -1, '\0')
-    l.set_attributes(attrs)
-    l.set_text(text, -1)
-    return l
+    pl = PangoCairo.create_layout(cr._cr)
+    pl.set_font_description(pango.FontDescription('sans 10'))
+    _, attrs, pt, _ = pango.parse_markup(text, -1, '\0')
+    pl.set_attributes(attrs)
+    pl.set_text(pt, -1)
+    return pl
 
 
 def pango_size(layout):
@@ -237,16 +237,16 @@ def draw_text(cr, shape, style, text,
         outside=False,
         align_f=text_pos_at_box):
 
-    l = pango_layout(cr, text)
-    size = pango_size(l)
-    l.set_alignment(lalign)
+    pl = pango_layout(cr, text)
+    size = pango_size(pl)
+    pl.set_alignment(lalign)
 
     x0, y0 = pos
     x, y = align_f(size, shape, style, align=align, outside=outside)
 
     cr.save()
     cr.move_to(x + x0, y + y0)
-    l.show(l)
+    PangoCairo.show_layout(cr._cr, pl)
     cr.restore()
 
     return size[1]
@@ -256,8 +256,8 @@ def text_size(cr, text):
     """
     Calculate total size of a multiline text.
     """
-    l = pango_layout(cr, text)
-    return pango_size(l)
+    pl = pango_layout(cr, text)
+    return pango_size(pl)
 
 
 # vim: sw=4:et:ai

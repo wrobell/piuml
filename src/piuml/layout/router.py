@@ -23,9 +23,8 @@ Line router for piUML diagrams.
 ARouter library is used for line routing.
 """
 
-import itertools
-
 from piuml.style import Pos
+from piuml.data import unwind, Element, Relationship
 
 import arouter
 
@@ -47,18 +46,20 @@ class Router(object):
 
         router = arouter.Router()
 
-        nodes = (n for n in ast.unwind() if n.type in ('element', 'ielement'))
+        nodes = (n for n in unwind(ast)
+                if isinstance(n, Element)
+                    and not isinstance(n, Relationship))
         for n in nodes:
             x, y = n.style.pos
             w, h = n.style.size
             shape = (x, y), (x + w, y + h)
             s = router.add(shape)
-            ncache[n] = s
+            ncache[n.id] = s
 
-        lines = (l for l in ast if l.type == 'line')
+        lines = (l for l in ast if isinstance(l, Relationship))
         for l in lines:
-            h = ncache[l.head]
-            t = ncache[l.tail]
+            h = ncache[l.head.id]
+            t = ncache[l.tail.id]
             c = router.connect(h, t)
             lcache[l] = c
 
@@ -66,7 +67,6 @@ class Router(object):
 
         for l, c in list(lcache.items()):
             l.style.edges = tuple(Pos(*p) for p in reversed(router.edges(c)))
-
 
 
 # vim: sw=4:et:ai

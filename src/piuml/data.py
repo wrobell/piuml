@@ -280,7 +280,7 @@ class Element(object):
     """
     def __init__(self, cls=None, id=None, stereotypes=None, name=None, data=None):
         self.cls = cls
-        self.id = id
+        self.id = str(uuid()) if id is None else id
         self.name = '' if name is None else name
         self.stereotypes = stereotypes
         self.parent = None
@@ -293,6 +293,20 @@ class Element(object):
     def __repr__(self):
         return '{} {} {} {}'.format(self.cls, self.id, self.name,
                 self.stereotypes)
+
+
+    def __hash__(self):
+        """
+        AST nodes are hashed with their id's hash value.
+        """
+        return self.id.__hash__()
+
+
+    def __eq__(self, other):
+        """
+        Equality comparision of AST nodes is their id equality.
+        """
+        return isinstance(other, Element) and self.id == other.id
 
 
 
@@ -327,6 +341,13 @@ class PackagingElement(Element):
         return iter(self.children)
 
 
+    def __len__(self):
+        """
+        Return amount of packaged elements.
+        """
+        return len(self.children)
+
+
     def __repr__(self):
         return super(PackagingElement, self).__repr__() \
                 + ' {}'.format(self.children)
@@ -341,7 +362,7 @@ class Diagram(PackagingElement):
      children
         Diagram elements.
     """
-    def __init__(self, children):
+    def __init__(self, children=[]):
         """
         Create UML diagram instance.
         """
@@ -467,7 +488,7 @@ class Align(PackagingElement):
     """
 
 
-def preorder(n, f):
+def preorder(n, f, reverse=False):
     """
     Traverse a tree in preorder.
 
@@ -475,10 +496,13 @@ def preorder(n, f):
      n
         Tree root.
      f
-        Function to execute on a node when traversing.
+        Function to visit a node when traversing.
+     reversed
+        Visit siblings in reversed order.
     """
     f(n)
     if isinstance(n, Iterable):
+        n = reversed(n) if reverse else n
         for k in n:
             preorder(k, f)
 
@@ -515,7 +539,7 @@ def lca(ast, *args):
     while len(parents) > 0:
         p.intersection_update(parents.pop())
 
-    data = sorted(p, key=ast.order.index)
+    data = list(p) # fixme: sorted(p, key=ast.order.index)
     return data[-1]
 
 
@@ -551,7 +575,6 @@ class MWalker(object):
 
     def __call__(self, n):
         fn = 'v_{}'.format(n.__class__.__name__.lower())
-        print('w', fn)
         f = getattr(self, fn)
         f(n)
 
@@ -565,5 +588,7 @@ def unwind(n):
         if isinstance(k1, Iterable):
             for k2 in unwind(k1):
                 yield k2
+        else:
+            yield k1
 
 # vim: sw=4:et:ai

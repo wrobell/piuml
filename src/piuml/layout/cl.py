@@ -17,7 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.data import lca, lsb
+from piuml.data import lca, lsb, preorder, MWalker, Relationship, \
+    Element, PackagingElement
 from piuml.layout.solver import *
 from piuml.style import Area
 
@@ -71,13 +72,13 @@ class SpanMatrix(object):
             self.data = []
 
 
-    def __getitem__(self, xxx_todo_changeme):
-        (col, row) = xxx_todo_changeme
+    def __getitem__(self, cell):
+        (col, row) = cell
         return self.data[col][row]
 
 
-    def __setitem__(self, xxx_todo_changeme1, value):
-        (col, row) = xxx_todo_changeme1
+    def __setitem__(self, cell, value):
+        (col, row) = cell
         self.data[col][row] = value
 
 
@@ -180,7 +181,7 @@ class SpanMatrix(object):
 
 
 
-class Layout(object):
+class Layout(MWalker):
     """
     Layout processing routines.
 
@@ -198,9 +199,12 @@ class Layout(object):
 
     def layout(self, ast):
         """
+        Layout diagram items on the diagram.
         """
         self._prepare(ast)
-        self._process()
+
+        # visit siblings in reversed order to constraint lines first
+        preorder(ast, self, reverse=True)
 
 
     def _prepare(self, ast):
@@ -208,45 +212,24 @@ class Layout(object):
         Postprocess alignment information from parser and prepare alignment
         information for layout.
         """
-        self.ast = ast
         # all alignment is defined at this stage, therefore align
         # information can be assigned to appropriate nodes and
         # postprocessed to simplify layout constraints assignment
-
-        align = (n for n in ast if n.type == 'align')
+        align = (k for n in ast if n.cls == 'layout' for k in n)
 
         # find
         # - common parent of nodes to align
         # - to level the nodes to align
         for n in align:
-            p = lca(self.ast, *n.nodes)
+            p = lca(self.ast, *n)
 
             if 'align' in p.data:
                 data = p.data['align']
             else:
                 data = p.data['align'] = []
 
-            dist = lsb(p, *n.nodes)
-            data.append(DefinedAlign(n.cls, list(n.nodes), dist))
-
-
-    def _process(self):
-        """
-        Process layout alignment information and create layout.
-        """
-        # functions to set constraints
-        FC = {
-            'diagram': self._element,
-            'element': self._element,
-            'line': self._line,
-            'ielement': self._ielement,
-        }
-        # process in reversed order to constraint lines first
-        for n in reversed(list(self.ast.unwind())):
-            # perform layout with constraints
-            f = FC.get(n.type)
-            if f:
-                f(n)
+            dist = lsb(p, *n)
+            data.append(DefinedAlign(n.cls, list(n), dist))
 
 
     def _span_matrix(self, node, align=[]):
@@ -260,7 +243,7 @@ class Layout(object):
             User defined alignment information.
         """
         # nodes to align
-        nodes = [k for k in node if k.type == 'element']
+        nodes = [k for k in node if k.__class__ in (PackagingElement, Element)]
 
         # middle is default alignment
         sm = SpanMatrix(*nodes)
@@ -287,7 +270,7 @@ class Layout(object):
         return sm, default
 
 
-    def _element(self, node):
+    def v_element(self, node):
         """
         Constraint element and its children using alignment information.
 
@@ -300,7 +283,7 @@ class Layout(object):
             self.within(node, node.parent)
 
         ns = node.style
-        if node.is_packaging():
+        if isinstance(node, PackagingElement):
             defined = node.data.get('align', [])
             sm, default = self._span_matrix(node, defined)
 
@@ -310,7 +293,7 @@ class Layout(object):
 
             for align in all_align:
                 nodes = align.align
-                assert all(isinstance(k, Node) for k in nodes)
+                assert all(isinstance(k, Element) for k in nodes)
 
                 # get and run alignment function
                 f = getattr(self, align.cls)
@@ -324,8 +307,14 @@ class Layout(object):
                 nodes = (k for k in col if k is not None)
                 self.vspan(*nodes)
 
+    v_diagram = v_packagingelement = v_element
 
-    def _ielement(self, node):
+    def v_align(self, n):
+        pass
+
+    v_section = v_align
+
+    def v_ielement(self, node):
         nodes = []
         left = None # find left node for hspan
         l_len = 0 # left side length
@@ -353,23 +342,23 @@ class Layout(object):
         self.between(node, nodes)
 
 
-    def _line(self, line):
+    def v_relationship(self, n):
         """
         Store line minimal length in line cache.
 
         :Parameters:
-         line
+         n
             Edge to constraint.
         """
-        log.debug('set line length constraint for {}'.format(line.cls))
-        t, h = line.tail, line.head
+        log.debug('set line length constraint for {}'.format(n.cls))
+        t, h = n.tail, n.head
 
         # find siblings
         p = lca(self.ast, t, h)
         t, h = lsb(p, t, h)
 
         # fixme: there can be multiple lines
-        length = line.style.min_length
+        length = n.style.min_length
         self.lines[t.id, h.id] = length
         self.lines[h.id, t.id] = length
 

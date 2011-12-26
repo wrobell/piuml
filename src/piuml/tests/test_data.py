@@ -19,7 +19,7 @@
 
 import unittest
 
-from piuml.data import Diagram, Dummy, lca, lsb
+from piuml.data import Diagram, PackagingElement, Element, lca, lsb, unwind
 
 """
 piUML language parser data model routines tests.
@@ -31,10 +31,10 @@ class DataModelTestCase(unittest.TestCase):
     """
     def test_eq(self):
         """
-        Test AST nodes equality.
+        Test AST nodes equality
         """
-        n1 = Dummy('b')
-        n2 = Dummy('b')
+        n1 = Element('b')
+        n2 = Element('b')
         assert n1.id != n2.id
 
         self.assertNotEquals(n1, n2)
@@ -45,10 +45,10 @@ class DataModelTestCase(unittest.TestCase):
 
     def test_hash(self):
         """
-        Test hashing of AST nodes.
+        Test hashing of AST nodes
         """
-        n1 = Dummy('b')
-        n2 = Dummy('b')
+        n1 = Element('b')
+        n2 = Element('b')
         assert n1.id != n2.id
 
         s = set([n1, n2])
@@ -63,16 +63,15 @@ class TreeTestCase(unittest.TestCase):
     Tree (AST tree) algorithms tests.
     """
     def test_lca(self):
-        """Test LCA
+        """
+        Test LCA
         """
         n1 = Diagram()
         n1.id = 'n1'
-        n1.cache['n1'] = n1
 
-        n2 = Dummy('a', id='n2')
-        n3 = Dummy('a', id='n3')
-        n1.reorder()
-        n1.extend((n2, n3))
+        n2 = Element('a', id='n2')
+        n3 = Element('a', id='n3')
+        n1.children.extend((n2, n3))
         n2.parent = n1
         n3.parent = n1
 
@@ -81,17 +80,18 @@ class TreeTestCase(unittest.TestCase):
 
 
     def test_lsb(self):
-        """Test LSB
+        """
+        Test LSB
         """
         n1 = Diagram()
         n1.id = 'n1'
 
-        n2 = Dummy('a', id='n2')
-        n3 = Dummy('a', id='n3')
-        n4 = Dummy('a', id='n4')
+        n2 = PackagingElement('a', id='n2')
+        n3 = PackagingElement('a', id='n3')
+        n4 = PackagingElement('a', id='n4')
 
-        n1.extend((n2, n3))
-        n2.append(n4)
+        n1.children.extend((n2, n3))
+        n2.children.append(n4)
 
         n2.parent = n1
         n3.parent = n1
@@ -99,6 +99,27 @@ class TreeTestCase(unittest.TestCase):
 
         siblings = lsb(n1, n3, n4)
         self.assertEquals([n3, n2], siblings)
+
+
+    def test_unwind(self):
+        """
+        Test unwind
+        """
+        n1 = Diagram()
+        n1.id = 'n1'
+
+        n2 = PackagingElement('a', id='n2')
+        n3 = PackagingElement('a', id='n3')
+        n4 = Element('a', id='n4')
+
+        n1.children.extend((n2, n3))
+        n2.children.append(n4)
+
+        n2.parent = n1
+        n3.parent = n1
+        n4.parent = n2
+
+        self.assertEquals([n1, n2, n4, n3], list(unwind(n1)))
 
 
 # vim: sw=4:et:ai
