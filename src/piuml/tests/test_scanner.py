@@ -1,3 +1,22 @@
+#
+# piUML - UML diagram generator.
+#
+# Copyright (C) 2010 by Artur Wroblewski <wrobell@pld-linux.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 """
 piUML language parsing tests.
 """
@@ -5,44 +24,53 @@ piUML language parsing tests.
 import re
 import unittest
 
-from piuml.parser import RE_ID, RE_NAME, RE_ELEMENT, RE_COMMENT, \
-    RE_STEREOTYPE, RE_ATTRIBUTE, RE_OPERATION, RE_STATTRIBUTES, \
-    RE_ASSOCIATION_END, name_dequote
+from piuml.parser import parse, name_dequote, ParseError
 
-class RETestCase(unittest.TestCase):
+class TokenTestCase(unittest.TestCase):
     def test_id(self):
-        """Test parsing id
         """
-        r = re.compile(RE_ID)
-        self.assertEquals('id1', r.search('id1').group(0))
-        self.assertFalse(r.search('1id'))
-        self.assertEquals('component1', r.search('component1').group(0))
-        self.assertFalse(r.search('1component'))
-        self.assertFalse(r.search('1component1'))
-        self.assertFalse(r.search('component'))
-        self.assertFalse(r.search('class'))
-
-
-    def test_element(self):
-        """Test element parsing
+        Test parsing id
         """
-        r = re.compile(RE_ELEMENT)
-        self.assertTrue(r.search('class'))
-        self.assertTrue(r.search('component'))
-        self.assertFalse(r.search('none'))
+        n = parse('class id1 "test"')
+        self.assertEquals('id1', n[0].id)
+
+        self.assertRaises(ParseError ,parse, 'class 1id "test"')
+
+        n = parse('class class1 "test"')
+        self.assertEquals('class1', n[0].id)
+
+        self.assertRaises(ParseError ,parse, 'class 1class "test"')
+
+        n = parse('class class "test"')
+        self.assertEquals('class', n[0].id)
 
 
-    def test_name(self):
-        """Test name parsing
+    def test_string(self):
         """
-        r = re.compile(RE_NAME)
-        self.assertEquals('"b\\"cd"', r.search('a"b\\"cd"ef').group(0))
-        self.assertEquals('"b\\"cd"', r.search('a "b\\"cd" ef').group(0))
-        self.assertEquals("'b\\'cd'", r.search('a\'b\\\'cd\'ef').group(0))
+        Test string parsing
+        """
+        n = parse('class id1 "bc d"')
+        self.assertEquals("bc d", n[0].name)
+
+        n = parse('class id1 \'bc d\'')
+        self.assertEquals("bc d", n[0].name)
+
+        # " char inside string quoted with "
+        n = parse('class id1 "b\\"cd"')
+        self.assertEquals("'b\\'cd'", n[0].name)
+
+        # ' char inside string quoted with '
+        n = parse('class id1 \'b\\\'cd\'')
+        self.assertEquals('"b\\"cd"', n[0].name)
+
+        # \" string inside string quoted with '
+        n = parse('class id1 \'a"b\\\\"cd"ef\'')
+        self.assertEquals('a"b\\"cd"ef', n[0].name)
 
 
     def test_name_quotation(self):
-        """Test name quotation
+        """
+        Test name quotation
         """
         self.assertEquals('aaa', name_dequote('"aaa"'))
         self.assertEquals('aaa', name_dequote("'aaa'"))
@@ -54,49 +82,85 @@ class RETestCase(unittest.TestCase):
 
 
     def test_comment(self):
-        """Test comment token parsing
         """
-        r = re.compile(RE_COMMENT)
-        self.assertTrue(r.search('# this is comment'))
-        self.assertTrue(r.search('#this is comment'))
-        self.assertTrue(r.search('this is not comment  # this is comment'))
-        self.assertFalse(r.search(r'\# this is not comment'))
+        Test comment token parsing
+        """
+        parse('# this is comment')
+        parse('#this is comment')
+        self.assertRaises(ParseError, parse, 'this is not comment  # this is comment')
+        self.assertRaises(ParseError, parse, r'\# this is not comment')
 
 
     def test_stereotype(self):
-        """Test stereotype token parsing
         """
-        r = re.compile(RE_STEREOTYPE)
-        self.assertTrue(r.search('<<test>>'))
-        self.assertTrue(r.search('<< test >>'))
-        self.assertTrue(r.search('<<t1, t2>>'))
-        self.assertTrue(r.search('<<t1,t2>>'))
-        self.assertTrue(r.search('<<  t1,t2  >>'))
-        self.assertTrue(r.search('<< t1 , t2 >>'))
+        Test stereotype token parsing
+        """
+        n = parse('class id <<test>> "aa"')
+        self.assertEquals(['test'], n[0].stereotypes)
+
+        n = parse('class id << test >> "aa"')
+        self.assertEquals(['test'], n[0].stereotypes)
+
+        n = parse('class id <<t1, t2>> "aa"')
+        self.assertEquals(['t1', 't2'], n[0].stereotypes)
+
+        n = parse('class id <<t1,t2>> "aa"')
+        self.assertEquals(['t1', 't2'], n[0].stereotypes)
+
+        n = parse('class id <<  t1,t2  >> "aa"')
+        self.assertEquals(['t1', 't2'], n[0].stereotypes)
+
+        n = parse('class id << t1 , t2 >> "aa"')
+        self.assertEquals(['t1', 't2'], n[0].stereotypes)
 
 
     def test_attribute(self):
-        """Test attribute token parsing
         """
-        r = re.compile(RE_ATTRIBUTE)
-        self.assertTrue(r.search(' : attr'))
-        self.assertTrue(r.search(' :attr'))
-        self.assertTrue(r.search(' : attr: int'))
-        self.assertTrue(r.search(' : attr: int = 1'))
-        self.assertTrue(r.search(' : attr = "test"'))
-        self.assertTrue(r.search(' : attr: str = "test"'))
-        self.assertTrue(r.search(' : attr: str = "test()"'))
-        self.assertTrue(r.search(' : attr[11]'))
-        self.assertTrue(r.search(' : attr [0..1]'))
-        self.assertTrue(r.search(' : attr [n..m]'))
-        self.assertTrue(r.search(' : [0..1]'))
-        self.assertFalse(r.search(' : oper()'))
-        self.assertFalse(r.search(' : oper(a: int, b: str)'))
-        self.assertFalse(r.search(' : oper(a: int, b: str): double'))
+        Test attribute token parsing
+        """
+        n = parse('class a "a"\n    : attr')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    :attr')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr: int')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr: int = 1')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr = "test"')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr: str = "test"')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr: str = "test()"')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr[11]')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr [0..1]')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : attr [n..m]')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        n = parse('class a "a"\n    : [0..1]')
+        self.assertEquals('attr', n[0].data['attributes'][0].name)
+
+        self.assertRaises(ParseError, parse, 'class a "a"\n    : oper()')
+        self.assertRaises(ParseError, parse,
+                'class a "a"\n    : oper(a: int, b: str)')
+        self.assertRaises(ParseError, parse,
+                'class a "a"\n    : oper(a: int, b: str): double')
 
 
     def test_operation(self):
-        """Test operation token parsing
+        """
+        Test operation token parsing
         """
         r = re.compile(RE_OPERATION)
         self.assertTrue(r.search(' : oper()'))
@@ -105,7 +169,8 @@ class RETestCase(unittest.TestCase):
 
 
     def test_association_end(self):
-        """Test association end parsing
+        """
+        Test association end parsing
         """
         r = re.compile(RE_ASSOCIATION_END)
         mre = r.search('attr')
@@ -125,7 +190,8 @@ class RETestCase(unittest.TestCase):
 
 
     def test_st_attributes(self):
-        """Test stereotype attributes token parsing
+        """
+        Test stereotype attributes token parsing
         """
         r = re.compile(RE_STATTRIBUTES)
         self.assertTrue(r.search(' : <<test>>:'))
@@ -134,3 +200,4 @@ class RETestCase(unittest.TestCase):
         self.assertFalse(r.search(' : <<test>>'))
 
 
+# vim: sw=4:et:ai

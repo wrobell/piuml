@@ -598,10 +598,10 @@ def create_parser():
     string = Token('"[^"]+"') | Token("'[^']+'")
     id = Token('[a-zA-Z][a-zA-Z0-9_]*')
     stereotype = Token('[a-zA-Z0-9]+')
-    stereotypes = ~Token('<<') \
+    stereotypes = ~Token('<<') & space[0:1] \
         & stereotype \
         & (~Token(' *, *') & stereotype)[0:] \
-        & ~Token('>>') > f_list('stereotypes')
+        & space[0:1] & ~Token('>>') > f_list('stereotypes')
     eparams = space & id & (space & stereotypes)[0:1] & space & string
 
     nelement = joinl(NELEMENTS) & eparams
@@ -693,6 +693,8 @@ def parse(f):
             # parse_file is causing problems at the moment
             nodes = __parser.parse(''.join(f))
     except P.FullFirstMatchException as ex:
+        raise ParseError(str(ex))
+    except P.RuntimeLexerError as ex:
         raise ParseError(str(ex))
 
     return Diagram((k[0] for k in nodes if k != []))
