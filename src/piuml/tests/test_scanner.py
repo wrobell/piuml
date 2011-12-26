@@ -126,9 +126,12 @@ class TokenTestCase(unittest.TestCase):
 
         n = parse('class a "a"\n    : attr: int')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
+        self.assertEquals('int', n[0].data['attributes'][0].type)
 
         n = parse('class a "a"\n    : attr: int = 1')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
+        self.assertEquals('int', n[0].data['attributes'][0].type)
+        self.assertEquals('1', n[0].data['attributes'][0].value)
 
         n = parse('class a "a"\n    : attr = "test"')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
@@ -148,56 +151,63 @@ class TokenTestCase(unittest.TestCase):
         n = parse('class a "a"\n    : attr [n..m]')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : [0..1]')
-        self.assertEquals('attr', n[0].data['attributes'][0].name)
-
-        self.assertRaises(ParseError, parse, 'class a "a"\n    : oper()')
-        self.assertRaises(ParseError, parse,
-                'class a "a"\n    : oper(a: int, b: str)')
-        self.assertRaises(ParseError, parse,
-                'class a "a"\n    : oper(a: int, b: str): double')
-
 
     def test_operation(self):
         """
         Test operation token parsing
         """
-        r = re.compile(RE_OPERATION)
-        self.assertTrue(r.search(' : oper()'))
-        self.assertTrue(r.search(' : oper(a: int)'))
-        self.assertTrue(r.search(' : oper(a: int, b: str): double'))
+        n = parse('class a1 "a1"\n    : oper()')
+        self.assertEquals('oper()', n[0].data['operations'][0].name)
+
+        n = parse('class a1 "a1"\n    : oper(a: int)')
+        self.assertEquals('oper(a: int)', n[0].data['operations'][0].name)
+
+        n = parse('class a1 "a1"\n    : oper(a: int, b: str): double')
+        self.assertEquals('oper(a: int, b: str): double',
+                n[0].data['operations'][0].name)
 
 
     def test_association_end(self):
         """
         Test association end parsing
         """
-        r = re.compile(RE_ASSOCIATION_END)
-        mre = r.search('attr')
-        self.assertEquals('attr', mre.group('name'))
+        f = """
+class c1 "C1"
+class c2 "C2"
 
-        mre = r.search('attr [0..1]')
-        self.assertEquals('attr', mre.group('name'))
-        self.assertEquals('0..1', mre.group('mult'))
+c1 == "An association" c2
+    : """
+        n = parse(f + 'attr')
+        data = n[2].data
+        self.assertEquals('attr', data['tail'][1].name)
+        self.assertEquals('[0..*]', str(data['tail'][1].mult))
 
-        mre = r.search('[0..1]')
-        self.assertFalse(mre.group('name'))
-        self.assertEquals('0..1', mre.group('mult'))
+        n = parse(f + 'attr [0..1]')
+        data = n[2].data
+        self.assertEquals('attr', data['tail'][1].name)
+        self.assertEquals('[0..1]', str(data['tail'][1].mult))
 
-        mre = r.search('attr [n..m]')
-        self.assertEquals('attr', mre.group('name'))
-        self.assertEquals('n..m', mre.group('mult'))
+        n = parse(f + '[0..1]')
+        data = n[2].data
+        self.assertEquals('[0..1]', str(data['tail'][1].mult))
+        self.assertEquals('', data['tail'][1].name)
+
+        n = parse(f + 'attr[n..m]')
+        data = n[2].data
+        self.assertEquals('attr', data['tail'][1].name)
+        self.assertEquals('[n..m]', str(data['tail'][1].mult))
 
 
     def test_st_attributes(self):
         """
         Test stereotype attributes token parsing
         """
-        r = re.compile(RE_STATTRIBUTES)
-        self.assertTrue(r.search(' : <<test>>:'))
-        self.assertFalse(r.search(' : <<t1, t2>>   :'))
-        self.assertFalse(r.search(': <<test>>'))
-        self.assertFalse(r.search(' : <<test>>'))
+        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = 1')
+        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = "1"')
+        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = abc')
+
+        self.assertRaises(ParseError, parse,
+                'class c1 "c1"\n    : <<t1, t2>>   :')
 
 
 # vim: sw=4:et:ai

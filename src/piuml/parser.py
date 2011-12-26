@@ -400,7 +400,8 @@ def f_association(args):
         stereotypes.extend(args[2])
         del args[2]
 
-    if isinstance(args[-1], Attribute) or args[-1] is None:
+    if (isinstance(args[-1], Attribute) or args[-1] is None) \
+            and (isinstance(args[-2], Attribute) or args[-2] is None):
         head_attr = args[-1]
         del args[-1]
 
@@ -541,6 +542,7 @@ def f_attribute(args):
     if len(args) > 0:
         name = None
         atype = None
+        value = None
         mult = None
 
         t = [type(v) for v in args]
@@ -549,13 +551,22 @@ def f_attribute(args):
             mult = args[k]
             del args[k]
         except ValueError:
+            mult = Mult()
+
+        name = args[0] if len(args) > 0 else ''
+        try:
+            k = args.index(':')
+            atype = args[k + 1]
+        except ValueError:
             pass
 
-        name = args[0]
-        if len(args) == 2:
-            atype = args[1]
+        try:
+            k = args.index('=')
+            value = args[k + 1]
+        except ValueError:
+            pass
 
-        attr = Attribute(name, atype, mult)
+        attr = Attribute(name, atype, value, mult)
     return attr
 
 
@@ -634,10 +645,13 @@ def create_parser():
     aend = ~Token(':') & (space[0:1] & aword)[0:1] \
             & (space[0:1] & mult > f_mult)[0:1] > f_attribute
 
-    field = aword & (space[0:1] & ~Token(':') & space[0:1] & aword)[0:1]
-    attribute = ~Token(':') & space & field \
-            & (space[0:1] & ~Token(':') & aword)[0:1] \
-            & (space[0:1] & mult > f_mult)[0:1] > f_attribute
+    attribute = ~Token(':') & space[0:1] \
+            & aword \
+            & (space[0:1] & Token(':') & space[0:1] & aword)[0:1] \
+            & (space[0:1] & Token('=') & space[0:1]
+                    & (aword | string | Token('[0-9]+')))[0:1] \
+            & (space[0:1] & mult > f_mult)[0:1] \
+            > f_attribute
     operation = ~Token(':') & space \
             & Token('[a-zA-Z_][a-zA-Z0-9_]*\(.*\).*') > f_operation
     stattrs = P.Line(~Token(':') & space & ~Token('<<') \

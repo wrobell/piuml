@@ -762,6 +762,24 @@ c1 == "An association" c2
         self.assertEquals('[0..n]', str(data['head'][1].mult))
 
 
+    def test_association_tail_only(self):
+        """
+        Test association with association end at tail only
+        """
+        f = """
+class c1 "C1"
+class c2 "C2"
+
+c1 == "An association" c2
+    : tail [0..n]
+"""
+        n = parse(f)
+        data = n[2].data
+        self.assertEquals('tail', data['tail'][1].name)
+        self.assertEquals('[0..n]', str(data['tail'][1].mult))
+        self.assertTrue(data['head'][1] is None, '{}'.format(data))
+
+
     def test_association_head_only(self):
         """
         Test association with association end at head only

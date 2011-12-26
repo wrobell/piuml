@@ -422,6 +422,8 @@ class Mult(object):
         """
         Convert multiplicity into string.
         """
+        assert self.lower is not None
+        assert self.upper is not None
         if self.lower == self.upper:
             return '[{}]'.format(self.lower)
         else:
@@ -440,10 +442,11 @@ class Attribute(Feature):
     """
     UML attribute representation.
     """
-    def __init__(self, name, type, mult):
+    def __init__(self, name, type, value, mult):
         super(Attribute, self).__init__()
         self.name = name
         self.type = type
+        self.value = value
         self.mult = mult
 
 
@@ -451,7 +454,14 @@ class Attribute(Feature):
         """
         Return UML attribute string representation.
         """
-        return '{} {} {}'.format(self.name, self.type, self.mult)
+        t = self.name
+        if self.type is not None:
+            t += ': {}'.format(self.type)
+        if self.value is not None:
+            t += ' = {}'.format(self.value)
+        if self.mult is not None:
+            t += ' {}'.format(self.mult)
+        return t
 
 
 class Operation(Feature):
