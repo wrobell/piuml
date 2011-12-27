@@ -26,7 +26,7 @@ from math import pi
 import cairo
 import unittest
 
-from piuml.data import Style, Pos, Area, Size
+from piuml.style import Style, Pos, Area, Size
 from piuml.renderer.cr import CairoBBContext
 from piuml.renderer.text import draw_text, text_pos_at_line
 
