@@ -139,7 +139,8 @@ class cls9 "C"
 
 
     def test_wrong_indentation(self):
-        """Test inconsistent indentation
+        """
+        Test inconsistent indentation
         """
         f = """
 component c1 "A"
@@ -468,7 +469,8 @@ class UMLCheckTestCase(unittest.TestCase):
     UML semantics test case.
     """
     def test_commentline(self):
-        """Test comment line creation
+        """
+        Test comment line creation
         """
         f = StringIO("""
 comment c1 "Test comment 1"
@@ -486,7 +488,8 @@ c1 -- c2
 
 
     def test_assembly(self):
-        """Test component assembly creation
+        """
+        Test component assembly creation
         """
         f = StringIO("""
 component c "Component"
