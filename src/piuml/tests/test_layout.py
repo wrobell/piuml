@@ -21,11 +21,10 @@
 Layout (alignment, span matrix, etc) tests.
 """
 
-from io import StringIO
-import unittest
-
 from piuml.layout.cl import Layout, SpanMatrix
 from piuml.parser import parse, ParseError
+
+import unittest
 
 
 class SpanMatrixTestCase(unittest.TestCase):
@@ -33,14 +32,16 @@ class SpanMatrixTestCase(unittest.TestCase):
     Span matrix tests.
     """
     def test_empty(self):
-        """Test empty span matrix
+        """
+        Test empty span matrix
         """
         m = SpanMatrix()
         self.assertEquals(0, len(m.data))
 
 
     def test_empty_insert_row(self):
-        """Test inserting row into empty span matrix
+        """
+        Test inserting row into empty span matrix
         """
         m = SpanMatrix()
         m.insert_row(0)
@@ -50,7 +51,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_insert_row(self):
-        """Test inserting row into span matrix
+        """
+        Test inserting row into span matrix
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -60,7 +62,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_empty_insert_col(self):
-        """Test inserting col into empty span matrix
+        """
+        Test inserting col into empty span matrix
         """
         m = SpanMatrix()
         m.insert_col(0)
@@ -70,7 +73,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_insert_col(self):
-        """Test inserting column into span matrix
+        """
+        Test inserting column into span matrix
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -79,7 +83,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_get(self):
-        """Test getting an item from span matrix
+        """
+        Test getting an item from span matrix
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -88,7 +93,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_set(self):
-        """Test setting an item in span matrix
+        """
+        Test setting an item in span matrix
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -98,7 +104,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_getting_rows(self):
-        """Test getting span matrix rows
+        """
+        Test getting span matrix rows
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -106,7 +113,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_getting_columns(self):
-        """Test getting span matrix columns
+        """
+        Test getting span matrix columns
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
@@ -114,7 +122,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_hspan(self):
-        """Test horizontal span
+        """
+        Test horizontal span
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D', 'E']] # create vertical column
@@ -150,7 +159,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_hspan_independent(self):
-        """Test horizontal span with independent requests
+        """
+        Test horizontal span with independent requests
         """
         m = SpanMatrix()
         m.data = [['A', 'B', 'C', 'D', 'E']] # create vertical column
@@ -164,7 +174,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_vspan(self):
-        """Test vertical span
+        """
+        Test vertical span
         """
         m = SpanMatrix('A', 'B', 'C', 'D', 'E')
 
@@ -206,7 +217,8 @@ class SpanMatrixTestCase(unittest.TestCase):
 
 
     def test_vspan_independent(self):
-        """Test vertical span with independent requests 
+        """
+        Test vertical span with independent requests 
         """
         m = SpanMatrix('A', 'B', 'C', 'D', 'E')
 
@@ -227,38 +239,40 @@ class LayoutTestCase(unittest.TestCase):
     Layout tests.
     """
     def test_default_simple(self):
-        """Test default, simple alignment
+        """
+        Test default, simple alignment
         """
         l = Layout()
-        f = StringIO("""
+        f = """
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
-""")
-        ast = parse(f)
-        c1 = ast.cache['c1']
-        c2 = ast.cache['c2']
-        c3 = ast.cache['c3']
-        l.layout(ast)
-        self.assertTrue(ast.data.get('align') is None)
+"""
+        n = parse(f)
+        c1 = n[0]
+        c2 = n[1]
+        c3 = n[2]
+        l.layout(n)
+        self.assertTrue(n.data.get('align') is None)
 
 
     def test_default_span(self):
-        """Test spanning of default, simple alignment
+        """
+        Test spanning of default, simple alignment
         """
         l = Layout()
-        f = StringIO("""
+        f = """
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
-""")
-        ast = parse(f)
-        c1 = ast.cache['c1']
-        c2 = ast.cache['c2']
-        c3 = ast.cache['c3']
+"""
+        n = parse(f)
+        c1 = n[0]
+        c2 = n[1]
+        c3 = n[2]
 
-        l.layout(ast)
-        span, default = l._span_matrix(ast)
+        l.layout(n)
+        span, default = l._span_matrix(n)
 
         self.assertEquals('middle', default.cls)
         self.assertEquals([c1, c2, c3], default.align)
@@ -268,58 +282,61 @@ class c3 "C3"
 
 
     def test_defined_simple(self):
-        """Test defined, simple alignment
+        """
+        Test defined, simple alignment
         """
         l = Layout()
-        f = StringIO("""
+        f = """
 class c1 "C1"
 class c2 "C2"
 
+# note reorder below
 :layout:
-    left: c2 c1 # note reorder
-""")
-        ast = parse(f)
-        c1 = ast.cache['c1']
-        c2 = ast.cache['c2']
+    left: c2 c1
+"""
+        n = parse(f)
+        c1 = n[0]
+        c2 = n[1]
 
-        l._prepare(ast)
-        align = ast.data['align']
+        l._prepare(n)
+        align = n.data['align']
         self.assertEquals(1, len(align))
         self.assertEquals('left', align[0].cls)
         self.assertEquals([c2, c1], align[0].align)
         self.assertEquals([c2, c1], align[0].span)
 
-        span, default = l._span_matrix(ast, align)
+        span, default = l._span_matrix(n, align)
 
         self.assertTrue(default is None)
         self.assertEquals([[None, None], [c2, c1]], span.data)
 
 
     def test_orphaned(self):
-        """Test orphaned (due to alignment) elements
+        """
+        Test orphaned (due to alignment) elements
         """
         l = Layout()
-        f = StringIO("""
+        f = """
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
 
 :layout:
     right: c1 c3
-""")
-        ast = parse(f)
-        c1 = ast.cache['c1']
-        c2 = ast.cache['c2']
-        c3 = ast.cache['c3']
+"""
+        n = parse(f)
+        c1 = n[0]
+        c2 = n[1]
+        c3 = n[2]
 
-        l._prepare(ast)
-        align = ast.data['align']
+        l._prepare(n)
+        align = n.data['align']
         self.assertEquals(1, len(align))
         self.assertEquals('right', align[0].cls)
         self.assertEquals([c1, c3], align[0].align)
         self.assertEquals([c1, c3], align[0].span)
 
-        span, default = l._span_matrix(ast, align)
+        span, default = l._span_matrix(n, align)
 
         self.assertEquals('middle', default.cls)
         self.assertEquals([c1, c2], default.align)
@@ -333,7 +350,8 @@ class c3 "C3"
 
 
     def test_deep_align(self):
-        """Test align with packaged elements
+        """
+        Test align with packaged elements
         """
         l = Layout()
         # diagram:
@@ -342,7 +360,7 @@ class c3 "C3"
         # -------
         #     c3
         #
-        f = StringIO("""
+        f = """
 class c "C"
     class c1 "C1"
     class c2 "C2"
@@ -352,22 +370,22 @@ class c5 "C5"
 
 :layout:
     center: c2 c3
-""")
-        ast = parse(f)
-        c = ast.cache['c']
-        c2 = ast.cache['c2']
-        c3 = ast.cache['c3']
-        c4 = ast.cache['c4']
-        c5 = ast.cache['c5']
+"""
+        n = parse(f)
+        c = n[0]
+        c2 = n[0][1]
+        c3 = n[1]
+        c4 = n[2]
+        c5 = n[3]
 
-        l._prepare(ast)
-        align = ast.data['align']
+        l._prepare(n)
+        align = n.data['align']
         self.assertEquals(1, len(align))
         self.assertEquals('center', align[0].cls)
         self.assertEquals([c2, c3], align[0].align)
         self.assertEquals([c, c3], align[0].span)
 
-        span, default = l._span_matrix(ast, align)
+        span, default = l._span_matrix(n, align)
 
         self.assertEquals('middle', default.cls)
         self.assertEquals([c, c4, c5], default.align)
@@ -382,13 +400,14 @@ class c5 "C5"
 
 
     def test_default_interleave(self):
-        """Test default align constraining with defined layout
+        """
+        Test default align constraining with defined layout
         """
         l = Layout()
         # diagram:
         # a c d
         # b   e
-        f = StringIO("""
+        f = """
 class a "C1"
 class b "C2"
 class c "C3"
@@ -398,16 +417,16 @@ class e "C5"
 :layout:
     left: a b
     right: d e
-""")
-        ast = parse(f)
-        a = ast.cache['a']
-        b = ast.cache['b']
-        c = ast.cache['c']
-        d = ast.cache['d']
-        e = ast.cache['e']
+"""
+        n = parse(f)
+        a = n[0]
+        b = n[1]
+        c = n[2]
+        d = n[3]
+        e = n[4]
 
-        l._prepare(ast)
-        align = ast.data['align']
+        l._prepare(n)
+        align = n.data['align']
         self.assertEquals(2, len(align))
         self.assertEquals('left', align[0].cls)
         self.assertEquals([a, b], align[0].align)
@@ -416,7 +435,7 @@ class e "C5"
         self.assertEquals([d, e], align[1].align)
         self.assertEquals([d, e], align[1].span)
 
-        span, default = l._span_matrix(ast, align)
+        span, default = l._span_matrix(n, align)
 
         self.assertEquals('middle', default.cls)
         self.assertEquals([a, c, d], default.align)
@@ -432,7 +451,8 @@ class e "C5"
 
 
     def test_deep_default_interleave(self):
-        """Test deep default align constraining with defined layout
+        """
+        Test deep default align constraining with defined layout
         """
         l = Layout()
         # diagram:
@@ -441,7 +461,7 @@ class e "C5"
         # -------
         #  c3 c4
         #
-        f = StringIO("""
+        f = """
 class c "C"
     class c1 "C1"
     class c2 "C2"
@@ -451,16 +471,16 @@ class c4 "C4"
 :layout:
     right: c1 c3
     left: c2 c4
-""")
-        ast = parse(f)
-        c = ast.cache['c']
-        c1 = ast.cache['c1']
-        c2 = ast.cache['c2']
-        c3 = ast.cache['c3']
-        c4 = ast.cache['c4']
+"""
+        n = parse(f)
+        c = n[0]
+        c1 = n[0][0]
+        c2 = n[0][1]
+        c3 = n[1]
+        c4 = n[2]
 
-        l._prepare(ast)
-        align = ast.data['align']
+        l._prepare(n)
+        align = n.data['align']
         self.assertEquals(2, len(align))
         self.assertEquals('right', align[0].cls)
         self.assertEquals([c1, c3], align[0].align)
@@ -469,7 +489,7 @@ class c4 "C4"
         self.assertEquals([c2, c4], align[1].align)
         self.assertEquals([c, c4], align[1].span)
 
-        span, default = l._span_matrix(ast, align)
+        span, default = l._span_matrix(n, align)
 
         self.assertTrue(default is None)
 
