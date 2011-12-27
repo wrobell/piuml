@@ -202,9 +202,9 @@ c1 == "An association" c2
         """
         Test stereotype attributes token parsing
         """
-        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = 1')
-        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = "1"')
-        n = parse('class c1 "c1"\n    : <<test>> :\n    : attr = abc')
+        n = parse('class c1 "c1"\n    : <<test>> :\n        : attr = 1')
+        n = parse('class c1 "c1"\n    : <<test>> :\n        : attr = "1"')
+        n = parse('class c1 "c1"\n    : <<test>> :\n        : attr = abc')
 
         self.assertRaises(ParseError, parse,
                 'class c1 "c1"\n    : <<t1, t2>>   :')

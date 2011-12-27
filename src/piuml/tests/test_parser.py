@@ -347,8 +347,8 @@ class StereotypeAttributesTestCase(unittest.TestCase):
         f = """
 class c1 "A"
     : <<tt>> :
-        : x: int
-        : y: int
+        : x = 1
+        : y = 2
 """
         n = parse(f)
         stattrs = n[0].data['stattrs']
@@ -365,8 +365,8 @@ class c1 "A"
         f = """
 class c1 "A"
     : <<tt1>> :
-        : x: int
-        : y: int
+        : x = "aaa"
+        : y = 'bbb'
     : <<tt2>> :
         : x: int
         : y: int
