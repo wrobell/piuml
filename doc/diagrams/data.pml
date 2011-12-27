@@ -3,7 +3,6 @@
 #
 
 class n "Node: list"
-#    : parent: Node = None
     : type: str
     : element: str
     : id: str = uuid()

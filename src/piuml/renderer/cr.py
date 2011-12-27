@@ -264,7 +264,7 @@ class CairoDimensionCalculator(MWalker):
         he = edge.data['head']
 
         # name length taken into account in _set_edge_len
-        txt = ''.join(t for t in te[:3] + he[:3] if t)
+        txt = ''.join(str(t) for t in te[:2] + he[:2] if t)
         w = text_size(self.cr, txt)[0]
 
         log.debug('calculate size of association "{}": {}'.format(txt, w))
@@ -591,7 +591,7 @@ class CairoRenderer(MWalker):
         if attr and attr.name:
             dt(attr.name, align=(halign, -1))
         if attr and attr.mult:
-            dt(attr.mult, align=(halign, 1))
+            dt(str(attr.mult), align=(halign, 1))
 
 
     def _draw_line(self,
