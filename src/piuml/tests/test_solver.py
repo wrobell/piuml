@@ -24,7 +24,7 @@ Tests of constraint solver and constraints.
 import unittest
 
 from piuml.layout.solver import Solver, TopEq, BottomEq, MinSize, MinHDist
-from piuml.data import BoxStyle, Size
+from piuml.style import BoxStyle, Size
 
 class SolverTestCase(unittest.TestCase):
     """
