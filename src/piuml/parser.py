@@ -86,7 +86,7 @@ class NodeCache(dict):
         for given id, then ParseError error is raised.
         """
         if id in self:
-            raise ParseError('Id "%s" is already defined' % id)
+            raise ParseError('Id "{}" is already defined'.format(id))
         else:
             super(NodeCache, self).__setitem__(id, node)
 
@@ -120,11 +120,6 @@ RE_ASSOCIATION_END = re.compile(r"""(?P<name>\w+)?\s* # attr name is optional
 
 
 
-def _diagram():
-    ast = self.ast = Diagram()
-    ast.cache = NodeCache()
-    ast.cache[ast.id] = self.ast
-
 def p_fdiface(self, args):
     """
     fdiface ::= FDIFACE SPACE NAME
@@ -145,22 +140,6 @@ def p_fdiface(self, args):
 
     self._set_parent('', n)
     return n
-
-
-def _line(self, cls, tail, head, stereotypes=None, data=None):
-
-    if data is None:
-        data = {}
-    if stereotypes is None:
-        stereotypes = ()
-
-    line = Line(cls, tail, head, data=data)
-
-    line.stereotypes.extend(stereotypes)
-
-    self._set_parent('', line)
-    self.ast.cache[line.id] = line
-    return line
 
 
 def p_assembly(self, args):
@@ -250,51 +229,6 @@ def p_fdifacedep(self, args):
     iface.data['dependency'] = n
     iface.data['lines'].append(n)
     return n
-
-
-def _feature(self, feature, value, title=False):
-    """
-    Create feature node. 
-
-    :Parameters:
-     feature
-        Feature type, i.e. attribute, operation.
-     value
-        Name assigned to feature node.
-     title
-        If ``True`` then feature is title of features to follow, i.e.
-        stereotype name of stereotype attributes.
-    """
-    indent, txt = value.split(':', 1)
-    if title:
-        txt = txt[:-1] # get rid of ending ':' from title
-    txt = txt.strip()
-
-    parent = self._istack[-1][1]
-
-    # special treatment for an association
-    if parent.cls == 'association':
-        is_head = value.strip().startswith('::')
-
-        if parent.data['tail'][1] is None and not is_head:
-            end = 'tail'
-        elif parent.data['head'][1] is None:
-            end = 'head'
-        else:
-            raise UMLError('Too many association ends')
-
-        et = parent.data[end][-1]
-        mre = RE_ASSOCIATION_END.search(txt)
-        constaint = None
-        name, mult = mre.group('name', 'mult')
-        if name is None:
-            name = ''
-        parent.data[end] = (constaint, name, mult, et)
-    else:
-        n = Feature(feature)
-        n.name = txt
-        self._set_parent(indent, n)
-        return n
 
 
 
@@ -585,7 +519,7 @@ def f_layout(args):
 
 def create_parser():
     global __cache
-    __cache = {}
+    __cache = NodeCache()
 
     Token = P.Token
     Or = P.Or
@@ -663,17 +597,15 @@ def create_parser():
     empty = P.Line(P.Empty(), indent=False)
     comment = P.Line(Token('#.*'), indent=False)
     rline = P.Line(relationship)
-    nblock = P.Line(nelement) & P.Block(features)[0:1] > f_named(Element)
-    pblock = P.Line(pelement) & P.Block(features)[0:1] > f_named(PackagingElement)
 
-    block = (P.Line(pelement) > f_named(PackagingElement)) \
-            & P.Block(statement[1:]) > f_packaging
     ablock = P.Line(association) \
             & P.Block(P.Line(aend))[0:2] > f_association
-
+    nblock = P.Line(nelement) & P.Block(features)[0:1] > f_named(Element)
+    pblock = (P.Line(pelement) & P.Block(features)[0:1] > f_named(PackagingElement)) \
+            & P.Block(statement[1:])[0:1] > f_packaging
     lblock = P.Line(layout) & P.Block(P.Line(align)[1:]) > f_layout
 
-    statement += (block | ablock | nblock | pblock | lblock \
+    statement += (nblock | pblock | ablock | lblock \
             | rline | ~comment | empty) > list
     program = statement[:]
 
@@ -690,6 +622,7 @@ def parse(f):
      f
         File to load diagram description from.
     """
+    __cache.clear()
     try:
         if isinstance(f, str):
             nodes = __parser.parse(f)

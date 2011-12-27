@@ -92,10 +92,9 @@ component c2 "B"
     class cls1 "B1"
 """
         n = parse(f)
-        data = dict((k.id, k.parent.id) for k in unwind(n) if k.parent)
-        self.assertEquals('diagram', data['c1'])
-        self.assertEquals('diagram', data['c2'])
-        self.assertEquals('c2', data['cls1'])
+        self.assertEquals('diagram', n[0].parent.id)
+        self.assertEquals('diagram', n[1].parent.id)
+        self.assertEquals('c2', n[1][0].parent.id)
 
 
     def test_complex(self):
@@ -410,11 +409,11 @@ class GeneralLanguageTestCase(unittest.TestCase):
         """
         Test an edge to an undefined id
         """
-        f = StringIO("""
+        f = """
 class c1 "Test1"
 class c2 "Test2"
 c1 -- cx
-""")
+"""
         self.assertRaises(ParseError, parse, f)
 
 
@@ -422,10 +421,10 @@ c1 -- cx
         """
         Test duplicate id specification
         """
-        f = StringIO("""
+        f = """
 class c1 "Test1"
 class c1 "Test2" # note duplicated id
-""")
+"""
         self.assertRaises(ParseError, parse, f)
 
 
