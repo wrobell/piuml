@@ -268,6 +268,34 @@ package p1 "P1"
         self.assertEquals('float', attrs[1].type)
 
 
+    def test_p_attribute_packaged_mixed(self):
+        """
+        Test adding an attribute to packaging and packaged elements
+        """
+        f = """
+package p1 "P1"
+    : a: float
+    : b: int
+
+    package c1 "A"
+        : x: int
+        : y: float
+"""
+        n = parse(f)
+
+        attrs = n[0].data['attributes']
+        self.assertEquals('a', attrs[0].name)
+        self.assertEquals('float', attrs[0].type)
+        self.assertEquals('b', attrs[1].name)
+        self.assertEquals('int', attrs[1].type)
+
+        attrs = n[0][0].data['attributes']
+        self.assertEquals('x', attrs[0].name)
+        self.assertEquals('int', attrs[0].type)
+        self.assertEquals('y', attrs[1].name)
+        self.assertEquals('float', attrs[1].type)
+
+
 
 class OperationsTestCase(unittest.TestCase):
     """
@@ -330,6 +358,30 @@ package p1 "P1"
         : cdef(x, y): int
 """
         n = parse(f)
+        opers = n[0][0].data['operations']
+        self.assertEquals('abc()', opers[0].name)
+        self.assertEquals('cdef(x, y): int', opers[1].name)
+
+
+    def test_p_operation_packaged_mixed(self):
+        """
+        Test adding an operation to both packaging and packaged elements
+        """
+        f = """
+package p1 "P1"
+    : x()
+    : y(x, y): int
+
+    package c1 "A"
+        : abc()
+        : cdef(x, y): int
+"""
+        n = parse(f)
+
+        opers = n[0].data['operations']
+        self.assertEquals('x()', opers[0].name)
+        self.assertEquals('y(x, y): int', opers[1].name)
+
         opers = n[0][0].data['operations']
         self.assertEquals('abc()', opers[0].name)
         self.assertEquals('cdef(x, y): int', opers[1].name)
