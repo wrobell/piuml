@@ -581,8 +581,8 @@ class MWalker(object):
     """
     Walk a tree and execute a method on each traversed node.
     """
-    def preorder(self, n):
-        preorder(n, self)
+    def preorder(self, n, reverse=False):
+        preorder(n, self, reverse)
 
 
     def postorder(self, n):

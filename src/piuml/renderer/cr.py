@@ -249,11 +249,11 @@ class CairoDimensionCalculator(MWalker):
             Additional length to be added to calculated length.
         """
         cr = self.cr
-        lens = [text_size(cr, edge.name)[0] + length]
+        pad = edge.style.padding.left
+        lens = [text_size(cr, edge.name)[0], length]
         if edge.stereotypes:
             lens.append(text_size(cr, st_fmt(edge.stereotypes))[0])
-        edge.style.min_length = max(75, 2 * sum(lens))
-        return sum(lens)
+        edge.style.min_length = max(75, sum(lens) + len(lens) * pad)
 
 
     def _association(self, edge):
@@ -265,10 +265,10 @@ class CairoDimensionCalculator(MWalker):
 
         # name length taken into account in _set_edge_len
         txt = ''.join(str(t) for t in te[:2] + he[:2] if t)
-        w = text_size(self.cr, txt)[0]
+        length = text_size(self.cr, txt)[0]
 
-        log.debug('calculate size of association "{}": {}'.format(txt, w))
-        self._set_edge_len(edge, w)
+        log.debug('calculate size of association "{}": {}'.format(txt, length))
+        self._set_edge_len(edge, length)
 
 
 

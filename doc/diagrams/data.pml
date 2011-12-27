@@ -24,9 +24,9 @@ p => e
 d => p
 r => e
 
-e =>= "has children" p
-    : parent [1]
+e =<= "packages" p
     : children [0..*]
+    : parent [0..1]
 
 :layout:
     middle: e p

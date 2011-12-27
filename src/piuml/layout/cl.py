@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.data import lca, lsb, preorder, MWalker, Relationship, \
+from piuml.data import lca, lsb, MWalker, Relationship, \
     Element, PackagingElement
 from piuml.layout.solver import *
 from piuml.style import Area
@@ -204,10 +204,29 @@ class Layout(MWalker):
         """
         Layout diagram items on the diagram.
         """
+        self._create_line_cache(ast)
         self._prepare(ast)
 
         # visit siblings in reversed order to constraint lines first
-        preorder(ast, self, reverse=True)
+        self.preorder(ast, reverse=True)
+
+
+    def _create_line_cache(self, ast):
+        """
+        Find all lines and create line length cache.
+        """
+        lines = (l for l in ast if isinstance(l, Relationship))
+        for l in lines:
+            # find siblings
+            t, h = l.tail, l.head
+            p = lca(ast, t, h)
+            t, h = lsb(p, t, h)
+
+            length = self.lines.get((t.id, h.id), 0) 
+            self.lines[t.id, h.id] = max(length, l.style.min_length)
+
+            length = self.lines.get((h.id, t.id), 0) 
+            self.lines[h.id, t.id] = max(length, l.style.min_length)
 
 
     def _prepare(self, ast):
@@ -338,27 +357,6 @@ class Layout(MWalker):
         self.lines[right.id, left.id] = r_len + l_len
 
         self.between(node, nodes)
-
-
-    def v_relationship(self, n):
-        """
-        Store line minimal length in line cache.
-
-        :Parameters:
-         n
-            Edge to constraint.
-        """
-        log.debug('set line length constraint for {}'.format(n.cls))
-        t, h = n.tail, n.head
-
-        # find siblings
-        p = lca(self.ast, t, h)
-        t, h = lsb(p, t, h)
-
-        # fixme: there can be multiple lines
-        length = n.style.min_length
-        self.lines[t.id, h.id] = length
-        self.lines[h.id, t.id] = length
 
 
     def size(self, node):
