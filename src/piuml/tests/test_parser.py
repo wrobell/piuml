@@ -256,7 +256,7 @@ package p1 "P1"
         """
         f = """
 package p1 "P1"
-    interface c1 "A"
+    package c1 "A"
         : x: int
         : y: float
 """
@@ -325,7 +325,7 @@ package p1 "P1"
         """
         f = """
 package p1 "P1"
-    interface c1 "A"
+    package c1 "A"
         : abc()
         : cdef(x, y): int
 """
