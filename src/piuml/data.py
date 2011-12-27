@@ -396,8 +396,6 @@ class Relationship(Element):
                 data=data)
         self.tail = tail
         self.head = head
-        #self.style = LineStyle()
-        #self.style.padding = Area(3, 10, 3, 10)
 
 
 
@@ -415,7 +413,7 @@ class Mult(object):
         if lower is None:
             self.lower = '0'
         if upper is None:
-            self.upper = '*'
+            self.upper = self.lower
 
 
     def __str__(self):
@@ -447,7 +445,7 @@ class Attribute(Feature):
         self.name = '' if name is None else name
         self.type = type
         self.value = value
-        self.mult = Mult() if mult is None else mult
+        self.mult = mult
 
 
     def __repr__(self):

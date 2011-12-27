@@ -2,40 +2,35 @@
 # piUML data model
 #
 
-class n "Node: list"
-    : type: str
-    : element: str
-    : id: str = uuid()
-    : name: str = ''
-    : stereotypes: list = []
-    : data: dict = {}
-    : is_packaging(): bool
-
 class e "Element"
+    : cls: str
+    : id: str = uuid()
+    : stereotypes: list = []
+    : name: str = ''
+    : data: dict = {}
 
-class l "Line"
-    : tail: Node [1]
-    : head: Node [1]
+class p "PackagingElement"
 
-class i "IElement"
+class d "Diagram"
 
-class s "Style"
+class r "Relationship"
+    : tail: Element
+    : head: Element
 
-e => n
-l => n
-i => n
+#class i "IElement"
+#class s "Style"
 
-n =>=> 'has style' s
-    : [1]
-    : style [1]
+p => e
+d => p
+r => e
 
-#n =>=> n
-#    : parent [1]
-#    : items [0..*]
+e =>= "has children" p
+    : parent [1]
+    : children [0..*]
 
 :layout:
-    top: e l i
-    center: l n
-    middle: n s
+    middle: e p
+    center: e r
+    center: p d
 
 # vim: sw=4:et:ai

@@ -58,7 +58,7 @@ def _name(node, bold=True, underline=False, fmt='%s'):
 
 
 def _features(node, ft):
-    return '\n'.join(f.name for f in node.data[ft])
+    return '\n'.join(str(f) for f in node.data[ft])
 
 
 def _head_size(style):
