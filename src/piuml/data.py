@@ -444,10 +444,10 @@ class Attribute(Feature):
     """
     def __init__(self, name, type, value, mult):
         super(Attribute, self).__init__()
-        self.name = name
+        self.name = '' if name is None else name
         self.type = type
         self.value = value
-        self.mult = mult
+        self.mult = Mult() if mult is None else mult
 
 
     def __repr__(self):

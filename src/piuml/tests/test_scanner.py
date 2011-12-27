@@ -118,37 +118,38 @@ class TokenTestCase(unittest.TestCase):
         """
         Test attribute token parsing
         """
-        n = parse('class a "a"\n    : attr')
+        f = 'class a "a"\n    '
+        n = parse(f + ': attr')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    :attr')
+        n = parse(f + ':attr')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr: int')
+        n = parse(f + ': attr: int')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
         self.assertEquals('int', n[0].data['attributes'][0].type)
 
-        n = parse('class a "a"\n    : attr: int = 1')
+        n = parse(f + ': attr: int = 1')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
         self.assertEquals('int', n[0].data['attributes'][0].type)
         self.assertEquals('1', n[0].data['attributes'][0].value)
 
-        n = parse('class a "a"\n    : attr = "test"')
+        n = parse(f + ': attr = "test"')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr: str = "test"')
+        n = parse(f + ': attr: str = "test"')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr: str = "test()"')
+        n = parse(f + ': attr: str = test()')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr[11]')
+        n = parse(f + ': attr[11]')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr [0..1]')
+        n = parse(f + ': attr [0..1]')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
-        n = parse('class a "a"\n    : attr [n..m]')
+        n = parse(f + ': attr [n..m]')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
 

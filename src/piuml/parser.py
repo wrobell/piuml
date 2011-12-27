@@ -545,26 +545,17 @@ def f_attribute(args):
         value = None
         mult = None
 
-        t = [type(v) for v in args]
-        try:
-            k = t.index(Mult)
-            mult = args[k]
-            del args[k]
-        except ValueError:
-            mult = Mult()
+        if not isinstance(args[0], Mult):
+            name = args[0]
+            del args[0]
 
-        name = args[0] if len(args) > 0 else ''
-        try:
-            k = args.index(':')
-            atype = args[k + 1]
-        except ValueError:
-            pass
-
-        try:
-            k = args.index('=')
-            value = args[k + 1]
-        except ValueError:
-            pass
+        for a in args:
+            if isinstance(a, Mult):
+                mult = a
+            elif a[0] == ':':
+                atype = a[1:].strip()
+            elif a[0] == '=':
+                value = a[1:].strip()
 
         attr = Attribute(name, atype, value, mult)
     return attr
@@ -647,9 +638,8 @@ def create_parser():
 
     attribute = ~Token(':') & space[0:1] \
             & aword \
-            & (space[0:1] & Token(':') & space[0:1] & aword)[0:1] \
-            & (space[0:1] & Token('=') & space[0:1]
-                    & (aword | string | Token('[0-9]+')))[0:1] \
+            & (space[0:1] & Token(':') + space[0:1] + aword)[0:1] \
+            & (space[0:1] & Token('=[^=><]+'))[0:1] \
             & (space[0:1] & mult > f_mult)[0:1] \
             > f_attribute
     operation = ~Token(':') & space \
