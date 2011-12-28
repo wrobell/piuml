@@ -22,12 +22,11 @@ piUML language parser.
 """
 
 import lepl as P
-
 import re
 import logging
 
 from piuml.data import Diagram, Element, PackagingElement, \
-        IElement, Relationship, Mult, Attribute, Operation, \
+        Relationship, Mult, Attribute, Operation, \
         Section, Align, NELEMENTS, PELEMENTS, KEYWORDS
 
 log = logging.getLogger('piuml.parser')

@@ -156,6 +156,7 @@ class LineStyle(Style):
         super(LineStyle, self).__init__()
         self.min_length = 100
         self.edges = (Pos(0, 0), Pos(0, 0))
+        self.padding = Area(3, 10, 3, 10)
 
 
 

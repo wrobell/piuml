@@ -17,7 +17,7 @@ m -e> wd
 doc -- c
 
 :layout:
-    center: pu doc
+    center: m wd
     middle: doc c
     middle: w pu
 

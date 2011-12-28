@@ -46,15 +46,6 @@ KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
 
 
-def ntype(cls):
-    """
-    Set type of parsed piUML language AST node, so it can be recognized by
-    Spark parsing routines.
-    """
-    cls.type = cls.__name__.lower()
-    return cls
-
-
 class Node(list):
     """
     Parsed piUML language node.
@@ -159,101 +150,6 @@ class Node(list):
         return isinstance(other, Node) and self.id == other.id
 
 
-@ntype
-class Diagram(Node):
-    """
-    Diagram node.
-    
-    Diagram node is root node of parsed abstract syntax tree (AST) of
-    diagram written in piUML language.
-
-    :Attributes:
-     cache
-        Cache of nodes by their id.
-     order
-        Order of nodes (LR then TB).
-    """
-    def __init__(self):
-        super(Diagram, self).__init__('diagram')
-        self.cache = {}
-        self.order = []
-
-    def reorder(self):
-        self.order = [k for k in self.unwind()]
-
-
-@ntype
-class Element(Node):
-    """
-    Representation of UML element like class, component, node, etc.
-    """
-
-
-@ntype
-class Feature(Node):
-    """
-    Representation of UML feature like attribute or operation.
-    """
-
-
-@ntype
-class IElement(Node):
-    """
-    Representation of UML element having form of an icon, i.e. assembly
-    connector, iconified interface, activity nodes.
-    """
-
-
-@ntype
-class Line(Node):
-    """
-    Representation of UML relationship like association, dependency,
-    comment line, etc.
-
-    :Attributes:
-     tail
-        Tail node.
-     head
-        Head node. 
-    """
-    def __init__(self, cls, tail, head, name='', data=[]):
-        super(Line, self).__init__(cls, name, data)
-        self.style = LineStyle()
-        self.tail = tail
-        self.head = head
-        self.style.padding = Area(3, 10, 3, 10)
-
-
-@ntype
-class Section(Node):
-    """
-    Section in a diagram written in piUML language.
-
-    There is only one section currently specified - 'layout'.
-    """
-
-
-@ntype
-class Align(Node):
-    """
-    Alignment definition information.
-
-    Alignment type may be one of:
-    - left
-    - right
-    - top
-    - bottom
-    - center
-    - middle
-
-    :Attributes:
-     cls
-        Alignment type.
-    """
-    def __init__(self, cls):
-        super(Align, self).__init__(cls)
-        self.nodes = []
-
 
 class Stereotype(object):
     """
@@ -277,6 +173,26 @@ class Stereotype(object):
 class Element(object):
     """
     Basic representation of UML element like interface, action, etc.
+
+    Contains preprocessed UML data like name and applied
+    stereotypes.
+
+    :Attributes:
+     cls     
+        Particularizes node type, which can be an UML class (element,
+        relationship).
+     id
+        Element unique identifier.
+     parent
+        Parent node.
+     stereotypes
+        List of stereotypes applied to an UML class.
+     name
+        Name of named element (i.e. class). Empty by default and empty for
+        non-named elements (i.e. dependency).
+     data
+        Additional node data, i.e. in case of association its ends
+        navigability information.
     """
     def __init__(self, cls=None, id=None, stereotypes=None, name=None, data=None):
         self.cls = cls
@@ -320,9 +236,9 @@ class PackagingElement(Element):
      children
         Elements packaged by the element.
     """
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, children=None, **kw):
         super(PackagingElement, self).__init__(*args, **kw)
-        self.children = []
+        self.children = [] if children is None else list(children)
 
 
     def __getitem__(self, k):
@@ -368,9 +284,8 @@ class Diagram(PackagingElement):
         """
         Create UML diagram instance.
         """
-        super(Diagram, self).__init__(cls='diagram', id='diagram')
-
-        self.children = list(children)
+        super(Diagram, self).__init__(cls='diagram', id='diagram',
+                children=children)
 
         log.debug('diagram children {}'.format(self.children))
         for k in self.children:
