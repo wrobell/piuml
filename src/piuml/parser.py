@@ -528,11 +528,13 @@ def create_parser():
         return Token(f(*(Literal(t) for t in literals)))
 
     space =  ~Token(' +')
+    id = Token('[a-zA-Z][a-zA-Z0-9_]*')
+    aword = Token('[a-zA-Z0-9\-_]+')
     #string = Token(r""""(([^"]|\")+)"|'(([^']|\')+)'""")
     #string = ~Token('"') + Token('[^"]+') + ~Token('"')
     string = Token('"[^"]+"') | Token("'[^']+'")
-    id = Token('[a-zA-Z][a-zA-Z0-9_]*')
     stereotype = Token('[a-zA-Z0-9]+')
+
     stereotypes = ~Token('<<') & space[0:1] \
         & stereotype \
         & (~Token(' *, *') & stereotype)[0:] \
@@ -561,7 +563,6 @@ def create_parser():
     relationship = dependency | generalization | commentline
 
     mnum = Token('[a-zA-Z0-9\*]+')
-    aword = Token('[a-zA-Z0-9\-]+')
     mult = ~Token('\[') & mnum \
             & (space[0:1] & ~Token('\.\.') & space[0:1] & mnum)[0:1] \
             & ~Token('\]')

@@ -2,10 +2,13 @@
 # piUML data model
 #
 
+class s "Stereotype"
+    : name: str
+    : is_keyword: bool
+
 class e "Element"
     : cls: str
     : id: str = uuid()
-    : stereotypes: list = []
     : name: str = ''
     : data: dict = {}
 
@@ -23,6 +26,9 @@ class r "Relationship"
 p => e
 d => p
 r => e
+
+s <=<= "has" e
+    : stereotypes [0..*]
 
 e =<= "packages" p
     : children [0..*]

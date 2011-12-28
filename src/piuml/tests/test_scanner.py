@@ -122,6 +122,9 @@ class TokenTestCase(unittest.TestCase):
         n = parse(f + ': attr')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
+        n = parse(f + ': attr-_1')
+        self.assertEquals('attr-_1', n[0].data['attributes'][0].name)
+
         n = parse(f + ':attr')
         self.assertEquals('attr', n[0].data['attributes'][0].name)
 
