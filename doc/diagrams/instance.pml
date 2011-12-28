@@ -1,11 +1,9 @@
 # default piUML instance specification
 
 instance p ':Parser'
-instance l ':MLayout'
-instance r ':MRenderer'
-instance ast 'ast :Node'
-    : type = 'diagram'
-    : element = 'diagram'
+instance l ':Layout'
+instance r ':Renderer'
+instance ast ':Diagram'
 
 p -> <<create>> ast
 l -> <<process>> ast
