@@ -46,130 +46,6 @@ KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
         'profile', 'stereotype', 'subsystem')
 
 
-class Node(list):
-    """
-    Parsed piUML language node.
-
-    Contains preprocessed UML data like name and applied
-    stereotypes.
-
-    The class itself is a list and may contain additional nodes as its
-    children. The children may be
-    
-    - attributes and operation of a class
-    - artifacts deployed within a node
-    - actions in a partition (swimlane)
-
-    :Attributes:
-     type
-        Basic node type.
-     cls     
-        Particularizes node type, which can be an UML class (element,
-        relationship) or subtype of other part of piUML language (i.e.
-        section type, align type, etc.).
-     id
-        Node identifier. It should be unique.
-     parent
-        Parent node.
-     name
-        Name of named element (i.e. class). Empty by default and empty for
-        non-named elements (i.e. dependency).
-     stereotypes
-        List of stereotypes applied to an UML class.
-     style
-        Style information of rendered node.
-     data
-        Additional node data, i.e. in case of association its ends
-        navigability information.
-    """
-    type = None
-
-    def __init__(self, cls, name='', data=None, id=None):
-        super(Node, self).__init__()
-        self.parent = None
-        self.cls = cls
-        if id is None:
-            self.id = str(uuid())
-        else:
-            self.id = id
-        self.name = name
-        self.stereotypes = []
-        self.data = data if data else {}
-        self.style = BoxStyle()
-
-        # few exceptions to default style
-        if cls == 'actor':
-            self.style.padding = Area(0, 0, 0, 0)
-            self.style.size = Size(40, 60)
-        elif cls in ('package', 'profile'):
-            self.style.size = Size(80, 60)
-        elif cls == 'association':
-            self.style.padding = Area(3, 18, 3, 18)
-        elif cls in ('artifact', 'component'):
-            self.style.icon_size = Size(10, 15)
-        elif cls == 'fdiface':
-            self.style.min_size = Size(30, 30)
-            self.style.size = Size(30, 30)
-        elif cls == 'node':
-            self.style.margin = Area(20, 20, 10, 10)
-
-
-    def is_packaging(self):
-        """
-        Check is UML element is packaging other UML elements.
-        """
-        return len([n for n in self if n.cls in ELEMENTS]) > 0
-
-
-    def unwind(self):
-        yield self
-        for i in self:
-            for j in i.unwind():
-                yield j
-
-
-    def __str__(self):
-        return self.cls + ': ' + '[%s]' % ','.join(str(k) for k in self)
-
-
-    def __repr__(self):
-        return self.id
-
-
-    def __hash__(self):
-        """
-        AST nodes are hashed with their id's hash value.
-        """
-        return self.id.__hash__()
-
-
-    def __eq__(self, other):
-        """
-        Equality comparision of AST nodes is their id equality.
-        """
-        return isinstance(other, Node) and self.id == other.id
-
-
-
-class Stereotype(object):
-    """
-    Stereotype information.
-
-    :Attributes:
-     name
-        Name of stereotype.
-    """
-    is_keyword = property(lambda s: s.name in KEYWORDS)
-
-    def __init__(self, name):
-        self.name = name
-
-
-    def __repr__(self):
-        return 'Stereotype({})'.format(self.name)
-
-
-
 class Element(object):
     """
     Basic representation of UML element like interface, action, etc.
@@ -311,6 +187,25 @@ class Relationship(Element):
                 data=data)
         self.tail = tail
         self.head = head
+
+
+
+class Stereotype(object):
+    """
+    Stereotype information.
+
+    :Attributes:
+     name
+        Name of stereotype.
+    """
+    is_keyword = property(lambda s: s.name in KEYWORDS)
+
+    def __init__(self, name):
+        self.name = name
+
+
+    def __repr__(self):
+        return 'Stereotype({})'.format(self.name)
 
 
 

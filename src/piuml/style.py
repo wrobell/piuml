@@ -179,9 +179,27 @@ class StyleDescriptor(object):
         """
         Get style information for an object.
         """
-        if obj not in self.data:
-            self.data[obj] = self.cls()
-        return self.data[obj]
+        style = self.data.get(obj)
+        if style is None:
+            style = self.data[obj] = self.cls()
+
+            # few exceptions to default style
+            cls = obj.cls
+            if cls == 'actor':
+                style.padding = Area(0, 0, 0, 0)
+                style.size = Size(40, 60)
+            elif cls in ('package', 'profile'):
+                style.size = Size(80, 60)
+            elif cls == 'association':
+                style.padding = Area(3, 18, 3, 18)
+            elif cls in ('artifact', 'component'):
+                style.icon_size = Size(10, 15)
+            elif cls == 'fdiface':
+                style.min_size = Size(30, 30)
+                style.size = Size(30, 30)
+            elif cls == 'node':
+                style.margin = Area(20, 20, 10, 10)
+        return style
 
 
 Element.style = StyleDescriptor(BoxStyle)
