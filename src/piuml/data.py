@@ -43,7 +43,7 @@ NELEMENTS = ('actor', 'comment', 'interface', 'metaclass', 'stereotype',
 ELEMENTS = PELEMENTS + NELEMENTS
 
 KEYWORDS = ('artifact', 'metaclass', 'component', 'device', 'interface',
-        'profile', 'stereotype', 'subsystem')
+        'profile', 'stereotype', 'subsystem', 'realization')
 
 
 class Element(object):

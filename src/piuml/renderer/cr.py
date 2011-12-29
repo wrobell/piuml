@@ -31,7 +31,7 @@ from io import BytesIO
 from math import ceil, floor, pi
 from functools import partial
 
-from piuml.data import MWalker, Element, PackagingElement
+from piuml.data import MWalker, Element, PackagingElement, KEYWORDS
 from piuml.style import Size, Pos, Style, Area
 from piuml.renderer.text import *
 from piuml.renderer.shape import *
@@ -41,18 +41,22 @@ from piuml.renderer.util import st_fmt
 import logging
 log = logging.getLogger('piuml.renderer.cr')
 
-def _name(node, bold=True, underline=False, fmt='%s'):
+def _name(node, bold=True, underline=False, fmt='{}', skip_keyword=False):
     texts = []
     if node.stereotypes:
-        texts.append('<span size="small">%s</span>' \
-                % st_fmt(node.stereotypes))
+        k = 0
+        if skip_keyword and node.stereotypes[0] in KEYWORDS:
+            k = 1
+        if k == 0 or len(node.stereotypes) > 2:
+            texts.append('<span size="small">{}</span>' \
+                    .format(st_fmt(node.stereotypes[k:])))
     name = node.name.replace('\\n', '\n')
     if name:
-        name = fmt % name
+        name = fmt.format(name)
         if bold:
-            name = '<b>%s</b>' % name
+            name = '<b>{}</b>'.format(name)
         if underline:
-            name = '<u>%s</u>' % name
+            name = '<u>{}</u>'.format(name)
         texts.append(name)
     return '\n'.join(texts)
 
@@ -515,10 +519,10 @@ class CairoRenderer(MWalker):
             params['draw_tail'] = draw_tail_arrow
 
         if supplier.cls == 'fdiface':
-            params = { 'show_st': False }
+            params = {'skip_keyword': True}
 
-        if supplier.cls in ('interface', 'component'):
-            params['show_st'] = False
+        if 'realization' in n.stereotypes:
+            params['skip_keyword'] = True
             if supplier is n.head:
                 params['draw_head'] = draw_head_triangle
             else:
@@ -602,7 +606,7 @@ class CairoRenderer(MWalker):
             draw_head=draw_head_none,
             dash=None,
             name_fmt='%s',
-            show_st=True):
+            skip_keyword=False):
         """
         Draw line between tail and head of an edge.
 
@@ -618,7 +622,7 @@ class CairoRenderer(MWalker):
         """
         draw_line(self.cr, line.style.edges, draw_tail=draw_tail, draw_head=draw_head, dash=dash)
 
-        name = _name(line, fmt=name_fmt)
+        name = _name(line, fmt=name_fmt, skip_keyword=skip_keyword)
         if name:
             segment = line_middle_segment(line.style.edges)
             draw_text(self.cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
