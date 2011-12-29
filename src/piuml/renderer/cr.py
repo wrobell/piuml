@@ -264,10 +264,12 @@ class CairoDimensionCalculator(MWalker):
         he = edge.data['head']
 
         # name length taken into account in _set_edge_len
-        txt = ''.join(str(t) for t in te[:2] + he[:2] if t)
-        length = text_size(self.cr, txt)[0]
+        tlen = text_size(self.cr, str(te[1]))[0]
+        hlen = text_size(self.cr, str(he[1]))[0]
+        # take longer one into account as it defines half length of line
+        length = max(tlen, hlen) * 2
 
-        log.debug('calculate size of association "{}": {}'.format(txt, length))
+        log.debug('calculate size of association "{}": {}'.format(edge.name, length))
         self._set_edge_len(edge, length)
 
 
