@@ -184,7 +184,7 @@ c1 == "An association" c2
         n = parse(f + 'attr')
         data = n[2].data
         self.assertEquals('attr', data['tail'][1].name)
-        self.assertEquals('[0..*]', str(data['tail'][1].mult))
+        self.assertTrue(data['tail'][1].mult is None)
 
         n = parse(f + 'attr [0..1]')
         data = n[2].data
