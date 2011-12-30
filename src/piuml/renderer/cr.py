@@ -61,6 +61,10 @@ def _name(node, bold=True, underline=False, fmt='{}', skip_keyword=False):
     return '\n'.join(texts)
 
 
+def _is_packaging(node):
+    return isinstance(node, PackagingElement) and len(node) > 0
+
+
 def _features(node, ft):
     return '\n'.join(str(f) for f in node.data[ft])
 
@@ -217,7 +221,7 @@ class CairoDimensionCalculator(MWalker):
             style.compartment.append(h)
 
         k = len(style.compartment)
-        if isinstance(node, PackagingElement):
+        if _is_packaging(node):
             k += 1
 
         width = max(w for w, h in sizes) + pad.left + pad.right
@@ -354,7 +358,7 @@ class CairoRenderer(MWalker):
         cr = self.cr
         cr.save()
 
-        if isinstance(node, PackagingElement):
+        if _is_packaging(node):
             align = (0, -1)
 
         if node.cls in ('node', 'device'):
@@ -568,11 +572,11 @@ class CairoRenderer(MWalker):
         dh = HEND[edge.data['head'][-1]]
 
         assert isinstance(edge.head, Element)
-        name_fmt = '%s'
+        name_fmt = '{}'
         if edge.data['direction'] is edge.head:
-            name_fmt = '%s \u25b6'
+            name_fmt = '{} \u25b6'
         else:
-            name_fmt = '\u25c0  %s'
+            name_fmt = '\u25c0 {}'
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
 
