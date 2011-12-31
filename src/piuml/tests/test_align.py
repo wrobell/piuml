@@ -84,13 +84,15 @@ class BoxAlignTestCase(unittest.TestCase):
 
 
     def test_inner_align(self):
-        """Test inner box align
+        """
+        Test inner box align
         """
         self._draw('box_align_i', (0, 0, 0, 0))
         self._draw('box_align_ip', (20, 10, 20, 10))
 
     def test_outer_align(self):
-        """Test outer box align
+        """
+        Test outer box align
         """
         self._draw('box_align_o', (0, 0, 0, 0), True)
         self._draw('box_align_op', (20, 10, 20, 10), True)
@@ -140,7 +142,8 @@ class LineAlignTestCase(unittest.TestCase):
 
 
     def test_halign(self):
-        """Test text at horizontal line alignment
+        """
+        Test text at horizontal line alignment
         """
         line = tuple(Pos(x, 150) for x in (100, 250, 350, 500))
         self._draw('line_align_h', line, (0, 0, 0, 0))
@@ -148,7 +151,8 @@ class LineAlignTestCase(unittest.TestCase):
 
 
     def test_valign(self):
-        """Test text at vertical line alignment
+        """
+        Test text at vertical line alignment
         """
         line = tuple(Pos(300, y) for y in (100, 125, 175, 200))
         self._draw('line_align_v', line, (0, 0, 0, 0))
@@ -156,7 +160,8 @@ class LineAlignTestCase(unittest.TestCase):
 
 
     def test_ahalign(self):
-        """Test text at almost horizontal line alignment
+        """
+        Test text at almost horizontal line alignment
         """
         line = tuple(Pos(x, y) for x, y in zip((100, 250, 400, 500), (150, 140, 160, 150)))
         self._draw('line_align_ah', line, (0, 0, 0, 0))
@@ -164,7 +169,8 @@ class LineAlignTestCase(unittest.TestCase):
 
 
     def test_avalign(self):
-        """Test text at almost vertical line alignment
+        """
+        Test text at almost vertical line alignment
         """
         line = tuple(Pos(x, y) for x, y in zip((200, 190, 210, 200), (100, 125, 175, 200)))
         self._draw('line_align_av', line, (0, 0, 0, 0))
