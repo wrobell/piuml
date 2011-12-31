@@ -5,8 +5,9 @@ Identifiers
 -----------
 The indentifiers
 
-- must exist when references (i.e. by edges or alignment)
-- cannot be duplicated
+- are unique, i.e. two elements like class and interface cannot have the
+  same id
+- must exist when referenced, i.e. by relationships or alignment
 
 UML Elements
 ------------
@@ -48,8 +49,8 @@ Component Assembly
 
 Dependency
 ~~~~~~~~~~
-- <<urime>>
-- o) (o
+.. - <<urime>>
+.. - o) (o
 
 Extension
 ~~~~~~~~~
@@ -60,14 +61,16 @@ Generalization
 Layout
 ------
 Horizontal alignment operators
-    top
-    center
-    bottom
+
+- top
+- center
+- bottom
 
 Vertical alignment operators
-    left
-    middle
-    right
+
+- left
+- middle
+- right
 
 Default layout alignment is middle.
 
@@ -109,18 +112,23 @@ a diagram is imported by new diagram.
 
 Errors
 ------
-There are two types of errors
+There are three types of errors
 
     parser erros
         piUML language errors, which indicate problems in the source code.
     UML errors
-        UML semantics errors.
+        UML semantics errors, when a construction is invalid due to UML
+        constraints.
+    alignment errors
+        Alignment errors are raised when diagram alignment is invalid or
+        impossible to obtain.
 
-Parsing Errors
-~~~~~~~~~~~~~~
-- string problem
-- non-existing id
+..  Parsing Errors
+..  ~~~~~~~~~~~~~~
+..  - string problem
+..  - non-existing id
 
-UML Errors
-~~~~~~~~~~
+.. UML Errors
+.. ~~~~~~~~~~
 
+.. vim: sw=4:et:ai
