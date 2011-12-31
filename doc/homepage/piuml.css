@@ -34,3 +34,6 @@ div.title blockquote {
     font-style: italic;
 }
 
+pre {
+    font-size: 150%;
+}

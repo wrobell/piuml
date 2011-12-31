@@ -1,11 +1,13 @@
 # the idea of piUML
 
-artifact f <<piuml, source>> 'model.pml'
 component c 'piUML'
-    component cr 'Renderer'
-    component cl 'Layout'
     component cp 'Parser'
-artifact m <<document>> 'model.pdf'
+    component cl 'Layout'
+    component cr 'Renderer'
+
+component fs 'Filesystem'
+    artifact f <<piuml, source>> 'model.pml'
+    artifact m <<document>> 'model.pdf'
 
 f <u- cp
 cr -> <<create>> m
@@ -14,6 +16,7 @@ cp <- cl
 cl <- cr
 
 :layout:
-    center: cr cl cp
+    center: cp f
+    center: cr m
 
 # vim: sw=4:et:ai

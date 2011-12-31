@@ -87,15 +87,32 @@
     The project provides <a href="http://sphinx.pocoo.org/">Sphinx</a> integration.
     </p>
 </div>
-<!--div class="generic foursixty break">
-    <h2>Language Example</h2>
+<div class="generic nineforty break">
+    <h2>Example</h2>
+    <a href='piuml.svg'>
+        <img src='piuml.png' align='right' title='piUML idea' alt='Diagram of piUML idea.'/>
+    </a>
     <pre>
-class c1 'Algorithm'
+component c &apos;piUML&apos;
+    component cp &apos;Parser&apos;
+    component cl &apos;Layout&apos;
+    component cr &apos;Renderer&apos;
+
+component fs &apos;Filesystem&apos;
+    artifact f &lt;&lt;piuml, source&gt;&gt; &apos;model.pml&apos;
+    artifact m &lt;&lt;document&gt;&gt; &apos;model.pdf&apos;
+
+f &lt;u- cp
+cr -&gt; &lt;&lt;create&gt;&gt; m
+
+cp &lt;- cl
+cl &lt;- cr
+
+:layout:
+    center: cp f
+    center: cr m
     </pre>
 </div>
-<div class="generic foursixty end">
-    <h2>Diagram Example</h2>
-</div-->
 <div class="generic nineforty">
     <p id="footer-nav">
         &copy; 2010 - 2012 <span class="piuml">piUML</span> team.
