@@ -9,7 +9,7 @@ extensions = ['piuml.sphinx_ext', 'sphinx.ext.autodoc',
         'sphinx.ext.doctest', 'sphinx.ext.todo',]
     
 project = 'piUML'
-source_suffix = '.txt'
+source_suffix = '.rst'
 master_doc = 'index'
 
 version = piuml.__version__
