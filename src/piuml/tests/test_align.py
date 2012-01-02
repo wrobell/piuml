@@ -28,7 +28,9 @@ import unittest
 
 from piuml.style import Style, Pos, Area, Size
 from piuml.renderer.cr import CairoBBContext
-from piuml.renderer.text import draw_text, text_pos_at_line
+from piuml.renderer.text import draw_text, text_pos_at_line, ALIGN_CENTER, \
+    ALIGN_TOP, ALIGN_BOTTOM, ALIGN_TAIL, ALIGN_HEAD, ALIGN_LEFT, \
+    ALIGN_RIGHT, ALIGN_MIDDLE
 
 surface = cairo.PDFSurface('src/piuml/tests/align.pdf', 600, 300)
 cr = CairoBBContext(cairo.Context(surface))
@@ -104,26 +106,28 @@ class LineAlignTestCase(unittest.TestCase):
     Text alignment at a line tests.
     """
     def _draw(self, name, line, pad):
-        cr.move_to(*line[0])
-        cr.arc(line[0].x, line[0].y, 1.0, 0.0, 2.0 * pi)
+        cr.rectangle(line[0].x - 3, line[0].y - 3, 6, 6)
         for p1, p2 in zip(line[:-1], line[1:]):
             cr.move_to(*p1)
             cr.line_to(*p2)
-            cr.arc(p2.x, p2.y, 1.0, 0.0, 2.0 * pi)
+            cr.arc(p2.x, p2.y, 1, 0.0, 2.0 * pi)
         cr.stroke()
 
+        cr.save()
+        cr.set_line_width(0.75)
+        cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
+        p1 = line[0]
+        p2 = line[-1]
         if any(pad):
-            cr.save()
-            cr.set_line_width(0.75)
-            cr.set_source_rgba(1.0, 0.0, 0.0, 0.5)
-            p1 = line[0]
-            p2 = line[-1]
             cr.rectangle(p1.x + pad[3],
-                    p1.x + pad[0],
-                    p2.x - p1.x - (pad[1] + pad[3]),
-                    p2.y - p1.y - (pad[0] + pad[2]))
-            cr.stroke()
-            cr.restore()
+                    p1.y + pad[0],
+                    abs(p2.x - p1.x) - (pad[1] + pad[3]),
+                    abs(p2.y - p1.y) - (pad[0] + pad[2]))
+        cr.stroke()
+        cr.move_to(p1.x, p1.y)
+        cr.line_to(p2.x, p2.y)
+        cr.stroke()
+        cr.restore()
 
         style = Style()
         style.size = Size(0, 0)
@@ -131,12 +135,12 @@ class LineAlignTestCase(unittest.TestCase):
         style.padding = Area(*pad)
 
         dt = partial(draw_text, cr, line, style, align_f=text_pos_at_line)
-        dt('(TOP)', align=(0, -1))
-        dt('(BOTTOM)', align=(0, 1))
-        dt('(LEFT TOP)', align=(-1, -1))
-        dt('(RIGHT TOP)', align=(1, -1))
-        dt('(L-BOTTOM)', align=(-1, 1))
-        dt('(R-BOTTOM)', align=(1, 1))
+        dt('(LEFT TAIL)', align=(ALIGN_LEFT, ALIGN_TAIL))
+        dt('(RIGHT TAIL)', align=(ALIGN_RIGHT, ALIGN_TAIL))
+        dt('(LEFT HEAD)', align=(ALIGN_LEFT, ALIGN_HEAD))
+        dt('(RIGHT HEAD)', align=(ALIGN_RIGHT, ALIGN_HEAD))
+        dt('(LEFT)', align=(ALIGN_LEFT, ALIGN_MIDDLE))
+        dt('(RIGHT)', align=(ALIGN_RIGHT, ALIGN_MIDDLE))
 
         cr.show_page()
 
@@ -146,17 +150,23 @@ class LineAlignTestCase(unittest.TestCase):
         Test text at horizontal line alignment
         """
         line = tuple(Pos(x, 150) for x in (100, 250, 350, 500))
+        rline = tuple(reversed(line))
         self._draw('line_align_h', line, (0, 0, 0, 0))
+        self._draw('line_align_h', rline, (0, 0, 0, 0))
         self._draw('line_align_hp', line, (10, 5, 10, 5))
+        self._draw('line_align_hp', rline, (10, 5, 10, 5))
 
 
     def test_valign(self):
         """
         Test text at vertical line alignment
         """
-        line = tuple(Pos(300, y) for y in (100, 125, 175, 200))
+        line = tuple(Pos(300, y) for y in (100, 125, 165, 200))
+        rline = tuple(reversed(line))
         self._draw('line_align_v', line, (0, 0, 0, 0))
+        self._draw('line_align_v', rline, (0, 0, 0, 0))
         self._draw('line_align_vp', line, (10, 5, 10, 5))
+        self._draw('line_align_vp', rline, (10, 5, 10, 5))
 
 
     def test_ahalign(self):
@@ -164,8 +174,18 @@ class LineAlignTestCase(unittest.TestCase):
         Test text at almost horizontal line alignment
         """
         line = tuple(Pos(x, y) for x, y in zip((100, 250, 400, 500), (150, 140, 160, 150)))
+        rline = tuple(reversed(line))
         self._draw('line_align_ah', line, (0, 0, 0, 0))
+        self._draw('line_align_ah', rline, (0, 0, 0, 0))
         self._draw('line_align_ahp', line, (10, 5, 10, 5))
+        self._draw('line_align_ahp', rline, (10, 5, 10, 5))
+
+        line = tuple(Pos(x, y) for x, y in zip((100, 250, 400, 500), (150, 160, 140, 150)))
+        rline = tuple(reversed(line))
+        self._draw('line_align_ah', line, (0, 0, 0, 0))
+        self._draw('line_align_ah', rline, (0, 0, 0, 0))
+        self._draw('line_align_ahp', line, (10, 5, 10, 5))
+        self._draw('line_align_ahp', rline, (10, 5, 10, 5))
 
 
     def test_avalign(self):
@@ -173,6 +193,13 @@ class LineAlignTestCase(unittest.TestCase):
         Test text at almost vertical line alignment
         """
         line = tuple(Pos(x, y) for x, y in zip((200, 190, 210, 200), (100, 125, 175, 200)))
+        rline = tuple(reversed(line))
+        self._draw('line_align_av', line, (0, 0, 0, 0))
+        self._draw('line_align_av', rline, (0, 0, 0, 0))
+        self._draw('line_align_avp', line, (10, 5, 10, 5))
+        self._draw('line_align_avp', rline, (10, 5, 10, 5))
+
+        line = tuple(Pos(x, y) for x, y in zip((200, 210, 190, 200), (100, 125, 175, 200)))
         self._draw('line_align_av', line, (0, 0, 0, 0))
         self._draw('line_align_avp', line, (10, 5, 10, 5))
 

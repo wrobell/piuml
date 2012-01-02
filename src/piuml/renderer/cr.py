@@ -629,7 +629,7 @@ class CairoRenderer(MWalker):
         name = _name(line, fmt=name_fmt, skip_keyword=skip_keyword)
         if name:
             segment = line_middle_segment(line.style.edges)
-            draw_text(self.cr, segment, line.style, name, align=(0, -1), align_f=text_pos_at_line)
+            draw_text(self.cr, segment, line.style, name, align=(-1, 0), align_f=text_pos_at_line)
 
 
     def v_diagram(self, n):

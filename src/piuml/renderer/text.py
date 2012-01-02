@@ -35,6 +35,8 @@ ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 # Vertical align.
 ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
+# Vertical line align (along the line from tail to head).
+ALIGN_TAIL, ALIGN_HEAD = -1, 1
 
 def text_pos_at_box(size, box, style, align, outside=False):
     """
@@ -103,6 +105,12 @@ def text_pos_at_line(size, line, style, align, outside=False):
     Calculate position of the text relative to specified line. Text is
     aligned using line style (i.e. padding) information. 
 
+    The alignment is calculated from perspective of a person standing at
+    the tail and looking towards the head
+
+    - vertical alignment is from tail, through the middle, till the head
+    - horizontal alignment can be at the left or right of the line
+
     :Parameters:
      size
         Width and height of text to be aligned.
@@ -114,85 +122,55 @@ def text_pos_at_line(size, line, style, align, outside=False):
         Horizontal and vertical alignment of text.
      outside
         If true the text is aligned outside the box.
-
-    fixme: works for straight vertical and horizontal lines
     """
-    EPSILON = 1e-6
-
     width, height = size
+    w2 = width / 2
+    h2 = height / 2
     pad = style.padding
     halign, valign = align
 
-    if halign == ALIGN_LEFT:
+    if valign == ALIGN_TAIL:
         p1, p2 = line[:2]
-    elif halign == ALIGN_RIGHT:
+        x0, y0 = p1
+    elif valign == ALIGN_HEAD:
         p1, p2 = line[-2:]
-    else: # ALIGN_CENTER
+        x0, y0 = p2
+    else: # ALIGN_MIDDLE
         p1, p2 = line_middle_segment(line)
+        x0 = (p1.x + p2.x) / 2.0
+        y0 = (p1.y + p2.y) / 2.0
 
-    x0 = (p1.x + p2.x) / 2.0
-    y0 = (p1.y + p2.y) / 2.0
     dx = p2.x - p1.x
     dy = p2.y - p1.y
+    a = atan2(dy, dx)
 
-    if abs(dx) < EPSILON:
-        d1 = -1.0
-        d2 = 1.0
-    elif abs(dy) < EPSILON:
-        d1 = 0.0
-        d2 = 0.0
-    else:
-        d1 = dy / dx
-        d2 = abs(d1)
+    padh = (0, pad.right, pad.left)
+    padv = (0, pad.bottom, pad.top)
 
-    # move to center and move by delta depending on line angle
-    if d2 < 0.5774: # <0, 30>, <150, 180>, <-180, -150>, <-30, 0>
-        # horizontal mode
-        w2 = width / 2.0
-        hint = w2 * d2
+    if abs(dx) > abs(dy): # horizontal line alignment
+        ld = 1 if p1.x <= p2.x else 0
+        sg = 1 if p1.x <= p2.x else -1
+        op = (0.5, ld, not ld)
+        gop = (1, -1, 1)
+        #gop = (0, 0, 0)
 
-        if halign == ALIGN_LEFT:
-            x = p1.x + pad.left
-        elif halign == ALIGN_RIGHT:
-            x = p2.x - width - pad.right
-        else:
-            x = x0 - w2
+        pv_op = (0, 1, -1)
+        ph_op = (0, -1, 1)
 
-        if valign == ALIGN_TOP:
-            y = y0 - pad.top - hint - height
-        else:
-            y = y0 + pad.bottom + hint
-    else: # much better in case of vertical lines
+        x0 -= op[valign] * width + sg * pv_op[valign] * padv[valign]
+        y0 -= abs(1 - op[halign]) * height + sg * ph_op[halign] * padh[halign]
 
-        # hint tuples to move text depending on quadrant
-        WIDTH_HINT = (0, 0, -1)    # width hint tuple
-        R_WIDTH_HINT = (-1, -1, 0)    # width hint tuple
-        PADDING_HINT = (1, 1, -1)  # padding hint tuple
+    else: # vertical line alignment
+        ld = 1 if p1.y <= p2.y else 0
+        sg = 1 if p1.y <= p2.y else -1
+        op = (0.5, ld, not ld)
 
-        # determine quadrant, we are interested in 1 or 3 and 2 or 4
-        # see hint tuples below
-        h2 = height / 2.0
-        q = (d1 > 0) - (d1 < 0) # cmp(d1, 0)
-        if abs(dx) < EPSILON:
-            hint = 0
-        else:
-            hint = h2 / d2
+        p_op = (0, 1, -1)
 
-        if halign == ALIGN_LEFT:
-            y = p1.y + pad.top
-        elif halign == ALIGN_RIGHT:
-            y = p2.y - pad.bottom - height
-        else:
-            y = y0 - h2
+        x0 -= op[halign] * width + sg * p_op[halign] * padh[halign] 
+        y0 -= op[valign] * height + sg * p_op[valign] * padv[valign]
 
-        if valign == ALIGN_TOP:
-            x = p1.x - width - pad.left
-        elif valign == ALIGN_BOTTOM:
-            x = p1.x + pad.right + hint
-        else:
-            assert False
-
-    return x, y
+    return x0, y0
 
 
 def line_middle_segment(edges):
