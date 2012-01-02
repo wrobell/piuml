@@ -151,8 +151,6 @@ def text_pos_at_line(size, line, style, align, outside=False):
         ld = 1 if p1.x <= p2.x else 0
         sg = 1 if p1.x <= p2.x else -1
         op = (0.5, ld, not ld)
-        gop = (1, -1, 1)
-        #gop = (0, 0, 0)
 
         pv_op = (0, 1, -1)
         ph_op = (0, -1, 1)
