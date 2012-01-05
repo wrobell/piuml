@@ -585,7 +585,7 @@ class CairoRenderer(MWalker):
         self._draw_association_end(dt, edge.data['head'], 1)
 
 
-    def _draw_association_end(self, dt, end, halign):
+    def _draw_association_end(self, dt, end, valign):
         """
         Draw association end.
 
@@ -594,14 +594,14 @@ class CairoRenderer(MWalker):
             Function used to draw association end text.
          end
             Tuple containing association end data.
-         halign
-            Horizontal alignment of the association end.
+         valign
+            Vertical alignment of the association end.
         """
         attr = end[1]
         if attr and attr.name:
-            dt(attr.name, align=(halign, -1))
+            dt(attr.name, align=(-1, valign))
         if attr and attr.mult:
-            dt(str(attr.mult), align=(halign, 1))
+            dt(str(attr.mult), align=(1, valign))
 
 
     def _draw_line(self,
