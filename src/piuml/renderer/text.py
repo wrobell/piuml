@@ -25,7 +25,7 @@ import cairo
 from gi.repository import Pango as pango
 from gi.repository import PangoCairo
 
-from math import atan2
+from math import atan2, pi, sin, cos
 
 from piuml.style import Pos
 
@@ -37,6 +37,8 @@ ALIGN_TOP, ALIGN_MIDDLE, ALIGN_BOTTOM = -1, 0, 1
 
 # Vertical line align (along the line from tail to head).
 ALIGN_TAIL, ALIGN_HEAD = -1, 1
+
+EPSILON = 1e-6
 
 def text_pos_at_box(size, box, style, align, outside=False):
     """
@@ -122,10 +124,13 @@ def text_pos_at_line(size, line, style, align, outside=False):
         Horizontal and vertical alignment of text.
      outside
         If true the text is aligned outside the box.
+
+    TODO
+
+    - tail and head alignment at the line needs improvement
+    - consider line attached to vertical or horizontal edge of a box
     """
     width, height = size
-    w2 = width / 2
-    h2 = height / 2
     pad = style.padding
     halign, valign = align
 
@@ -144,31 +149,85 @@ def text_pos_at_line(size, line, style, align, outside=False):
     dy = p2.y - p1.y
     a = atan2(dy, dx)
 
-    padh = (0, pad.right, pad.left)
-    padv = (0, pad.bottom, pad.top)
+    kx = p1.x > p2.x
+    ky = p1.y > p2.y
 
-    if abs(dx) > abs(dy): # horizontal line alignment
-        ld = 1 if p1.x <= p2.x else 0
-        sg = 1 if p1.x <= p2.x else -1
-        op = (0.5, ld, not ld)
+    xml, xmr = 0, 0
+    yml, ymr = 0, 0
+    if abs(dx) < EPSILON:
+        # fixme: to get rid of x00/y00 investigate 
+        #   kx = cmp(p1.x, p1.y) 
+        # and that
+        #   ~(-2, -1, 0, 1) = (1, 0, -1, -2)
+        yml += height / 2
+        ymr += -height / 2
+    elif abs(dy) < EPSILON:
+        xml += -width / 2
+        xmr += width / 2
 
-        pv_op = (0, 1, -1)
-        ph_op = (0, -1, 1)
+    # (-2, -1, 0, 1) = ~(1, 0, -1, -2)
+    ym = (not kx ^ ky) - (not ky) - 2 * (kx and ky)
 
-        x0 -= op[valign] * width + sg * pv_op[valign] * padv[valign]
-        y0 -= abs(1 - op[halign]) * height + sg * ph_op[halign] * padh[halign]
+    if abs(dx) > abs(dy): # horizontal
+        xop = ((),
+               (-(not ky), -(not kx), -kx), # right: middle, head, tail
+               (-ky, -(not kx), -kx),) # left: middle, head, tail
+        yop = ((),
+               (ym, ym, ym), # right: middle, head, tail
+               (~ym, ~ym, ~ym),) # left: middle, head, tail
+    else: # vertical
+        xm = -ky
+        xop = ((),
+               (~xm, ~xm, ~xm), # right: middle, head, tail
+               (xm, xm, xm),) # left: middle, head, tail
+        yop = ((),
+               (ym, ~xm, xm), # right: middle, head, tail
+               (~ym, ~xm, xm),) # left: middle, head, tail
+    mxop = ((),
+           (xmr, 0, 0), # right: middle, head, tail
+           (xml, 0, 0)) # left: middle, head, tail
+    myop = ((),
+           (ymr, 0, 0), # right: middle, head, tail
+           (yml, 0, 0),) # left: middle, head, tail
 
-    else: # vertical line alignment
-        ld = 1 if p1.y <= p2.y else 0
-        sg = 1 if p1.y <= p2.y else -1
-        op = (0.5, ld, not ld)
+    # fixme: simplify with vector operations, i.e.
+    #   -sin(a) * ((pad.right,) * 3) + cos(a) * (0, -pad.top, pad.bottom)
+    #   sin(a) * ((pad.left,) * 3) + cos(a) * (0, -pad.top, pad.bottom)
+    #   cos(a) * ((pad.right,) * 3) + sin(a) * (0, -pad.top, pad.bottom)
+    #   -cos(a) * ((pad.left,) * 3) + sin(a) * (0, -pad.top, pad.bottom)
+    pxop = ((),
+           (-pad.right * sin(a), -pad.right * sin(a) - pad.top * cos(a), -pad.right * sin(a) + pad.bottom * cos(a)), # right: middle, head, tail
+           (pad.left * sin(a), pad.left * sin(a) - pad.top * cos(a),  pad.left * sin(a) + pad.bottom * cos(a)),) # left: middle, head, tail
+    pyop = ((),
+           (pad.right * cos(a), pad.right * cos(a) - pad.top * sin(a), pad.right * cos(a) + pad.bottom * sin(a)), # right: middle, head, tail
+           (-pad.left * cos(a), -pad.left * cos(a) - pad.top * sin(a), -pad.left * cos(a) + pad.bottom * sin(a)),) # left: middle, head, tail
 
-        p_op = (0, 1, -1)
-
-        x0 -= op[halign] * width + sg * p_op[halign] * padh[halign] 
-        y0 -= op[valign] * height + sg * p_op[valign] * padv[valign]
+    x0 += width * xop[halign][valign] + mxop[halign][valign] + pxop[halign][valign]
+    y0 += height * yop[halign][valign] + myop[halign][valign] + pyop[halign][valign]
 
     return x0, y0
+
+
+def line_single_text_hint(line, style, align):
+    halign, valign = align
+
+    if valign == ALIGN_TAIL:
+        p1, p2 = line[:2]
+    elif valign == ALIGN_HEAD:
+        p1, p2 = line[-2:]
+    else: # ALIGN_MIDDLE
+        p1, p2 = line_middle_segment(line)
+
+    dx = p2.x - p1.x
+    dy = p2.y - p1.y
+
+    if abs(dx) < EPSILON or abs(dy) < EPSILON:
+        da = 0
+    else:
+        da = abs(dy / dx)
+   
+    # <0, 30>, <150, 180>, <-180, -150>, <-30, 0>
+    return da > 0.6
 
 
 def line_middle_segment(edges):
