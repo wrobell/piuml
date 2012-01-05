@@ -156,7 +156,7 @@ class LineStyle(Style):
         super(LineStyle, self).__init__()
         self.min_length = 100
         self.edges = (Pos(0, 0), Pos(0, 0))
-        self.padding = Area(10, 3, 10, 3)
+        self.padding = Area(15, 3, 15, 3)
 
 
 
@@ -190,8 +190,6 @@ class StyleDescriptor(object):
                 style.size = Size(40, 60)
             elif cls in ('package', 'profile'):
                 style.size = Size(80, 60)
-            elif cls == 'association':
-                style.padding = Area(3, 18, 3, 18)
             elif cls in ('artifact', 'component'):
                 style.icon_size = Size(10, 15)
             elif cls == 'fdiface':
