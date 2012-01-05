@@ -57,11 +57,11 @@ class TokenTestCase(unittest.TestCase):
 
         # " char inside string quoted with "
         n = parse('class id1 "b\\"cd"')
-        self.assertEquals("'b\\'cd'", n[0].name)
+        self.assertEquals("b\"cd", n[0].name)
 
         # ' char inside string quoted with '
         n = parse('class id1 \'b\\\'cd\'')
-        self.assertEquals('"b\\"cd"', n[0].name)
+        self.assertEquals('b\'cd', n[0].name)
 
         # \" string inside string quoted with '
         n = parse('class id1 \'a"b\\\\"cd"ef\'')

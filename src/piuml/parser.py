@@ -532,7 +532,7 @@ def create_parser():
     aword = Token('[a-zA-Z0-9\-_]+')
     #string = Token(r""""(([^"]|\")+)"|'(([^']|\')+)'""")
     #string = ~Token('"') + Token('[^"]+') + ~Token('"')
-    string = Token('"[^"]+"') | Token("'[^']+'")
+    string = Token(r'"(?:[^"]|\\")+"') | Token(r"'(?:[^']|\\')+'")
     stereotype = Token('[a-zA-Z0-9]+')
 
     stereotypes = ~Token('<<') & space[0:1] \
