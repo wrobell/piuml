@@ -1,6 +1,7 @@
 /* remove top border for body defined by typogridphy */
 body {
     border-top: none;
+    font-size: 12px;
 }
 
 /* redefine top border defined by typogridphy */
@@ -34,6 +35,3 @@ div.title blockquote {
     font-style: italic;
 }
 
-pre {
-    font-size: 150%;
-}
