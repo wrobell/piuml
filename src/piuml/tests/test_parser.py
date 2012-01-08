@@ -51,6 +51,19 @@ class a 'A1'
         n = parse(f)
 
 
+    def test_element_initialization(self):
+        """
+        Test element data initialization
+        """
+        f = "class c1 'A'"
+        n = parse(f)
+        self.assertTrue('attributes' in n[0].data)
+        self.assertTrue('operations' in n[0].data)
+        self.assertTrue('stattrs' in n[0].data)
+
+
+
+
 class PackagingTestCase(unittest.TestCase):
     """
     Element packaging test case.

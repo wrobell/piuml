@@ -76,12 +76,11 @@ class Element(object):
         self.name = '' if name is None else name
         self.stereotypes = stereotypes
         self.parent = None
-        _data = {
-            'attributes': [],
-            'operations': [],
-            'stattrs': [], 
-        }
-        self.data = _data if data is None else data
+
+        self.data = {} if data is None else data
+        for a in ('attributes', 'operations', 'stattrs'):
+            if a not in self.data:
+                self.data[a] = []
 
 
     def __repr__(self):
