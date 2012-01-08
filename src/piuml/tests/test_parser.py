@@ -32,19 +32,6 @@ class ParserTestCase(unittest.TestCase):
     """
     Basic parser tests.
     """
-    def test_string(self):
-        """
-        Test string parsing
-        """
-        f = "class a 'A1'"
-        n = parse(f)
-        self.assertEquals('A1', n.children[0].name)
-
-        f = 'class a "A2"'
-        n = parse(f)
-        self.assertEquals('A2', n.children[0].name)
-
-
     def test_input_file(self):
         """
         Test parsing data from file
