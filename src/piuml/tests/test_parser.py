@@ -63,7 +63,6 @@ class a 'A1'
 
 
 
-
 class PackagingTestCase(unittest.TestCase):
     """
     Element packaging test case.
