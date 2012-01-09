@@ -94,7 +94,7 @@ class CairoBBContext(object):
     def _update_bbox(self, bbox):
         if bbox == (0, 0, 0, 0):
             return
-        x1, y1, x2,  y2 = bbox
+        x1, y1, x2, y2 = bbox
         xb1, yb1, xb2, yb2 = self.bbox
         self.bbox = min(x1, xb1), min(y1, yb1), max(x2, xb2), max(y2, yb2)
 
@@ -148,14 +148,7 @@ class CairoBBContext(object):
         """
         Interceptor for Cairo drawing method.
         """
-        cr = self._cr
-        x, y = cr.get_current_point()
-        e = cr.text_extents(txt)
-        x1, y1 = cr.user_to_device(x + e[0], y + e[1])
-        x2, y2 = cr.user_to_device(x + e[0] + e[2], y + e[1] + e[3])
-        bbox = x1 - 2, y1 - 2, x2 + 2, y2 + 2
-        self._update_bbox(bbox)
-        cr.show_text(txt)
+        raise NotImplemented()
 
 
 class CairoDimensionCalculator(MWalker):

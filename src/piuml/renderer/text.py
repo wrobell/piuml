@@ -27,8 +27,6 @@ from gi.repository import PangoCairo
 
 from math import atan2, pi, sin, cos
 
-from piuml.style import Pos
-
 # Horizontal align.
 ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT = -1, 0, 1
 
@@ -240,17 +238,6 @@ def line_middle_segment(edges):
     return p1, p2
 
 
-def line_center(edges):
-    """
-    Get mid point and angle of middle segment of a line defined by
-    specified edges.
-    """
-    p1, p2 = line_middle_segment(edges)
-    pos = Pos((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
-    angle = atan2(p2.y - p1.y, p2.x - p1.x)
-    return pos, angle
-
-
 def pango_layout(cr, text):
     pl = PangoCairo.create_layout(cr._cr)
     pl.set_font_description(pango.FontDescription('sans 10'))
@@ -273,15 +260,21 @@ def draw_text(cr, shape, style, text,
         align_f=text_pos_at_box):
 
     pl = pango_layout(cr, text)
-    size = pango_size(pl)
+    w, h = size = pango_size(pl)
     pl.set_alignment(lalign)
 
-    x0, y0 = pos
     x, y = align_f(size, shape, style, align=align, outside=outside)
+    x += pos[0]
+    y += pos[1]
 
     cr.save()
-    cr.move_to(x + x0, y + y0)
+    cr.move_to(x, y)
+
+    x1, y1 = cr.user_to_device(x, y)
+    x2, y2 = cr.user_to_device(x + w, y + h)
     PangoCairo.show_layout(cr._cr, pl)
+    cr._update_bbox((x1, y1, x2, y2))
+
     cr.restore()
 
     return size[1]
