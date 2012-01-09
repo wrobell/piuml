@@ -568,7 +568,7 @@ class CairoRenderer(MWalker):
         name_fmt = '{}'
         if edge.data['direction'] is edge.head:
             name_fmt = '{} \u25b6'
-        else:
+        elif edge.data['direction'] is edge.tail:
             name_fmt = '\u25c0 {}'
             
         self._draw_line(edge, draw_tail=dt, draw_head=dh, name_fmt=name_fmt)
