@@ -28,9 +28,10 @@ notation. Advantages of such system could be as follows
 - any SCM can be used for easy and convenient model version management
 - embedding of simple diagrams in textual communication is instant
 
-`UMLGraph <http://www.umlgraph.org/>`_ project provides above qualities, but 
-its language is Java based and `Graphviz <http://www.graphviz.org/>`_ is used as
-layout system, which have the following disadvantages
+`UMLGraph <http://www.umlgraph.org/>`_ [GUML2003]_ project provides above
+qualities, but its language is Java based and `Graphviz
+<http://www.graphviz.org/>`_ is used as layout system, which have the following
+disadvantages
 
 - the Java notation is quite verbose and does not reflect UML notation, i.e.
   visibility of class methods and attributes
@@ -58,5 +59,9 @@ Ability to describe models in declarative way can enable others to experiment
 with voice based interfaces or automated, spatial and flexible GUI (i.e. gesture
 based). While such research is beyond scope of this project, then appropriate
 API could be maintained to support various user interface ideas.
+
+References
+----------
+.. [GUML2003] Diomidis Spinellis, `"On the Declarative Specification of Models" <http://www.spinellis.gr/pubs/jrnl/2003-IEEESW-umlgraph/html/article.html>`_, http://www.spinellis.gr/pubs/jrnl/2003-IEEESW-umlgraph/html/article.html
 
 .. vim: sw=4:et:ai
