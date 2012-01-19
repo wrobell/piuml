@@ -28,7 +28,7 @@ notation. Advantages of such system could be as follows
 - any SCM can be used for easy and convenient model version management
 - embedding of simple diagrams in textual communication is instant
 
-`UMLGraph <http://www.umlgraph.org/>`_ [GUML2003]_ project provides above
+`UMLGraph <http://www.umlgraph.org/>`_ project [GUML2003]_ provides above
 qualities, but its language is Java based and `Graphviz
 <http://www.graphviz.org/>`_ is used as layout system, which have the following
 disadvantages
