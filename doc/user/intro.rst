@@ -1,14 +1,16 @@
 Introduction
 ============
 
+piUML is textual language for Unified Modeling Language (UML). The piUML project
+provides language specification, language parser and generator of diagrams in
+UML notation. 
+
 .. _piuml_concept
 
-.. .. uml-diagram:: doc/diagrams/piuml
-..     :align: center
+.. uml-diagram:: doc/diagrams/piuml
+    :align: center
 
-piUML is textual language for Unified Modeling Language (UML). The piUML
-project provides language specification, language interpreter and software
-for diagrams generation in UML notation. 
+    piUML project components
 
 .. more from homepage to be copied later
 

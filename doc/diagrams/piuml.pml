@@ -5,7 +5,7 @@ component c 'piUML'
     component cl 'Layout'
     component cr 'Renderer'
 
-component fs 'Filesystem'
+component fs <<actor>> 'Filesystem'
     artifact f <<piuml, source>> 'model.pml'
     artifact m <<document>> 'model.pdf'
 
