@@ -4,9 +4,10 @@ piUML for Sphinx extension.
 
 import os.path
 from docutils import nodes
+from docutils.parsers.rst.directives.images import Figure
 
 from sphinx.errors import SphinxError
-from docutils.parsers.rst.directives.images import Figure
+from sphinx.util.osutil import ensuredir
 
 from piuml import generate
 
@@ -33,7 +34,8 @@ class UMLDiagram(Figure):
         uri = img['uri']
         fin = uri + '.pml'
         fname = os.path.basename(uri) + '.svg'
-        fout = os.path.join(self.app.builder.outdir, '_images', fname)
+        _, tdir = self.app.env.relfn2path('')
+        fout = os.path.join(tdir, fname)
         
         with open(fin) as f:
             generate(f, fout, 'svg')
