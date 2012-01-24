@@ -1,7 +1,7 @@
 #
 # piUML - UML diagram generator.
 #
-# Copyright (C) 2010 by Artur Wroblewski <wrobell@pld-linux.org>
+# Copyright (C) 2010 - 2012 by Artur Wroblewski <wrobell@pld-linux.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
