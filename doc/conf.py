@@ -14,3 +14,8 @@ master_doc = 'index'
 
 version = piuml.__version__
 release = piuml.__version__
+
+epub_basename = 'piUML - {}'.format(version)
+epub_author = 'piUML team'
+
+# vim: sw=4:et:ai
