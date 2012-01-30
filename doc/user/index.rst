@@ -9,8 +9,11 @@ User Manual
 
    intro
    qstart
+   cmd
    ref
    ack
 
 * :ref:`genindex`
 * :ref:`search`
+
+.. vim: sw=4:et:ai
