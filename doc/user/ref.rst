@@ -38,25 +38,26 @@ usecase         No          No
 UML Relationships
 -----------------
 
+Relationship:
+
+===============  ===========  ========================================
+ Relationship       Symbol                  Constraints
+===============  ===========  ========================================
+association        ``==``
+comment line       ``--``
+dependency         ``->``
+extend             ``-e>``    between use cases
+extension          ``==``     between metaclass and stereotype
+generalization     ``=>``
+import             ``-i>``    between packages
+include            ``-i>``    between use cases
+merge              ``-m>``    between packages
+realization        ``-r>``
+use                ``-u>``
+===============  ===========  ========================================
+
 Association
 ~~~~~~~~~~~
-
-Comment Line
-~~~~~~~~~~~~
-
-Component Assembly
-~~~~~~~~~~~~~~~~~~
-
-Dependency
-~~~~~~~~~~
-.. - <<urime>>
-.. - o) (o
-
-Extension
-~~~~~~~~~
-
-Generalization
-~~~~~~~~~~~~~~
 
 Layout
 ------
