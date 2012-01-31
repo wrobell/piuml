@@ -38,7 +38,7 @@ usecase         No          No
 UML Relationships
 -----------------
 
-Relationship:
+Relationships:
 
 ===============  ===========  ========================================
  Relationship       Symbol                  Constraints
