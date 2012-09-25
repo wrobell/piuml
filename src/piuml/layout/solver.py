@@ -39,7 +39,9 @@ A rectangle has to implement following interface
 import time
 import math
 from collections import deque
+import logging
 
+log = logging.getLogger('piuml.layout.solver')
 
 class SolverError(Exception):
     """
@@ -79,6 +81,18 @@ class Solver(object):
             deps.add(c)
 
 
+    def get(self, *variables):
+        """
+        Get constraints between specified variables.
+
+        :Parameters:
+         variables
+            Collection of variables.
+        """
+        return {c for v in variables for c in self._deps[v] \
+            if tuple(variables) == tuple(c.variables)}
+
+
     def solve(self):
         """
         Find solution for all constraints.
@@ -112,7 +126,9 @@ class Solver(object):
             self.count += 1
             if self.count > kill:
                 if __debug__:
-                    print('Unsolved: %s' % unsolved)
+                    log.debug('Remaining constraints: {}'.format(inque))
+                    log.debug('Constraints status queue:\n{}' \
+                            .format('\n'.join('    {}: {}'.format(c, c()) for c in inque)))
                 raise SolverError('Could not find a solution;' \
                     ' unsolved={0} after {1} iterations' \
                     .format(len(unsolved), self.count))
@@ -122,9 +138,9 @@ class Solver(object):
         # some stats follow
         t2 = time.time()
         k = len(self._constraints)
-        fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
         if __debug__:
-            print(fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1))
+            fmt = 'k=constraints: {k}, steps: {c}, O(k log k)={O}, time: {t:.3f}'
+            log.debug(fmt.format(k=k, c=self.count, O=int(math.log(k, 2) * k), t=t2 -t1))
 
 
 

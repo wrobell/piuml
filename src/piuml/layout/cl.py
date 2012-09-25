@@ -27,7 +27,7 @@ from collections import namedtuple
 import logging
 log = logging.getLogger('piuml.layout.cl')
 
-DefinedAlign = namedtuple('DefinedAlign', 'cls align span')
+DefinedAlign = namedtuple('DefinedAlign', 'cls align')
 
 
 class LayoutError(Exception):
@@ -239,9 +239,8 @@ class Layout(MWalker):
         # postprocessed to simplify layout constraints assignment
         align = (k for n in ast if n.name == 'layout' for k in n.data)
 
-        # find
-        # - common parent of nodes to align
-        # - to level the nodes to align
+        # find common parent of nodes to align and put alignment
+        # information on parent level
         for a in align:
             p = lca(self.ast, *a.nodes)
 
@@ -250,46 +249,7 @@ class Layout(MWalker):
             else:
                 data = p.data['align'] = []
 
-            dist = lsb(p, *a.nodes)
-            data.append(DefinedAlign(a.type, list(a.nodes), dist))
-
-
-    def _span_matrix(self, node, align=[]):
-        """
-        Create span matrix for node using defined alignment information.
-
-        :Parameters:
-         node
-            Node for which span matrix should be created.
-         align
-            User defined alignment information.
-        """
-        # nodes to align
-        nodes = [k for k in node if k.__class__ in (PackagingElement, Element)]
-
-        # middle is default alignment
-        sm = SpanMatrix(*nodes)
-
-        span_f = {
-            'top': sm.hspan,
-            'middle': sm.hspan,
-            'bottom': sm.hspan,
-            'left': sm.vspan,
-            'center': sm.vspan,
-            'right': sm.vspan,
-        }
-        for a in align:
-            assert a.cls in list(span_f.keys()), 'Unknown alignment type'
-            for k1, k2 in zip(a.span[:-1], a.span[1:]):
-                span_f[a.cls](k1, k2)
-                if k2 in nodes:
-                    nodes.remove(k2)
-
-        default = None
-        if len(nodes) > 1:
-            default = DefinedAlign('middle', nodes, nodes)
-
-        return sm, default
+            data.append(DefinedAlign(a.type, list(a.nodes)))
 
 
     def v_element(self, node):
@@ -306,28 +266,43 @@ class Layout(MWalker):
 
         ns = node.style
         if isinstance(node, PackagingElement):
-            defined = node.data.get('align', [])
-            sm, default = self._span_matrix(node, defined)
+            # first get the defined alignment
+            align_info = node.data.get('align', [])
 
-            all_align = list(defined)
-            if default:
-                all_align.insert(0, default)
+            # determine default alignment
+            used_nodes = [n for align in align_info for n in align.align]
+            default = DefinedAlign('middle', 
+                [k for k in node
+                if k not in used_nodes and type(k) in (Element, PackagingElement)])
+                    # fixme: if k not in used_nodes and k.can_align], [])
 
-            for align in all_align:
+            if __debug__:
+                log.debug('used nodes: {}'.format(used_nodes))
+                log.debug('default align: {}'.format(default))
+                log.debug('defined align: {}'.format(align_info))
+
+            if default.align:
+                # all alignment information determined
+                align_info.insert(0, default)
+
+            F = {
+                'top': (self.top, self.hspan),
+                'middle': (self.middle, self.hspan),
+                'bottom': (self.bottom, self.hspan),
+                'left': (self.left, self.vspan),
+                'center': (self.center, self.vspan),
+                'right': (self.right, self.vspan),
+            }
+            for align in align_info:
                 nodes = align.align
                 assert all(isinstance(k, Element) for k in nodes)
 
-                # get and run alignment function
-                f = getattr(self, align.cls)
-                f(*nodes)
-
-            for row in sm.rows():
-                nodes = (k for k in row if k is not None)
-                self.hspan(*nodes)
-
-            for col in sm.columns():
-                nodes = (k for k in col if k is not None)
-                self.vspan(*nodes)
+                # get alignment and span functions
+                f_a, f_s = F[align.cls]
+                f_a(*nodes)
+    
+                p = lca(self.ast, *nodes)
+                f_s(*lsb(p, *nodes))
 
     v_diagram = v_packagingelement = v_element
 

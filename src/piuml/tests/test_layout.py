@@ -21,346 +21,136 @@
 Layout (alignment, span matrix, etc) tests.
 """
 
-from piuml.layout.cl import Layout, SpanMatrix
+from piuml.layout.cl import ConstraintLayout, MinHDist, MinVDist, \
+    MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq
 from piuml.parser import parse, ParseError
 
 import unittest
-
-
-class SpanMatrixTestCase(unittest.TestCase):
-    """
-    Span matrix tests.
-    """
-    def test_empty(self):
-        """
-        Test empty span matrix
-        """
-        m = SpanMatrix()
-        self.assertEquals(0, len(m.data))
-
-
-    def test_empty_insert_row(self):
-        """
-        Test inserting row into empty span matrix
-        """
-        m = SpanMatrix()
-        m.insert_row(0)
-        self.assertEquals(1, len(m.data))
-        self.assertEquals(1, len(m.data[0]))
-        self.assertEquals(None, m[0, 0])
-
-
-    def test_insert_row(self):
-        """
-        Test inserting row into span matrix
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        m.insert_row(1)
-        d = [t[1] for t in m.data] # get row
-        self.assertEquals([None, None], d)
-
-
-    def test_empty_insert_col(self):
-        """
-        Test inserting col into empty span matrix
-        """
-        m = SpanMatrix()
-        m.insert_col(0)
-        self.assertEquals(1, len(m.data))
-        self.assertEquals(1, len(m.data[0]))
-        self.assertEquals(None, m[0, 0])
-
-
-    def test_insert_col(self):
-        """
-        Test inserting column into span matrix
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        m.insert_col(1)
-        self.assertEquals([None] * 4, m.data[1])
-
-
-    def test_get(self):
-        """
-        Test getting an item from span matrix
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        self.assertEquals('B', m[0, 1])
-        self.assertEquals(3, m[1, 2])
-
-
-    def test_set(self):
-        """
-        Test setting an item in span matrix
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        assert 3 == m.data[1][2]
-        m[1, 2] = 'X'
-        self.assertEquals('X', m.data[1][2])
-
-
-    def test_getting_rows(self):
-        """
-        Test getting span matrix rows
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        self.assertEquals([['A', 1], ['B', 2], ['C', 3], ['D', 4]], m.rows())
-
-
-    def test_getting_columns(self):
-        """
-        Test getting span matrix columns
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D'], [1, 2, 3, 4]]
-        self.assertEquals([['A', 'B', 'C', 'D'], [1, 2, 3, 4]], m.columns())
-
-
-    def test_hspan(self):
-        """
-        Test horizontal span
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D', 'E']] # create vertical column
-
-        m.hspan('A', 'B')
-        self.assertEquals([
-            ['A', None, 'C', 'D', 'E'],
-            ['B', None, None, None, None],
-        ], m.data)
-
-        m.hspan('A', 'C')
-        self.assertEquals([
-            ['A', None, None, 'D', 'E'],
-            ['B', None, None, None, None],
-            ['C', None, None, None, None],
-        ], m.data)
-
-        m.hspan('B', 'D')
-        self.assertEquals([
-            ['A', None, None, None, 'E'],
-            ['B', None, None, None, None],
-            ['C', None, None, None, None],
-            ['D', None, None, None, None],
-        ], m.data)
-
-        m.hspan('E', 'A')
-        self.assertEquals([
-            [None, None, None, None, 'E'],
-            ['B', None, None, None, 'A'],
-            ['C', None, None, None, None],
-            ['D', None, None, None, None],
-        ], m.data)
-
-
-    def test_hspan_independent(self):
-        """
-        Test horizontal span with independent requests
-        """
-        m = SpanMatrix()
-        m.data = [['A', 'B', 'C', 'D', 'E']] # create vertical column
-
-        m.hspan('A', 'B')
-        m.hspan('C', 'D')
-        self.assertEquals([
-            ['A', None, 'C', None, 'E'],
-            ['B', None, 'D', None, None],
-        ], m.data)
-
-
-    def test_vspan(self):
-        """
-        Test vertical span
-        """
-        m = SpanMatrix('A', 'B', 'C', 'D', 'E')
-
-        m.vspan('A', 'B')
-        self.assertEquals([
-            ['A', 'B'], 
-            [None, None],
-            ['C', None],
-            ['D', None],
-            ['E', None],
-        ], m.data)
-
-        m.vspan('A', 'C')
-        self.assertEquals([
-            ['A', 'B', 'C'], 
-            [None, None, None],
-            [None, None, None],
-            ['D', None, None],
-            ['E', None, None],
-        ], m.data)
-
-        m.vspan('B', 'D')
-        self.assertEquals([
-            ['A', 'B', 'C', 'D'], 
-            [None, None, None, None],
-            [None, None, None, None],
-            [None, None, None, None],
-            ['E', None, None, None],
-        ], m.data)
-
-        m.vspan('E', 'A')
-        self.assertEquals([
-            [None, 'B', 'C', 'D'], 
-            [None, None, None, None],
-            [None, None, None, None],
-            [None, None, None, None],
-            ['E', 'A', None, None],
-        ], m.data)
-
-
-    def test_vspan_independent(self):
-        """
-        Test vertical span with independent requests 
-        """
-        m = SpanMatrix('A', 'B', 'C', 'D', 'E')
-
-        m.vspan('A', 'B')
-        m.vspan('C', 'D')
-        self.assertEquals([
-            ['A', 'B'], 
-            [None, None],
-            ['C', 'D'],
-            [None, None],
-            ['E', None],
-        ], m.data)
-
 
 
 class LayoutTestCase(unittest.TestCase):
     """
     Layout tests.
     """
+    def _process(self, f):
+        """
+        Process layout and return the root node.
+        """
+        l = self._layout = ConstraintLayout()
+        n = parse(f)
+        l._prepare(n)
+        l.preorder(n, reverse=True)
+        return n
+
+
+    def _check_c(self, constraint, *variables):
+        """
+        Check if constraint is set between variables.
+
+        If constraint is None, then check if there are no constraints
+        between variables.
+        """
+        c = {c.__class__ for c in self._layout.solver.get(*variables)}
+        if constraint:
+            self.assertTrue(constraint in c)
+        else:
+            self.assertFalse(c)
+
+
+    def _check_c_not(self, constraint, *variables):
+        """
+        Check if constraint is _not_ set between variables.
+        """
+        c = {c.__class__ for c in self._layout.solver.get(*variables)}
+        self.assertFalse(constraint in c)
+
+
     def test_default_simple(self):
         """
         Test default, simple alignment
         """
-        l = Layout()
-        f = """
+        n = self._process("""
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
-"""
-        n = parse(f)
-        c1 = n[0]
-        c2 = n[1]
-        c3 = n[2]
-        l.layout(n)
+""")
+        c1 = n[0].style
+        c2 = n[1].style
+        c3 = n[2].style
         self.assertTrue(n.data.get('align') is None)
-
-
-    def test_default_span(self):
-        """
-        Test spanning of default, simple alignment
-        """
-        l = Layout()
-        f = """
-class c1 "C1"
-class c2 "C2"
-class c3 "C3"
-"""
-        n = parse(f)
-        c1 = n[0]
-        c2 = n[1]
-        c3 = n[2]
-
-        l.layout(n)
-        span, default = l._span_matrix(n)
-
-        self.assertEquals('middle', default.cls)
-        self.assertEquals([c1, c2, c3], default.align)
-        self.assertEquals([c1, c2, c3], default.span)
-
-        self.assertEquals([[c1], [c2], [c3]], span.data)
+        self._check_c(MiddleEq, c1, c2)
+        self._check_c(MinHDist, c1, c2)
+        self._check_c(MiddleEq, c2, c3)
+        self._check_c(MinHDist, c2, c3)
 
 
     def test_defined_simple(self):
         """
         Test defined, simple alignment
         """
-        l = Layout()
-        f = """
+
+        n = self._process("""
 class c1 "C1"
 class c2 "C2"
 
 # note reorder below
 :layout:
     left: c2 c1
-"""
-        n = parse(f)
-        c1 = n[0]
-        c2 = n[1]
+""")
+        c1 = n[0].style
+        c2 = n[1].style
 
-        l._prepare(n)
-        align = n.data['align']
-        self.assertEquals(1, len(align))
-        self.assertEquals('left', align[0].cls)
-        self.assertEquals([c2, c1], align[0].align)
-        self.assertEquals([c2, c1], align[0].span)
-
-        span, default = l._span_matrix(n, align)
-
-        self.assertTrue(default is None)
-        self.assertEquals([[None, None], [c2, c1]], span.data)
+        self._check_c(LeftEq, c2, c1)
+        self._check_c(MinVDist, c2, c1)
+        self._check_c(None, c1, c2) # note reorder above
 
 
     def test_orphaned(self):
         """
         Test orphaned (due to alignment) elements
         """
-        l = Layout()
-        f = """
+        n = self._process("""
 class c1 "C1"
 class c2 "C2"
 class c3 "C3"
+class c4 "C4"
 
 :layout:
     right: c1 c3
-"""
-        n = parse(f)
-        c1 = n[0]
-        c2 = n[1]
-        c3 = n[2]
+""")
+        c1 = n[0].style
+        c2 = n[1].style
+        c3 = n[2].style
+        c4 = n[3].style
 
-        l._prepare(n)
-        align = n.data['align']
-        self.assertEquals(1, len(align))
-        self.assertEquals('right', align[0].cls)
-        self.assertEquals([c1, c3], align[0].align)
-        self.assertEquals([c1, c3], align[0].span)
+        self._check_c(RightEq, c1, c3)
+        self._check_c(MinVDist, c1, c3)
 
-        span, default = l._span_matrix(n, align)
+        # default alignment
+        self._check_c(MiddleEq, c2, c4)
+        self._check_c(MinHDist, c2, c4)
 
-        self.assertEquals('middle', default.cls)
-        self.assertEquals([c1, c2], default.align)
-        self.assertEquals([c1, c2], default.span)
+        self._check_c(None, c1, c2)
+        self._check_c(None, c1, c4)
+        self._check_c(None, c3, c2)
+        self._check_c(None, c3, c4)
 
-        self.assertEquals([
-            [c1, c3],
-            [c2, None],
-            [None, None],
-        ], span.data)
+
+    def test_independent(self):
+        self.fail('to be implemented')
 
 
     def test_deep_align(self):
         """
         Test align with packaged elements
         """
-        l = Layout()
         # diagram:
         # -- c --
         # |c1 c2| c4 c5
         # -------
         #     c3
         #
-        f = """
+        n = self._process("""
 class c "C"
     class c1 "C1"
     class c2 "C2"
@@ -370,33 +160,21 @@ class c5 "C5"
 
 :layout:
     center: c2 c3
-"""
-        n = parse(f)
-        c = n[0]
-        c2 = n[0][1]
-        c3 = n[1]
-        c4 = n[2]
-        c5 = n[3]
+""")
+        c = n[0].style
+        c2 = n[0][1].style
+        c3 = n[1].style
+        c4 = n[2].style
+        c5 = n[3].style
 
-        l._prepare(n)
-        align = n.data['align']
-        self.assertEquals(1, len(align))
-        self.assertEquals('center', align[0].cls)
-        self.assertEquals([c2, c3], align[0].align)
-        self.assertEquals([c, c3], align[0].span)
+        self._check_c(CenterEq, c2, c3)
+        self._check_c(MinVDist, c, c3)
+        self._check_c_not(MinVDist, c2, c3)
 
-        span, default = l._span_matrix(n, align)
-
-        self.assertEquals('middle', default.cls)
-        self.assertEquals([c, c4, c5], default.align)
-        self.assertEquals([c, c4, c5], default.span)
-
-        self.assertEquals([
-            [c, c3],
-            [None, None],
-            [c4, None],
-            [c5, None],
-        ], span.data)
+        self._check_c(MiddleEq, c, c4)
+        self._check_c(MiddleEq, c4, c5)
+        self._check_c(MinHDist, c, c4)
+        self._check_c(MinHDist, c4, c5)
 
 
     def test_default_interleave(self):
@@ -498,6 +276,43 @@ class c4 "C4"
             [None, None, None],
             [None, None, None],
         ], span.data)
+
+
+    def test_star_layout(self):
+        """
+        Test star layout
+        """
+        # diagram:
+        #   d
+        # a b c
+        #   e  
+        n = self._process("""
+class a "C1"
+class b "C2"
+class c "C3"
+class d "C4"
+class e "C5"
+
+:layout:
+    middle: a b c
+    center: d b e
+""")
+        a = n[0].style
+        b = n[1].style
+        c = n[2].style
+        d = n[3].style
+        e = n[4].style
+
+        self._check_c(MinHDist, a, b)
+        self._check_c(MiddleEq, a, b)
+        self._check_c(MinHDist, b, c)
+        self._check_c(MiddleEq, b, c)
+        self._check_c(None, a, c)
+        self._check_c(None, b, b)
+        self._check_c(MinVDist, d, b)
+        self._check_c(CenterEq, d, b)
+        self._check_c(MinVDist, b, e)
+        self._check_c(CenterEq, b, e)
 
 
 # vim: sw=4:et:ai
