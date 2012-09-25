@@ -23,7 +23,8 @@ Tests of constraint solver and constraints.
 
 import unittest
 
-from piuml.layout.solver import Solver, TopEq, BottomEq, MinSize, MinHDist
+from piuml.layout.solver import Solver, TopEq, BottomEq, CenterEq, \
+    MiddleEq, MinSize, MinHDist, MinVDist, SolverError
 from piuml.style import BoxStyle, Size
 
 class SolverTestCase(unittest.TestCase):
@@ -31,7 +32,8 @@ class SolverTestCase(unittest.TestCase):
     Constraint solver test case.
     """
     def test_solver(self):
-        """Test (simply) constraint solver
+        """
+        Test (simply) constraint solver
         """
         r1 = BoxStyle()
         r2 = BoxStyle()
@@ -66,7 +68,8 @@ class SolverTestCase(unittest.TestCase):
 
 
     def test_bottom_eq(self):
-        """Test bottom eq constraint
+        """
+        Test bottom eq constraint
         """
         r1 = BoxStyle()
         r2 = BoxStyle()
@@ -91,6 +94,24 @@ class SolverTestCase(unittest.TestCase):
 
         self.assertEquals(0, r1.pos.y)
         self.assertEquals(5, r2.pos.y)
+
+
+    def test_over_constraint(self):
+        """
+        Test over constraint problem
+        """
+        r1 = BoxStyle()
+        r2 = BoxStyle()
+        r3 = BoxStyle()
+        
+        r1.min_size = Size(10, 10)
+        r2.min_size = Size(20, 5)
+
+        s = Solver()
+        s.add(TopEq(r1, r2))
+        s.add(MinVDist(r1, r2, 20))
+
+        self.assertRaises(SolverError, s.solve)
 
 
 # vim: sw=4:et:ai
