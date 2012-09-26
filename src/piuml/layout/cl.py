@@ -204,23 +204,23 @@ class Layout(MWalker):
         """
         Layout diagram items on the diagram.
         """
-        self._create_line_cache(ast)
+        self.ast = ast # fixme
+        self._create_line_cache()
         self._prepare(ast)
 
         # visit siblings in reversed order to constraint lines first
         self.preorder(ast, reverse=True)
 
 
-    def _create_line_cache(self, ast):
+    def _create_line_cache(self):
         """
         Find all lines and create line length cache.
         """
-        lines = (l for l in ast if isinstance(l, Relationship))
+        lines = (l for l in self.ast if isinstance(l, Relationship))
         for l in lines:
             # find siblings
             t, h = l.tail, l.head
-            p = lca(ast, t, h)
-            t, h = lsb(p, t, h)
+            t, h = self._level(t, h)
 
             length = self.lines.get((t.id, h.id), 0) 
             self.lines[t.id, h.id] = max(length, l.style.min_length)
@@ -252,6 +252,15 @@ class Layout(MWalker):
             data.append(DefinedAlign(a.type, list(a.nodes)))
 
 
+    def _level(self, *nodes):
+        """
+        Given the collection of nodes find all nodes having the same direct
+        ancestor.
+        """
+        p = lca(self.ast, *nodes)
+        return lsb(p, *nodes)
+
+
     def v_element(self, node):
         """
         Constraint element and its children using alignment information.
@@ -270,11 +279,12 @@ class Layout(MWalker):
             align_info = node.data.get('align', [])
 
             # determine default alignment
-            used_nodes = [n for align in align_info for n in align.align]
+            used_nodes = [n for align in align_info
+                for n in self._level(*align.align)]
             default = DefinedAlign('middle', 
                 [k for k in node
                 if k not in used_nodes and type(k) in (Element, PackagingElement)])
-                    # fixme: if k not in used_nodes and k.can_align], [])
+                # fixme: if k not in used_nodes and k.can_align], [])
 
             if __debug__:
                 log.debug('used nodes: {}'.format(used_nodes))
@@ -300,9 +310,7 @@ class Layout(MWalker):
                 # get alignment and span functions
                 f_a, f_s = F[align.cls]
                 f_a(*nodes)
-    
-                p = lca(self.ast, *nodes)
-                f_s(*lsb(p, *nodes))
+                f_s(*self._level(*nodes))
 
     v_diagram = v_packagingelement = v_element
 

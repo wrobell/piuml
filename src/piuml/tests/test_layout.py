@@ -177,6 +177,44 @@ class c5 "C5"
         self._check_c(MinHDist, c4, c5)
 
 
+    def test_deep_auto_default_up_layer(self):
+        """
+        Test align with packaged elements and upper layer defaulting
+        """
+        # diagram:
+        # -- c1 --
+        # |c3  c4|
+        # --------
+        # -- c2 --
+        # |c5  c6|
+        # --------
+        n = self._process("""
+class c1 "C1"
+    class c3 "C3"
+    class c4 "C4"
+class c2 "C2"
+    class c5 "C5"
+    class c6 "C6"
+
+# c1 and c2 defaults properly
+:layout:
+    center: c3 c5
+""")
+        c1 = n[0].style
+        c2 = n[1].style
+        c3 = n[0][0].style
+        c5 = n[1][0].style
+
+        # check the below just in case
+        self._check_c(CenterEq, c3, c5)
+        self._check_c_not(MinVDist, c3, c5)
+
+        # the most important checks in this test
+        # check for both constraints!
+        self._check_c_not(MinHDist, c1, c2)
+        self._check_c(MinVDist, c1, c2)
+
+
     def test_default_interleave(self):
         """
         Test default align constraining with defined layout
