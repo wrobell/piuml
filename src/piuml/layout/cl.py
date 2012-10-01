@@ -433,6 +433,8 @@ class ConstraintLayout(Layout):
 
 
     def within(self, node, parent):
+        if __debug__:
+            log.debug('{} within {}'.format(node.id, parent.id))
         ns = node.style
         mar = ns.margin
         ps = parent.style
@@ -459,16 +461,22 @@ class ConstraintLayout(Layout):
 
     def top(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} at top {}'.format(k1.id, k2.id))
             self.add_c(TopEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def bottom(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} bottom {}'.format(k1.id, k2.id))
             self.add_c(BottomEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def middle(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} middle {}'.format(k1.id, k2.id))
             self.add_c(MiddleEq(k1.style, k2.style))
         self._apply(f, nodes)
 
@@ -490,6 +498,9 @@ class ConstraintLayout(Layout):
 
     def hspan(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} hspan {}'.format(k1.id, k2.id))
+            assert k1 is not k2
             m = k1.style.margin.right + k2.style.margin.left
             l = self.lines.get((k1.id, k2.id), 0)
             self.add_c(MinHDist(k1.style, k2.style, max(l, m)))
@@ -498,6 +509,9 @@ class ConstraintLayout(Layout):
 
     def vspan(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} vspan {}'.format(k1.id, k2.id))
+            assert k1 is not k2
             m = k1.style.margin.bottom + k2.style.margin.top
             l = self.lines.get((k1.id, k2.id), 0)
             self.add_c(MinVDist(k1.style, k2.style, max(l, m)))
