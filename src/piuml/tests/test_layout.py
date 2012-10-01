@@ -219,11 +219,10 @@ class c2 "C2"
         """
         Test default align constraining with defined layout
         """
-        l = Layout()
         # diagram:
         # a c d
         # b   e
-        f = """
+        n = self._process("""
 class a "C1"
 class b "C2"
 class c "C3"
@@ -233,37 +232,22 @@ class e "C5"
 :layout:
     left: a b
     right: d e
-"""
-        n = parse(f)
-        a = n[0]
-        b = n[1]
-        c = n[2]
-        d = n[3]
-        e = n[4]
+""")
+        a = n[0].style
+        b = n[1].style
+        c = n[2].style
+        d = n[3].style
+        e = n[4].style
 
-        l._prepare(n)
-        align = n.data['align']
-        self.assertEquals(2, len(align))
-        self.assertEquals('left', align[0].cls)
-        self.assertEquals([a, b], align[0].align)
-        self.assertEquals([a, b], align[0].span)
-        self.assertEquals('right', align[1].cls)
-        self.assertEquals([d, e], align[1].align)
-        self.assertEquals([d, e], align[1].span)
+        self._check_c(MiddleEq, a, c)
+        self._check_c(MinHDist, a, c)
+        self._check_c(MiddleEq, c, d)
+        self._check_c(MinHDist, c, d)
 
-        span, default = l._span_matrix(n, align)
-
-        self.assertEquals('middle', default.cls)
-        self.assertEquals([a, c, d], default.align)
-        self.assertEquals([a, c, d], default.span)
-
-        self.assertEquals([
-            [a, b],
-            [None, None],
-            [c, None],
-            [d, e],
-            [None, None],
-        ], span.data)
+        self._check_c(LeftEq, a, b)
+        self._check_c(MinVDist, a, b)
+        self._check_c(RightEq, d, e)
+        self._check_c(MinVDist, d, e)
 
 
     def test_deep_default_interleave(self):
