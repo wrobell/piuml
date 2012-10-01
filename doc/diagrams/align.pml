@@ -42,6 +42,4 @@ class r1 'Right'
 
 :layout:
     middle: l1 d1 r1
-    center: d1 t1 b1
-#    center: t1 d1 b1
-
+    center: t1 d1 b1
