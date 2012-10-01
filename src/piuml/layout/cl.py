@@ -279,8 +279,14 @@ class Layout(MWalker):
             align_info = node.data.get('align', [])
 
             # determine default alignment
-            used_nodes = [n for align in align_info
-                for n in self._level(*align.align)[1:]]
+            used_nodes = set()
+            for align in align_info:
+                v = self._level(*align.align)
+                if used_nodes & set(v):
+                    used_nodes.update(v)
+                else:
+                    used_nodes.update(v[1:])
+
             default = DefinedAlign('middle', 
                 [k for k in node
                 if k not in used_nodes and type(k) in (Element, PackagingElement)])
@@ -291,7 +297,7 @@ class Layout(MWalker):
                 log.debug('default align: {}'.format(default))
                 log.debug('defined align: {}'.format(align_info))
 
-            if default.align:
+            if len(default.align) > 1:
                 # all alignment information determined
                 align_info.insert(0, default)
 

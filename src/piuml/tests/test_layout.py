@@ -38,6 +38,7 @@ class LayoutTestCase(unittest.TestCase):
         """
         l = self._layout = ConstraintLayout()
         n = parse(f)
+#        l.layout(n)
         l._prepare(n)
         l.preorder(n, reverse=True)
         return n
@@ -105,6 +106,32 @@ class c2 "C2"
         self._check_c(None, c1, c2) # note reorder above
 
 
+    def test_all_used(self):
+        """
+        Test all used 
+        """
+        # diagram:
+        # 
+        # c1
+        # c3
+        # c2
+        n = self._process("""
+class c1 "C1"
+class c2 "C2"
+class c3 "C3"
+
+:layout:
+    right: c1 c3
+    left: c3 c2
+""")
+        c1 = n[0].style
+        c2 = n[1].style
+        c3 = n[2].style
+
+        self._check_c_not(MiddleEq, c1, c3)
+        self._check_c_not(MinHDist, c1, c3)
+
+
     def test_orphaned(self):
         """
         Test orphaned (due to alignment) elements
@@ -139,10 +166,6 @@ class c4 "C4"
         self._check_c(None, c1, c2)
         self._check_c(None, c2, c3) # note the order of c1, c3, c2
         self._check_c(None, c3, c4)
-
-
-    def test_independent(self):
-        self.fail('to be implemented')
 
 
     def test_deep_align(self):
@@ -255,6 +278,42 @@ class e "C5"
         self._check_c(MinVDist, d, e)
 
 
+    def test_default_interleave_all(self):
+        """
+        Test default align constraining with defined layout and all used
+        """
+        # diagram:
+        # a c
+        # b d
+        #   e
+        n = self._process("""
+class a "C1"
+class b "C2"
+class c "C3"
+class d "C4"
+class e "C5"
+
+:layout:
+    left: a b
+    right: c d e
+""")
+        a = n[0].style
+        b = n[1].style
+        c = n[2].style
+        d = n[3].style
+        e = n[4].style
+
+        self._check_c(MiddleEq, a, c)
+        self._check_c(MinHDist, a, c)
+
+        self._check_c(LeftEq, a, b)
+        self._check_c(MinVDist, a, b)
+        self._check_c(RightEq, c, d)
+        self._check_c(MinVDist, c, d)
+        self._check_c(RightEq, d, e)
+        self._check_c(MinVDist, d, e)
+
+
     def test_deep_default_interleave(self):
         """
         Test deep default align constraining with defined layout
@@ -291,9 +350,9 @@ class c4 "C4"
         self._check_c(MinHDist, c1, c2)
 
 
-    def test_star_layout(self):
+    def test_cross_layout(self):
         """
-        Test star layout
+        Test cross layout
         """
         # diagram:
         #   d
@@ -316,12 +375,14 @@ class e "C5"
         d = n[3].style
         e = n[4].style
 
+        self._check_c(None, a, d)
+        self._check_c(None, a, c)
+        self._check_c(None, b, b)
+
         self._check_c(MinHDist, a, b)
         self._check_c(MiddleEq, a, b)
         self._check_c(MinHDist, b, c)
         self._check_c(MiddleEq, b, c)
-        self._check_c(None, a, c)
-        self._check_c(None, b, b)
         self._check_c(MinVDist, d, b)
         self._check_c(CenterEq, d, b)
         self._check_c(MinVDist, b, e)
