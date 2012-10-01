@@ -109,6 +109,11 @@ class c2 "C2"
         """
         Test orphaned (due to alignment) elements
         """
+        # diagram:
+        # 
+        # c1 c4 
+        # c3
+        # c2
         n = self._process("""
 class c1 "C1"
 class c2 "C2"
@@ -116,7 +121,7 @@ class c3 "C3"
 class c4 "C4"
 
 :layout:
-    right: c1 c3
+    right: c1 c3 c2
 """)
         c1 = n[0].style
         c2 = n[1].style
@@ -125,14 +130,14 @@ class c4 "C4"
 
         self._check_c(RightEq, c1, c3)
         self._check_c(MinVDist, c1, c3)
+        self._check_c(RightEq, c3, c2)
+        self._check_c(MinVDist, c3, c2)
 
-        # default alignment
-        self._check_c(MiddleEq, c2, c4)
-        self._check_c(MinHDist, c2, c4)
+        self._check_c(MiddleEq, c1, c4)
+        self._check_c(MinHDist, c1, c4)
 
         self._check_c(None, c1, c2)
-        self._check_c(None, c1, c4)
-        self._check_c(None, c3, c2)
+        self._check_c(None, c2, c3) # note the order of c1, c3, c2
         self._check_c(None, c3, c4)
 
 
@@ -254,14 +259,13 @@ class e "C5"
         """
         Test deep default align constraining with defined layout
         """
-        l = Layout()
         # diagram:
         # -- c --
         # |c1 c2|
         # -------
         #  c3 c4
         #
-        f = """
+        n = self._process("""
 class c "C"
     class c1 "C1"
     class c2 "C2"
@@ -271,33 +275,20 @@ class c4 "C4"
 :layout:
     right: c1 c3
     left: c2 c4
-"""
-        n = parse(f)
-        c = n[0]
-        c1 = n[0][0]
-        c2 = n[0][1]
-        c3 = n[1]
-        c4 = n[2]
+""")
+        c = n[0].style
+        c1 = n[0][0].style
+        c2 = n[0][1].style
+        c3 = n[1].style
+        c4 = n[2].style
 
-        l._prepare(n)
-        align = n.data['align']
-        self.assertEquals(2, len(align))
-        self.assertEquals('right', align[0].cls)
-        self.assertEquals([c1, c3], align[0].align)
-        self.assertEquals([c, c3], align[0].span)
-        self.assertEquals('left', align[1].cls)
-        self.assertEquals([c2, c4], align[1].align)
-        self.assertEquals([c, c4], align[1].span)
+        self._check_c(RightEq, c1, c3)
+        self._check_c(MinVDist, c, c3)
+        self._check_c(LeftEq, c2, c4)
+        self._check_c(MinVDist, c, c4)
 
-        span, default = l._span_matrix(n, align)
-
-        self.assertTrue(default is None)
-
-        self.assertEquals([
-            [c, c3, c4],
-            [None, None, None],
-            [None, None, None],
-        ], span.data)
+        self._check_c(MiddleEq, c1, c2)
+        self._check_c(MinHDist, c1, c2)
 
 
     def test_star_layout(self):
