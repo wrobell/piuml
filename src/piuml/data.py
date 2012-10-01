@@ -354,18 +354,19 @@ def lca(ast, *args):
     """
     parents = []
     for n in args:
-        p = set()
+        p = []
         k = n
         while k.parent:
-            p.add(k.parent)
+            p.append(k.parent)
             k = k.parent
         parents.append(p)
-    p = parents.pop()
-    while len(parents) > 0:
-        p.intersection_update(parents.pop())
-
-    data = list(p) # fixme: sorted(p, key=ast.order.index)
-    return data[-1]
+    left = set(parents[0])
+    for p in parents[1:]:
+        left.intersection_update(p)
+    for p in parents[0]: # parents[0] is already reversed
+        if p in left:
+            return p
+    assert False, parents
 
 
 def lsb(parent, *kids):

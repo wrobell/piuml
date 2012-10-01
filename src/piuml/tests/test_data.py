@@ -80,6 +80,29 @@ class TreeTestCase(unittest.TestCase):
         self.assertEquals('n1', p.id)
 
 
+    def test_lca_order(self):
+        """
+        Test LCA ordering
+        """
+        n1 = Diagram()
+        n1.id = 'd1'
+
+        n2 = Element('a', id='n2')
+        n3 = PackagingElement('a', id='dc2')
+        n4 = Element('a', id='n4')
+        n5 = Element('a', id='n5')
+        n1.children.extend((n2, n3))
+        n2.parent = n1
+        n3.parent = n1
+
+        n3.children.extend((n4, n5))
+        n4.parent = n3
+        n5.parent = n3
+
+        p = lca(n1, n4, n5)
+        self.assertEquals('dc2', p.id)
+
+
     def test_lsb(self):
         """
         Test LSB
