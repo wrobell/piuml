@@ -282,10 +282,9 @@ class Layout(MWalker):
             used_nodes = set()
             for align in align_info:
                 v = self._level(*align.align)
-                if used_nodes & set(v):
-                    used_nodes.update(v)
-                else:
-                    used_nodes.update(v[1:])
+                if not used_nodes & set(v):
+                    v = v[1:]
+                used_nodes.update(v)
 
             default = DefinedAlign('middle', 
                 [k for k in node
