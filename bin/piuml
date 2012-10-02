@@ -23,32 +23,25 @@ from piuml import generate
 
 import sys
 import os.path
-import optparse
+import argparse
 
 usage = """\
-%prog [OPTION]... FILE...
-
 Process files written in piUML language and generate UML diagrams in PDF,
 SVG or PNG format.\
 """
 
-parser = optparse.OptionParser(usage=usage)
-parser.add_option('--type', '-T',
-        action='store',
-        type='string',
+parser = argparse.ArgumentParser(description=usage)
+parser.add_argument('--type', '-T',
         dest='filetype',
         default='pdf',
-        help='Type of output file: pdf (default), svg or mp (Metapost)')
+        help='Type of output file: pdf (default), svg or png')
+parser.add_argument('input', nargs='+', help='piUML files to process')
 
-options, args = parser.parse_args()
+args = parser.parse_args()
 
-if len(args) < 1:
-    parser.print_help()
-    sys.exit(1)
-
-for fn in args:
+for fn in args.input:
     fout, ext = os.path.splitext(fn)
-    ft = options.filetype
+    ft = args.filetype
     with open(fn) as f:
         generate(f, fout + '.' + ft, ft)
 
