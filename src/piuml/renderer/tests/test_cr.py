@@ -23,7 +23,7 @@ calculation.
 """
 
 from piuml.renderer.cr import _head_size
-from piuml.data import BoxStyle, Size, Area
+from piuml.style import BoxStyle, Size, Area
 
 import unittest
 
