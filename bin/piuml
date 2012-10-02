@@ -19,11 +19,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml import generate
-
-import sys
 import os.path
 import argparse
+import logging
+
+logging.basicConfig()
+
+from piuml import generate
 
 usage = """\
 Process files written in piUML language and generate UML diagrams in PDF,
@@ -35,9 +37,19 @@ parser.add_argument('--type', '-T',
         dest='filetype',
         default='pdf',
         help='Type of output file: pdf (default), svg or png')
-parser.add_argument('input', nargs='+', help='piUML files to process')
+parser.add_argument('--verbose', '-v',
+        dest='verbose',
+        action='store_true',
+        help='Explain what is being done')
+parser.add_argument('input',
+        nargs='+',
+        help='piUML files to process')
 
 args = parser.parse_args()
+
+if args.verbose:
+    log = logging.getLogger('piuml')
+    log.setLevel(logging.DEBUG)
 
 for fn in args.input:
     fout, ext = os.path.splitext(fn)
