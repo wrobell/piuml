@@ -331,8 +331,7 @@ class Layout(MWalker):
                 r_len = max(r_len, e.style.min_length)
                 nodes.append(e.tail)
 
-        p = lca(self.ast, left, right)
-        left, right = lsb(p, left, right)
+        left, right = self._level(self.ast, left, right)
         self.lines[left.id, right.id] = r_len + l_len
         self.lines[right.id, left.id] = r_len + l_len
 
