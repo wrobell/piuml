@@ -21,7 +21,7 @@
 Layout (alignment, span matrix, etc) tests.
 """
 
-from piuml.layout.cl import ConstraintLayout, MinHDist, MinVDist, \
+from piuml.layout.cl import Layout, MinHDist, MinVDist, \
     MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq
 from piuml.parser import parse, ParseError
 
@@ -36,11 +36,9 @@ class LayoutTestCase(unittest.TestCase):
         """
         Process layout and return the root node.
         """
-        l = self._layout = ConstraintLayout()
         n = parse(f)
-#        l.layout(n)
-        l._create_align_cache(n)
-        l.preorder(n, reverse=True)
+        l = self._layout = Layout(n)
+        l.layout(solve=False)
         return n
 
 

@@ -32,9 +32,9 @@ class LayoutError(Exception):
     """
 
 
-class Layout(MWalker):
+class Layout(object):
     """
-    Layout processing routines.
+    Layout processor.
 
     :Attributes:
      ast
@@ -44,23 +44,36 @@ class Layout(MWalker):
      lines
         Cache of lines with tail and head nodes as key.
     """
-    def __init__(self):
+    def __init__(self, ast):
+        """
+        Create layout processor.
+        """
         super(Layout, self).__init__()
-        self.ast = None
+        self.ast = ast
         self.align = {}
         self.lines = {}
+        self.solver = Solver()
 
 
-    def layout(self, ast):
+    def layout(self, solve=True):
         """
         Layout diagram items on the diagram.
+
+        :Parameters:
+         solve
+            Do not solve constraints (useful for testing layout).
         """
-        self.ast = ast # fixme
-        self._create_align_cache(ast)
+        dab = DefaultAlignBuilder(self)
+        cb = ConstraintBuilder(self)
+
+        # create caches
+        self._create_align_cache()
         self._create_line_cache()
 
-        # visit siblings in reversed order to constraint lines first
-        self.preorder(ast, reverse=True)
+        dab.preorder(self.ast, reverse=True) # find default alignment
+        cb.preorder(self.ast, reverse=True)  # create constraints
+        if solve:
+            self.solver.solve()
 
 
     def _create_line_cache(self):
@@ -71,7 +84,7 @@ class Layout(MWalker):
         for l in lines:
             # find siblings
             t, h = l.tail, l.head
-            t, h = self._level(t, h)
+            t, h = level(self.ast, t, h)
 
             length = self.lines.get((t.id, h.id), 0) 
             self.lines[t.id, h.id] = max(length, l.style.min_length)
@@ -80,12 +93,12 @@ class Layout(MWalker):
             self.lines[h.id, t.id] = max(length, l.style.min_length)
 
 
-    def _create_align_cache(self, ast):
+    def _create_align_cache(self):
         """
         Create alignment information cache - the aligment information is
         groupped by common nodes parent.
         """
-        align = (k for n in ast if n.name == 'layout' for k in n.data)
+        align = (k for n in self.ast if n.name == 'layout' for k in n.data)
 
         for a in align:
             p = lca(self.ast, *a.nodes)
@@ -94,26 +107,42 @@ class Layout(MWalker):
             self.align[p].append(a)
 
 
-    def _level(self, *nodes):
+
+class DefaultAlignBuilder(MWalker):
+    """
+    Default align builder.
+
+    Walks through the piUML's AST and updates alignment cache with default
+    alignment definition.
+
+    :Attributes:
+     ast
+        piUML's AST.
+     align
+        Alignment cache.
+    """
+    def __init__(self, layout):
         """
-        Given the collection of nodes find all nodes having the same direct
-        ancestor.
+        Create default alignment builder for the layout.
         """
-        p = lca(self.ast, *nodes)
-        return lsb(p, *nodes)
+        self.ast = layout.ast
+        self.align = layout.align
 
 
-    def _align_nodes(self, node):
+    def v_packagingelement(self, node):
         """
-        Align children of the node.
-        
-        The default children alignment is determined. The children are
-        aligned using both default and user defined alignment information.
-        """
-        # get user defined alignment
-        align_info = self.align.get(node, [])[:]
+        Update alignment cache with default alignment information.
 
-        # determine default alignment
+        :Parameters:
+         node
+            The node for which default alignment has to be found.
+        """
+        # get all alignment info
+        if node not in self.align:
+            self.align[node] = []
+
+        align_info = self.align[node]
+
         used_nodes = set()
         for a in align_info:
             v = lsb(node, *a.nodes)
@@ -134,6 +163,31 @@ class Layout(MWalker):
         if len(default.nodes) > 1:
             # all alignment information determined
             align_info.insert(0, default)
+
+    v_diagram = v_packagingelement
+
+
+
+class ConstraintBuilder(MWalker):
+    def __init__(self, layout):
+        """
+        Create constraints builder for the layout.
+        """
+        super(ConstraintBuilder, self).__init__()
+        self.ast = layout.ast
+        self.solver = layout.solver
+        self.align = layout.align
+        self.lines = layout.lines
+
+
+    def _align_nodes(self, node):
+        """
+        Align children of the node.
+        
+        The default children alignment is determined. The children are
+        aligned using both default and user defined alignment information.
+        """
+        align_info = self.align[node]
 
         for a in align_info:
             if __debug__:
@@ -183,92 +237,15 @@ class Layout(MWalker):
                 r_len = max(r_len, e.style.min_length)
                 nodes.append(e.tail)
 
-        left, right = self._level(self.ast, left, right)
+        left, right = level(self.ast, left, right)
         self.lines[left.id, right.id] = r_len + l_len
         self.lines[right.id, left.id] = r_len + l_len
 
         self.between(node, nodes)
 
 
-    def size(self, node):
-        """
-        Set node minimum size.
-        """
-
-
-    def within(self, parent, node):
-        """
-        Constraint node to be contained within parent.
-        """
-
-
-    def between(self, node, nodes):
-        """
-        Constraint node to be between other nodes.
-        """
-
-
-    def top(self, *nodes):
-        """
-        Align nodes on the top.
-        """
-
-
-    def bottom(self, *nodes):
-        """
-        Align nodes on the bottom.
-        """
-
-
-    def left(self, *nodes):
-        """
-        Align nodes on the left.
-        """
-
-
-    def right(self, *nodes):
-        """
-        Align nodes on the right.
-        """
-
-
-    def center(self, *nodes):
-        """
-        Center horizontally all nodes.
-        """
-
-
-    def middle(self, *nodes):
-        """
-        Center vertically all nodes.
-        """
-
-
-    def hspan(self, *nodes):
-        """
-        Span nodes horizontally.
-        """
-
-
-    def vspan(self, *nodes):
-        """
-        Span nodes vertically.
-        """
-
-
-
-class ConstraintLayout(Layout):
-    def __init__(self):
-        super(ConstraintLayout, self).__init__()
-        self.solver = Solver()
-
     def add_c(self, c):
         self.solver.add(c)
-
-
-    def layout(self, ast):
-        super(ConstraintLayout, self).layout(ast)
-        self.solver.solve()
 
 
     def size(self, node):
@@ -366,14 +343,24 @@ class ConstraintLayout(Layout):
             f(k1, k2)
 
 
-# map align types to ConstraintLayout methods 
+# map align types to ConstraintBuilder methods 
 ALIGN_CONSTRAINTS = {
-    'top': (ConstraintLayout.top, ConstraintLayout.hspan),
-    'middle': (ConstraintLayout.middle, ConstraintLayout.hspan),
-    'bottom': (ConstraintLayout.bottom, ConstraintLayout.hspan),
-    'left': (ConstraintLayout.left, ConstraintLayout.vspan),
-    'center': (ConstraintLayout.center, ConstraintLayout.vspan),
-    'right': (ConstraintLayout.right, ConstraintLayout.vspan),
+    'top': (ConstraintBuilder.top, ConstraintBuilder.hspan),
+    'middle': (ConstraintBuilder.middle, ConstraintBuilder.hspan),
+    'bottom': (ConstraintBuilder.bottom, ConstraintBuilder.hspan),
+    'left': (ConstraintBuilder.left, ConstraintBuilder.vspan),
+    'center': (ConstraintBuilder.center, ConstraintBuilder.vspan),
+    'right': (ConstraintBuilder.right, ConstraintBuilder.vspan),
 }
+
+
+def level(ast, *nodes):
+    """
+    Given the collection of nodes find all nodes having the same direct
+    ancestor.
+    """
+    p = lca(ast, *nodes)
+    return lsb(p, *nodes)
+
 
 # vim: sw=4:et:ai

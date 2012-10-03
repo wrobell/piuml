@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.layout.cl import ConstraintLayout as Layout
+from piuml.layout.cl import Layout
 from piuml.layout.router import Router
 
 # vim: sw=4:et:ai

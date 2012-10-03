@@ -44,16 +44,17 @@ def generate(f, fout, filetype='pdf'):
      filetype
         Type of a file: pdf, svg or mp.
     """
-    graph = Layout()
-    renderer = Renderer()
+    ast = parse(f)
+
+    layout = Layout(ast)
     router = Router()
 
+    renderer = Renderer()
     renderer.filetype = filetype
     renderer.output = fout
 
-    ast = parse(f)
     renderer.measure(ast)
-    graph.layout(ast)
+    layout.layout()
     router.route(ast)
     renderer.render(ast)
 
