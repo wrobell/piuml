@@ -1006,4 +1006,24 @@ class c3 "C1"
         self.assertEquals('l6', s.data[5].id)
 
 
+    def test_alignment_id_ref(self):
+        """
+        Test alignment id referencing parsing
+        """
+        f = """
+package p1 "P1"
+comment c2 "a comment"
+class c3 "C1"
+
+:layout:
+    bottom l1: p1 c2
+    middle: p1 l1
+"""
+        n = parse(f)
+        s = n[3]
+        self.assertEquals('layout', s.name)
+        self.assertEquals('p1', s.data[1].nodes[0].id)
+        self.assertEquals('l1', s.data[1].nodes[1].id)
+
+
 # vim: sw=4:et:ai

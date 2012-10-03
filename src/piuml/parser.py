@@ -514,6 +514,7 @@ def f_layout(args):
         for id in st[1:]:
             a.nodes.append(__cache[id])
         s.data.append(a)
+        __cache[a.id] = a
     return s
 
 
