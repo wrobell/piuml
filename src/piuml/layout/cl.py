@@ -268,7 +268,6 @@ class Layout(MWalker):
         if node.parent:
             self.within(node, node.parent)
 
-        ns = node.style
         if isinstance(node, PackagingElement):
             # first get the defined alignment
             align_info = node.data.get('align', [])
@@ -295,22 +294,15 @@ class Layout(MWalker):
                 # all alignment information determined
                 align_info.insert(0, default)
 
-            F = {
-                'top': (self.top, self.hspan),
-                'middle': (self.middle, self.hspan),
-                'bottom': (self.bottom, self.hspan),
-                'left': (self.left, self.vspan),
-                'center': (self.center, self.vspan),
-                'right': (self.right, self.vspan),
-            }
             for align in align_info:
                 nodes = align.nodes
                 assert all(isinstance(k, Element) for k in nodes)
+                assert align.type in ALIGN_CONSTRAINTS
 
                 # get alignment and span functions
-                f_a, f_s = F[align.type]
-                f_a(*nodes)
-                f_s(*self._level(*nodes))
+                f_a, f_s = ALIGN_CONSTRAINTS[align.type]
+                f_a(self, *nodes)
+                f_s(self, *self._level(*nodes))
 
     v_diagram = v_packagingelement = v_element
 
@@ -516,5 +508,16 @@ class ConstraintLayout(Layout):
     def _apply(self, f, node):
         for k1, k2 in zip(node[:-1], node[1:]):
             f(k1, k2)
+
+
+# map align types to ConstraintLayout methods 
+ALIGN_CONSTRAINTS = {
+    'top': (ConstraintLayout.top, ConstraintLayout.hspan),
+    'middle': (ConstraintLayout.middle, ConstraintLayout.hspan),
+    'bottom': (ConstraintLayout.bottom, ConstraintLayout.hspan),
+    'left': (ConstraintLayout.left, ConstraintLayout.vspan),
+    'center': (ConstraintLayout.center, ConstraintLayout.vspan),
+    'right': (ConstraintLayout.right, ConstraintLayout.vspan),
+}
 
 # vim: sw=4:et:ai
