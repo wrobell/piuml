@@ -1035,7 +1035,7 @@ package p1 "P1"
 comment c2 "a comment"
 
 :layout:
-    left: c3
+    left: c2
 """
         self.assertRaises(ParseError, parse, f)
 
