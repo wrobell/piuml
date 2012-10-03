@@ -319,6 +319,11 @@ class Align(object):
         self.nodes = []
 
 
+    def __repr__(self):
+        return '{}({}): {}'.format(self.type, self.id,
+                tuple(n.id for n in self.nodes))
+
+
 def preorder(n, f, reverse=False):
     """
     Traverse a tree in preorder.
