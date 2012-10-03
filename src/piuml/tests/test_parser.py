@@ -1026,4 +1026,17 @@ class c3 "C1"
         self.assertEquals('l1', s.data[1].nodes[1].id)
 
 
+    def test_alignment_single_error(self):
+        """
+        Test alignment parsing error with one referenced element
+        """
+        f = """
+package p1 "P1"
+comment c2 "a comment"
+
+:layout:
+    left: c3
+"""
+        self.assertRaises(ParseError, parse, f)
+
 # vim: sw=4:et:ai
