@@ -508,9 +508,10 @@ def f_layout(args):
     """
     log.debug('layout {}'.format(args))
     s = Section('layout')
-    for p in args[1:]:
-        a = Align(p[0])
-        for id in p[1:]:
+    for st in args[1:]:
+        # st[0] is alignment declaration: alignment type and optional id
+        a = Align(*st[0])
+        for id in st[1:]:
             a.nodes.append(__cache[id])
         s.data.append(a)
     return s
@@ -587,10 +588,10 @@ def create_parser():
             & (stattrs[0:] > f_list('stattrs'))
 
     layout = ~Token(':') & Token('layout') & ~Token(':')
-    align  = (Token('top') | Token('right') | Token('bottom') \
+    align_d  = (Token('top') | Token('right') | Token('bottom') \
                 | Token('left') | Token('middle') | Token('center')) \
-            & ~ Token(':') \
-            & space[0:] & id & (space & id)[1:] > list
+               & (space & id)[0:1] > tuple
+    align = align_d & ~Token(':') & space[0:] & id & (space & id)[1:] > list
 
     statement = P.Delayed()
 

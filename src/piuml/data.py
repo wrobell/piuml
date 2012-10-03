@@ -296,7 +296,8 @@ class Align(object):
     """
     Alignment definition information.
 
-    Alignment type may be one of:
+    Alignment type may be one of
+
     - left
     - right
     - top
@@ -307,9 +308,14 @@ class Align(object):
     :Attributes:
      type
         Alignment type.
+     id
+        Alignment definition id.
+     nodes
+        List of nodes to be aligned.
     """
-    def __init__(self, type):
+    def __init__(self, type, id=None):
         self.type = type
+        self.id = str(uuid()) if id is None else id
         self.nodes = []
 
 
