@@ -17,17 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from piuml.data import lca, lsb, MWalker, Relationship, \
+from piuml.data import lca, lsb, MWalker, Align, Relationship, \
     Element, PackagingElement
 from piuml.layout.solver import *
 from piuml.style import Area
 
-from collections import namedtuple
-
 import logging
 log = logging.getLogger('piuml.layout.cl')
-
-DefinedAlign = namedtuple('DefinedAlign', 'cls align')
 
 
 class LayoutError(Exception):
@@ -239,8 +235,7 @@ class Layout(MWalker):
         # postprocessed to simplify layout constraints assignment
         align = (k for n in ast if n.name == 'layout' for k in n.data)
 
-        # find common parent of nodes to align and put alignment
-        # information on parent level
+        # put alignment information on parent level
         for a in align:
             p = lca(self.ast, *a.nodes)
 
@@ -249,7 +244,7 @@ class Layout(MWalker):
             else:
                 data = p.data['align'] = []
 
-            data.append(DefinedAlign(a.type, list(a.nodes)))
+            data.append(a)
 
 
     def _level(self, *nodes):
@@ -281,14 +276,14 @@ class Layout(MWalker):
             # determine default alignment
             used_nodes = set()
             for align in align_info:
-                v = self._level(*align.align)
+                v = self._level(*align.nodes)
                 if not used_nodes & set(v):
                     v = v[1:]
                 used_nodes.update(v)
 
-            default = DefinedAlign('middle', 
-                [k for k in node
-                if k not in used_nodes and type(k) in (Element, PackagingElement)])
+            default = Align('middle')
+            default.nodes = [k for k in node
+                if k not in used_nodes and type(k) in (Element, PackagingElement)]
                 # fixme: if k not in used_nodes and k.can_align], [])
 
             if __debug__:
@@ -296,7 +291,7 @@ class Layout(MWalker):
                 log.debug('default align: {}'.format(default))
                 log.debug('defined align: {}'.format(align_info))
 
-            if len(default.align) > 1:
+            if len(default.nodes) > 1:
                 # all alignment information determined
                 align_info.insert(0, default)
 
@@ -309,11 +304,11 @@ class Layout(MWalker):
                 'right': (self.right, self.vspan),
             }
             for align in align_info:
-                nodes = align.align
+                nodes = align.nodes
                 assert all(isinstance(k, Element) for k in nodes)
 
                 # get alignment and span functions
-                f_a, f_s = F[align.cls]
+                f_a, f_s = F[align.type]
                 f_a(*nodes)
                 f_s(*self._level(*nodes))
 
