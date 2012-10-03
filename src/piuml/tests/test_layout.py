@@ -39,7 +39,7 @@ class LayoutTestCase(unittest.TestCase):
         l = self._layout = ConstraintLayout()
         n = parse(f)
 #        l.layout(n)
-        l._prepare(n)
+        l._create_align_cache(n)
         l.preorder(n, reverse=True)
         return n
 

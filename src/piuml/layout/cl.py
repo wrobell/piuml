@@ -187,12 +187,15 @@ class Layout(MWalker):
     :Attributes:
      ast
         piUML source parsed tree.
+     align
+        Cache of alignment information per nodes common parent.
      lines
         Cache of lines with tail and head nodes as key.
     """
     def __init__(self):
         super(Layout, self).__init__()
         self.ast = None
+        self.align = {}
         self.lines = {}
 
 
@@ -201,8 +204,8 @@ class Layout(MWalker):
         Layout diagram items on the diagram.
         """
         self.ast = ast # fixme
+        self._create_align_cache(ast)
         self._create_line_cache()
-        self._prepare(ast)
 
         # visit siblings in reversed order to constraint lines first
         self.preorder(ast, reverse=True)
@@ -225,26 +228,18 @@ class Layout(MWalker):
             self.lines[h.id, t.id] = max(length, l.style.min_length)
 
 
-    def _prepare(self, ast):
+    def _create_align_cache(self, ast):
         """
-        Postprocess alignment information from parser and prepare alignment
-        information for layout.
+        Create alignment information cache - the aligment information is
+        groupped by common nodes parent.
         """
-        # all alignment is defined at this stage, therefore align
-        # information can be assigned to appropriate nodes and
-        # postprocessed to simplify layout constraints assignment
         align = (k for n in ast if n.name == 'layout' for k in n.data)
 
-        # put alignment information on parent level
         for a in align:
             p = lca(self.ast, *a.nodes)
-
-            if 'align' in p.data:
-                data = p.data['align']
-            else:
-                data = p.data['align'] = []
-
-            data.append(a)
+            if p not in self.align:
+                self.align[p] = []
+            self.align[p].append(a)
 
 
     def _level(self, *nodes):
@@ -254,6 +249,49 @@ class Layout(MWalker):
         """
         p = lca(self.ast, *nodes)
         return lsb(p, *nodes)
+
+
+    def _align_nodes(self, node):
+        """
+        Align children of the node.
+        
+        The default children alignment is determined. The children are
+        aligned using both default and user defined alignment information.
+        """
+        # get user defined alignment
+        align_info = self.align.get(node, [])[:]
+
+        # determine default alignment
+        used_nodes = set()
+        for a in align_info:
+            v = lsb(node, *a.nodes)
+            if not used_nodes & set(v):
+                v = v[1:]
+            used_nodes.update(v)
+
+        default = Align('middle')
+        default.nodes = [k for k in node
+            if k not in used_nodes and type(k) in (Element, PackagingElement)]
+            # fixme: if k not in used_nodes and k.can_align], [])
+
+        if __debug__:
+            log.debug('used nodes: {}'.format(used_nodes))
+            log.debug('default align: {}'.format(default))
+            log.debug('defined align: {}'.format(align_info))
+
+        if len(default.nodes) > 1:
+            # all alignment information determined
+            align_info.insert(0, default)
+
+        for a in align_info:
+            if __debug__:
+                assert all(isinstance(k, Element) for k in a.nodes)
+                assert a.type in ALIGN_CONSTRAINTS
+
+            # get alignment and span functions
+            f_a, f_s = ALIGN_CONSTRAINTS[a.type]
+            f_a(self, *a.nodes)
+            f_s(self, *lsb(node, *a.nodes))
 
 
     def v_element(self, node):
@@ -269,40 +307,7 @@ class Layout(MWalker):
             self.within(node, node.parent)
 
         if isinstance(node, PackagingElement):
-            # first get the defined alignment
-            align_info = node.data.get('align', [])
-
-            # determine default alignment
-            used_nodes = set()
-            for align in align_info:
-                v = self._level(*align.nodes)
-                if not used_nodes & set(v):
-                    v = v[1:]
-                used_nodes.update(v)
-
-            default = Align('middle')
-            default.nodes = [k for k in node
-                if k not in used_nodes and type(k) in (Element, PackagingElement)]
-                # fixme: if k not in used_nodes and k.can_align], [])
-
-            if __debug__:
-                log.debug('used nodes: {}'.format(used_nodes))
-                log.debug('default align: {}'.format(default))
-                log.debug('defined align: {}'.format(align_info))
-
-            if len(default.nodes) > 1:
-                # all alignment information determined
-                align_info.insert(0, default)
-
-            for align in align_info:
-                nodes = align.nodes
-                assert all(isinstance(k, Element) for k in nodes)
-                assert align.type in ALIGN_CONSTRAINTS
-
-                # get alignment and span functions
-                f_a, f_s = ALIGN_CONSTRAINTS[align.type]
-                f_a(self, *nodes)
-                f_s(self, *self._level(*nodes))
+            self._align_nodes(node)
 
     v_diagram = v_packagingelement = v_element
 
