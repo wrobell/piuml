@@ -143,23 +143,36 @@ class PackagingElement(Element):
 
     def __repr__(self):
         return super(PackagingElement, self).__repr__() \
-                + ' {}'.format(self.children)
+                + ' {}'.format(tuple(n.id if hasattr(n, 'id') else n for n in self.children))
 
 
 
 class Diagram(PackagingElement):
     """
     UML diagram instance.
-
-    :Attributes:
-     children
-        Diagram elements.
     """
     def __init__(self, children=[]):
         """
         Create UML diagram instance.
         """
         super(Diagram, self).__init__(cls='diagram', id='diagram',
+                children=children)
+
+        log.debug('diagram children {}'.format(self.children))
+        for k in self.children:
+            k.parent = self
+
+
+
+class NodeGroup(PackagingElement):
+    """
+    Node group.
+    """
+    def __init__(self, id, children=[]):
+        """
+        Create UML diagram instance.
+        """
+        super(NodeGroup, self).__init__(cls='nodegroup', id=id,
                 children=children)
 
         log.debug('diagram children {}'.format(self.children))
@@ -413,6 +426,7 @@ class MWalker(object):
     def __call__(self, n):
         fn = 'v_{}'.format(n.__class__.__name__.lower())
         if hasattr(self, fn):
+            log.debug('found visitor method {}'.format(fn))
             f = getattr(self, fn)
             f(n)
         else:

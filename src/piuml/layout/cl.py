@@ -18,10 +18,11 @@
 #
 
 from piuml.data import lca, lsb, MWalker, Align, Relationship, \
-    Element, PackagingElement
+    Element, PackagingElement, NodeGroup
 from piuml.layout.solver import *
 from piuml.style import Area
 
+from collections import OrderedDict
 import logging
 log = logging.getLogger('piuml.layout.cl')
 
@@ -50,7 +51,7 @@ class Layout(object):
         """
         super(Layout, self).__init__()
         self.ast = ast
-        self.align = {}
+        self.align = OrderedDict()
         self.lines = {}
         self.solver = Solver()
 
@@ -61,16 +62,16 @@ class Layout(object):
 
         :Parameters:
          solve
-            Do not solve constraints (useful for testing layout).
+            Do not solve constraints if False (useful for layout unit
+            testing).
         """
         dab = DefaultAlignBuilder(self)
         cb = ConstraintBuilder(self)
 
-        # create caches
         self._create_align_cache()
-        self._create_line_cache()
-
         dab.preorder(self.ast, reverse=True) # find default alignment
+        self._create_align_groups()
+        self._create_line_cache()
         cb.preorder(self.ast, reverse=True)  # create constraints
         if solve:
             self.solver.solve()
@@ -106,6 +107,33 @@ class Layout(object):
                 self.align[p] = []
             self.align[p].append(a)
 
+
+    def _create_align_groups(self):
+        # default align only? leave it alone
+        all_align = [(p, a) for p, a in self.align.items() if len(a) > 1]
+        for p, align_info in all_align:
+            for a in list(align_info):
+                p = lca(p, *a.nodes)
+                nodes = lsb(p, *a.nodes)
+                log.debug('{} -> {}'.format(tuple(n.id for n in a.nodes), tuple(n.id for n in nodes)))
+
+                # fixme: reparent function?
+                log.debug('remove {} from {}'.format(tuple(n.id for n in nodes), p.id))
+                for n in nodes:
+                    p.children.remove(n)
+                    n.parent = None
+
+                log.debug('append {} to {}'.format(tuple(n.id for n in nodes), a.id))
+                ng = NodeGroup(a.id, children=nodes)
+                # fixme: reparent function?
+                ng.parent = p
+                p.children.append(ng)
+                log.debug('{} added to {}'.format(ng.id, p.id))
+
+                #self.align[ng] = [a]
+                #align_info.remove(a)
+                #if len(align_info) == 0:
+                #    del self.align[p]
 
 
 class DefaultAlignBuilder(MWalker):
@@ -145,7 +173,7 @@ class DefaultAlignBuilder(MWalker):
 
         used_nodes = set()
         for a in align_info:
-            v = lsb(node, *a.nodes)
+            v = level(node, *a.nodes)
             if not used_nodes & set(v):
                 v = v[1:]
             used_nodes.update(v)
@@ -156,9 +184,9 @@ class DefaultAlignBuilder(MWalker):
             # fixme: if k not in used_nodes and k.can_align], [])
 
         if __debug__:
-            log.debug('used nodes: {}'.format(used_nodes))
-            log.debug('default align: {}'.format(default))
-            log.debug('defined align: {}'.format(align_info))
+            log.debug('{} used nodes: {}'.format(node.id, used_nodes))
+            log.debug('{} default align: {}'.format(node.id, default))
+            log.debug('{} defined align: {}'.format(node.id, align_info))
 
         if len(default.nodes) > 1:
             # all alignment information determined
@@ -187,7 +215,7 @@ class ConstraintBuilder(MWalker):
         The default children alignment is determined. The children are
         aligned using both default and user defined alignment information.
         """
-        align_info = self.align[node]
+        align_info = self.align.get(node, [])
 
         for a in align_info:
             if __debug__:
@@ -197,7 +225,7 @@ class ConstraintBuilder(MWalker):
             # get alignment and span functions
             f_a, f_s = ALIGN_CONSTRAINTS[a.type]
             f_a(self, *a.nodes)
-            f_s(self, *lsb(node, *a.nodes))
+            f_s(self, *level(node, *a.nodes))
 
 
     def v_element(self, node):
@@ -215,7 +243,7 @@ class ConstraintBuilder(MWalker):
         if isinstance(node, PackagingElement):
             self._align_nodes(node)
 
-    v_diagram = v_packagingelement = v_element
+    v_nodegroup = v_diagram = v_packagingelement = v_element
 
     def v_ielement(self, node):
         nodes = []
@@ -320,7 +348,7 @@ class ConstraintBuilder(MWalker):
         def f(k1, k2):
             if __debug__:
                 log.debug('{} hspan {}'.format(k1.id, k2.id))
-            assert k1 is not k2
+            assert k1 is not k2, '{} vs. {}'.format(k1, k2)
             m = k1.style.margin.right + k2.style.margin.left
             l = self.lines.get((k1.id, k2.id), 0)
             self.add_c(MinHDist(k1.style, k2.style, max(l, m)))
@@ -331,7 +359,7 @@ class ConstraintBuilder(MWalker):
         def f(k1, k2):
             if __debug__:
                 log.debug('{} vspan {}'.format(k1.id, k2.id))
-            assert k1 is not k2
+            assert k1 is not k2, '{} vs. {}'.format(k1, k2)
             m = k1.style.margin.bottom + k2.style.margin.top
             l = self.lines.get((k1.id, k2.id), 0)
             self.add_c(MinVDist(k1.style, k2.style, max(l, m)))
