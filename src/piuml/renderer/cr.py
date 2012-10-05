@@ -27,6 +27,7 @@ import cairo
 from gi.repository import Pango
 
 import sys
+import os
 from io import BytesIO
 from math import ceil, floor, pi
 from functools import partial
@@ -486,6 +487,26 @@ class CairoRenderer(MWalker):
             t = '_association'
         f = getattr(self, t)
         f(n)
+
+
+    def v_nodegroup(self, n):
+        """
+        Draw node group.
+        
+        The node group is drawn when layout debugging is enabled only.
+        """
+        if os.getenv('PIUML_DEBUG_LAYOUT'):
+            cr = self.cr
+            style = n.style
+            x, y = style.pos
+            width, height = size = style.size
+            cr.save()
+            cr.set_line_width(1.0)
+            cr.set_source_rgb(1.0, 0, 0)
+            cr.rectangle(x, y, width, height)
+            draw_text(cr, n.style.size, n.style, n.id, align=(-1, -1))
+            cr.stroke()
+            cr.restore()
 
 
     def _connector(self, n):

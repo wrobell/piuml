@@ -21,6 +21,8 @@
 Style information of rendered UML diagram items.
 """
 
+import os
+
 from piuml.data import Element, Relationship
 
 import logging
@@ -203,6 +205,10 @@ class StyleDescriptor(object):
                 style.min_size = Size(0, 0)
                 style.padding = Area(0, 0, 0, 0)
                 style.size = Size(0, 0)
+
+                if os.getenv('PIUML_DEBUG_LAYOUT'):
+                    style.margin = Area(15, 15, 15, 15)
+
         return style
 
 
