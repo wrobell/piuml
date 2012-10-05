@@ -197,6 +197,12 @@ class StyleDescriptor(object):
                 style.size = Size(30, 30)
             elif cls == 'node':
                 style.margin = Area(20, 20, 10, 10)
+            elif cls == 'nodegroup':
+                style.icon_size = Size(0, 0)
+                style.margin = Area(0, 0, 0, 0)
+                style.min_size = Size(0, 0)
+                style.padding = Area(0, 0, 0, 0)
+                style.size = Size(0, 0)
         return style
 
 
