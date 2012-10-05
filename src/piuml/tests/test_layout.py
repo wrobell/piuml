@@ -24,8 +24,18 @@ Layout (alignment, span matrix, etc) tests.
 from piuml.layout.cl import Layout, MinHDist, MinVDist, \
     MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq
 from piuml.parser import parse, ParseError
+from piuml.data import unwind
 
 import unittest
+
+def find_node(ast, id):
+    for n in unwind(ast):
+        if hasattr(n, 'id') and n.id == id:
+            return n
+    raise ValueError('Cannot find node {}'.format(id))
+
+def find_style(ast, id):
+    return find_node(ast, id).style
 
 
 class LayoutTestCase(unittest.TestCase):
@@ -73,9 +83,17 @@ class c1 "C1"
 class c2 "C2"
 class c3 "C3"
 """)
-        c1 = n[0].style
-        c2 = n[1].style
-        c3 = n[2].style
+        c1n = find_node(n, 'c1')
+        c2n = find_node(n, 'c2')
+        c3n = find_node(n, 'c3')
+
+        c1 = c1n.style
+        c2 = c2n.style
+        c3 = c3n.style
+
+        # no artificial groups
+        self.assertEquals([c1n, c2n, c3n], n.children)
+
         self.assertTrue(n.data.get('align') is None)
         self._check_c(MiddleEq, c1, c2)
         self._check_c(MinHDist, c1, c2)
@@ -96,8 +114,8 @@ class c2 "C2"
 :layout:
     left: c2 c1
 """)
-        c1 = n[0].style
-        c2 = n[1].style
+        c1 = find_style(n, 'c1')
+        c2 = find_style(n, 'c2')
 
         self._check_c(LeftEq, c2, c1)
         self._check_c(MinVDist, c2, c1)
@@ -106,7 +124,7 @@ class c2 "C2"
 
     def test_all_used(self):
         """
-        Test all used 
+        Test layout with all nodes used for alignment
         """
         # diagram:
         # 
@@ -119,12 +137,12 @@ class c2 "C2"
 class c3 "C3"
 
 :layout:
-    right: c1 c3
-    left: c3 c2
+    right g1: c1 c3
+    left g2: c3 c2
 """)
-        c1 = n[0].style
-        c2 = n[1].style
-        c3 = n[2].style
+        c1 = find_style(n, 'c1')
+        c2 = find_style(n, 'c2')
+        c3 = find_style(n, 'c3')
 
         self._check_c_not(MiddleEq, c1, c3)
         self._check_c_not(MinHDist, c1, c3)
@@ -146,20 +164,22 @@ class c3 "C3"
 class c4 "C4"
 
 :layout:
-    right: c1 c3 c2
+    right g1: c1 c3 c2
 """)
-        c1 = n[0].style
-        c2 = n[1].style
-        c3 = n[2].style
-        c4 = n[3].style
+        c1 = find_style(n, 'c1')
+        c2 = find_style(n, 'c2')
+        c3 = find_style(n, 'c3')
+        c4 = find_style(n, 'c4')
+
+        g1 = find_style(n, 'g1')
+
+        self._check_c(MiddleEq, c1, c4)
+        self._check_c(MinHDist, g1, c4)
 
         self._check_c(RightEq, c1, c3)
         self._check_c(MinVDist, c1, c3)
         self._check_c(RightEq, c3, c2)
         self._check_c(MinVDist, c3, c2)
-
-        self._check_c(MiddleEq, c1, c4)
-        self._check_c(MinHDist, c1, c4)
 
         self._check_c(None, c1, c2)
         self._check_c(None, c2, c3) # note the order of c1, c3, c2
@@ -185,13 +205,28 @@ class c4 "C4"
 class c5 "C5"
 
 :layout:
-    center: c2 c3
+    center g1: c2 c3
 """)
-        c = n[0].style
-        c2 = n[0][1].style
-        c3 = n[1].style
-        c4 = n[2].style
-        c5 = n[3].style
+        cn = find_node(n, 'c')
+        c1n = find_node(n, 'c1')
+        c2n = find_node(n, 'c2')
+        c3n = find_node(n, 'c3')
+        c4n = find_node(n, 'c4')
+        c5n = find_node(n, 'c5')
+        g1n = find_node(n, 'g1')
+        g0n = g1n.parent
+
+        c = cn.style
+        c1 = c1n.style
+        c2 = c2n.style
+        c3 = c3n.style
+        c4 = c4n.style
+        c5 = c5n.style
+        g0 = g0n.style
+        g1 = g1n.style
+
+        self.assertEquals([g1n, c4n, c5n], g0n.children)
+        self.assertEquals([cn, c3n], g1n.children)
 
         self._check_c(CenterEq, c2, c3)
         self._check_c(MinVDist, c, c3)
@@ -199,7 +234,7 @@ class c5 "C5"
 
         self._check_c(MiddleEq, c, c4)
         self._check_c(MiddleEq, c4, c5)
-        self._check_c(MinHDist, c, c4)
+        self._check_c(MinHDist, g1, c4)
         self._check_c(MinHDist, c4, c5)
 
 
@@ -208,12 +243,14 @@ class c5 "C5"
         Test align with packaged elements and upper layer defaulting
         """
         # diagram:
-        # -- c1 --
-        # |c3  c4|
-        # --------
-        # -- c2 --
-        # |c5  c6|
-        # --------
+        # --- g1 ---
+        # |-- c1 --|
+        # ||c3  c4||
+        # |--------|
+        # |-- c2 --|
+        # ||c5  c6||
+        # |--------|
+        # ----------
         n = self._process("""
 class c1 "C1"
     class c3 "C3"
@@ -222,14 +259,23 @@ class c2 "C2"
     class c5 "C5"
     class c6 "C6"
 
-# c1 and c2 defaults properly
+# check if c1 and c2 alignment default is ok!
 :layout:
-    center: c3 c5
+    center g1: c3 c5
 """)
-        c1 = n[0].style
-        c2 = n[1].style
-        c3 = n[0][0].style
-        c5 = n[1][0].style
+        c1n = find_node(n, 'c1')
+        c2n = find_node(n, 'c2')
+        c3n = find_node(n, 'c3')
+        c5n = find_node(n, 'c5')
+        g1n = find_node(n, 'g1')
+
+        c1 = c1n.style
+        c2 = c2n.style
+        c3 = c3n.style
+        c5 = c5n.style
+        g1 = g1n.style
+
+        self.assertEquals([c1n, c2n], g1n.children)
 
         # check the below just in case
         self._check_c(CenterEq, c3, c5)
@@ -256,19 +302,21 @@ class d "C4"
 class e "C5"
 
 :layout:
-    left: a b
-    right: d e
+    left g1: a b
+    right g2: d e
 """)
-        a = n[0].style
-        b = n[1].style
-        c = n[2].style
-        d = n[3].style
-        e = n[4].style
+        a = find_style(n, 'a')
+        b = find_style(n, 'b')
+        c = find_style(n, 'c')
+        d = find_style(n, 'd')
+        e = find_style(n, 'e')
+        g1 = find_style(n, 'g1')
+        g2 = find_style(n, 'g2')
 
         self._check_c(MiddleEq, a, c)
-        self._check_c(MinHDist, a, c)
+        self._check_c(MinHDist, g1, c)
         self._check_c(MiddleEq, c, d)
-        self._check_c(MinHDist, c, d)
+        self._check_c(MinHDist, c, g2)
 
         self._check_c(LeftEq, a, b)
         self._check_c(MinVDist, a, b)
@@ -292,17 +340,20 @@ class d "C4"
 class e "C5"
 
 :layout:
-    left: a b
-    right: c d e
+    left g1: a b
+    right g2: c d e
 """)
-        a = n[0].style
-        b = n[1].style
-        c = n[2].style
-        d = n[3].style
-        e = n[4].style
+        a = find_style(n, 'a')
+        b = find_style(n, 'b')
+        c = find_style(n, 'c')
+        d = find_style(n, 'd')
+        e = find_style(n, 'e')
+
+        g1 = find_style(n, 'g1')
+        g2 = find_style(n, 'g2')
 
         self._check_c(MiddleEq, a, c)
-        self._check_c(MinHDist, a, c)
+        self._check_c(MinHDist, g1, g2)
 
         self._check_c(LeftEq, a, b)
         self._check_c(MinVDist, a, b)
@@ -330,19 +381,20 @@ class c3 "C3"
 class c4 "C4"
 
 :layout:
-    right: c1 c3
-    left: c2 c4
+    right g1: c1 c3
+    left g2: c2 c4
 """)
-        c = n[0].style
-        c1 = n[0][0].style
-        c2 = n[0][1].style
-        c3 = n[1].style
-        c4 = n[2].style
+        c = find_style(n, 'c')
+        c1 = find_style(n, 'c1')
+        c2 = find_style(n, 'c2')
+        c3 = find_style(n, 'c3')
+        c4 = find_style(n, 'c4')
+        g1 = find_style(n, 'g1')
 
         self._check_c(RightEq, c1, c3)
         self._check_c(MinVDist, c, c3)
         self._check_c(LeftEq, c2, c4)
-        self._check_c(MinVDist, c, c4)
+        self._check_c(MinVDist, g1, c4)
 
         self._check_c(MiddleEq, c1, c2)
         self._check_c(MinHDist, c1, c2)
@@ -364,14 +416,16 @@ class d "C4"
 class e "C5"
 
 :layout:
-    middle: a b c
-    center: d b e
+    middle g1: a b c
+    center g2: d b e
 """)
-        a = n[0].style
-        b = n[1].style
-        c = n[2].style
-        d = n[3].style
-        e = n[4].style
+        g1 = find_style(n, 'g1')
+        g2 = find_style(n, 'g2')
+        a = find_style(n, 'a')
+        b = find_style(n, 'b')
+        c = find_style(n, 'c')
+        d = find_style(n, 'd')
+        e = find_style(n, 'e')
 
         self._check_c(None, a, d)
         self._check_c(None, a, c)
@@ -381,9 +435,9 @@ class e "C5"
         self._check_c(MiddleEq, a, b)
         self._check_c(MinHDist, b, c)
         self._check_c(MiddleEq, b, c)
-        self._check_c(MinVDist, d, b)
+        self._check_c(MinVDist, d, g1)
         self._check_c(CenterEq, d, b)
-        self._check_c(MinVDist, b, e)
+        self._check_c(MinVDist, g1, e)
         self._check_c(CenterEq, b, e)
 
 

@@ -109,12 +109,14 @@ class Layout(object):
 
 
     def _create_align_groups(self):
-        # default align only? leave it alone
-        all_align = [(p, a) for p, a in self.align.items() if len(a) > 1]
-        for p, align_info in all_align:
+        all_align = [(p, a) for p, a in self.align.items()]
+        for parent, align_info in all_align:
             for a in list(align_info):
-                p = lca(p, *a.nodes)
+                p = lca(parent, *a.nodes)
                 nodes = lsb(p, *a.nodes)
+                if set(parent.children) == set(nodes):
+                    log.debug('no group for {}'.format(a))
+                    continue
                 log.debug('{} -> {}'.format(tuple(n.id for n in a.nodes), tuple(n.id for n in nodes)))
 
                 # fixme: reparent function?
@@ -189,8 +191,9 @@ class DefaultAlignBuilder(MWalker):
             log.debug('{} defined align: {}'.format(node.id, align_info))
 
         if len(default.nodes) > 1:
-            # all alignment information determined
-            align_info.insert(0, default)
+            # append default align at the end to have more intuitive
+            # alignment groups
+            align_info.append(default)
 
     v_diagram = v_packagingelement
 
