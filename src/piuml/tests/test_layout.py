@@ -22,7 +22,8 @@ Layout (alignment, span matrix, etc) tests.
 """
 
 from piuml.layout.cl import Layout, MinHDist, MinVDist, \
-    MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq
+    MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq, \
+    djset
 from piuml.parser import parse, ParseError
 from piuml.data import unwind
 
@@ -439,6 +440,94 @@ class e "C5"
         self._check_c(CenterEq, d, b)
         self._check_c(MinVDist, g1, e)
         self._check_c(CenterEq, b, e)
+
+
+    def test_nondir_ref(self):
+        """
+        Test alignment non-direct references
+        """
+        # diagram:
+        # a b c
+        # d e f
+        #
+        n = self._process("""
+class a "C1"
+class b "C2"
+class c "C3"
+class d "C4"
+class e "C5"
+class f "C6"
+
+:layout:
+    middle g1: a b c
+    middle g2: d e f
+    center: b e
+""")
+        g1 = find_style(n, 'g1')
+        g2 = find_style(n, 'g2')
+        a = find_style(n, 'a')
+        b = find_style(n, 'b')
+        c = find_style(n, 'c')
+        d = find_style(n, 'd')
+        e = find_style(n, 'e')
+
+        self._check_c(None, a, d)
+
+
+class DisjointSetTestCase(unittest.TestCase):
+    """
+    Disjoint set tests.
+    """
+    def test_single(self):
+        """
+        Test adding items to disjoint set
+        """
+        s = djset()
+        s.add([1, 2, 3])
+        self.assertEquals({1, 2, 3}, s.data[1])
+
+
+    def test_exclusive(self):
+        """
+        Test adding mutually exclusive items to disjoint set.
+        """
+        s = djset()
+        s.add([1, 2, 3])
+        s.add([4, 5, 6])
+        self.assertEquals({1, 2, 3}, s.data[1])
+        self.assertEquals({4, 5, 6}, s.data[4])
+
+
+    def test_join(self):
+        """
+        Test joining partitions in disjoint set
+        """
+        s = djset()
+        s.add([1, 2, 3])
+        s.add([4, 5, 6])
+        s.add([2, 5])
+        self.assertEquals({1, 2, 3, 4, 5, 6}, s.data[1])
+        self.assertFalse(2 in s.data)
+
+
+    def test_nonzero(self):
+        """
+        Test disjoint set bool evaluation
+        """
+        self.assertFalse(djset())
+        self.assertTrue(djset([1, 2, 3]))
+        self.assertTrue(djset([1, 2, 3], [4, 5, 6]))
+        self.assertTrue(djset([1, 2, 3], [4, 5, 6], [5, 6]))
+
+
+    def test_length(self):
+        """
+        Test disjoint set length
+        """
+        self.assertEquals(0, len(djset()))
+        self.assertEquals(3, len(djset([1, 2, 3])))
+        self.assertEquals(6, len(djset([1, 2, 3], [4, 5, 6])))
+        self.assertEquals(6, len(djset([1, 2, 3], [4, 5, 6], [5, 6])))
 
 
 # vim: sw=4:et:ai

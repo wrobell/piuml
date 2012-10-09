@@ -117,25 +117,26 @@ class Layout(object):
                 if set(parent.children) == set(nodes):
                     log.debug('no group for {}'.format(a))
                     continue
-                log.debug('{} -> {}'.format(tuple(n.id for n in a.nodes), tuple(n.id for n in nodes)))
 
+                log.debug('group {}: {} -> {}'.format(a.id,
+                    tuple(n.id for n in a.nodes),
+                    tuple(n.id for n in nodes)))
+                log.debug('group {}: remove {} from {}'.format(a.id,
+                    tuple(n.id for n in nodes),
+                    p.id))
                 # fixme: reparent function?
-                log.debug('remove {} from {}'.format(tuple(n.id for n in nodes), p.id))
                 for n in nodes:
                     p.children.remove(n)
                     n.parent = None
 
-                log.debug('append {} to {}'.format(tuple(n.id for n in nodes), a.id))
+                log.debug('group {}: {}'.format(a.id,
+                    tuple(n.id for n in nodes)))
                 ng = NodeGroup(a.id, children=nodes)
                 # fixme: reparent function?
                 ng.parent = p
                 p.children.append(ng)
-                log.debug('{} added to {}'.format(ng.id, p.id))
+                log.debug('group {} created in {}'.format(ng.id, p.id))
 
-                #self.align[ng] = [a]
-                #align_info.remove(a)
-                #if len(align_info) == 0:
-                #    del self.align[p]
 
 
 class DefaultAlignBuilder(MWalker):
@@ -173,17 +174,19 @@ class DefaultAlignBuilder(MWalker):
 
         align_info = self.align[node]
 
+        default = []# Align('middle')
         used_nodes = set()
-        for a in align_info:
-            v = level(node, *a.nodes)
+        for a, b in zip(align_info[:-1], align_info[1:]):
+            v1 = level(node, *a.nodes)
+            v2 = level(node, *b.nodes)
             if not used_nodes & set(v):
-                v = v[1:]
-            used_nodes.update(v)
+                default.nodes.append(v[0])
+            used_nodes.update(v1)
+            used_nodes.update(v2)
 
-        default = Align('middle')
-        default.nodes = [k for k in node
-            if k not in used_nodes and type(k) in (Element, PackagingElement)]
-            # fixme: if k not in used_nodes and k.can_align], [])
+        #default.nodes = [k for k in node
+        #    if k not in used_nodes and type(k) in (Element, PackagingElement)]
+        #    # fixme: if k not in used_nodes and k.can_align], [])
 
         if __debug__:
             log.debug('{} used nodes: {}'.format(node.id, used_nodes))
@@ -374,15 +377,76 @@ class ConstraintBuilder(MWalker):
             f(k1, k2)
 
 
-# map align types to ConstraintBuilder methods 
-ALIGN_CONSTRAINTS = {
-    'top': (ConstraintBuilder.top, ConstraintBuilder.hspan),
-    'middle': (ConstraintBuilder.middle, ConstraintBuilder.hspan),
-    'bottom': (ConstraintBuilder.bottom, ConstraintBuilder.hspan),
-    'left': (ConstraintBuilder.left, ConstraintBuilder.vspan),
-    'center': (ConstraintBuilder.center, ConstraintBuilder.vspan),
-    'right': (ConstraintBuilder.right, ConstraintBuilder.vspan),
-}
+class djset(object):
+    """
+    Disjoint set data structure.
+
+    :Arguments:
+     data
+        Disjoint set partitions.
+    """
+    def __init__(self, *args):
+        """
+        Create disjoint set with all arguments added to the structure.
+
+        :Parameters:
+         *args
+            List of items to be added.
+        """
+        self.data = OrderedDict()
+        self.update(*args)
+
+
+    def update(self, *args):
+        """
+        Update disjoint set with the arguments.
+
+        :Parameters:
+         *args
+            List of items to be added.
+        """
+        for a in args:
+            self.add(a)
+
+
+    def add(self, values):
+        """
+        Add collection of values to the disjoint set.
+        """
+        fv = values[0]
+        values = set(values)
+        data = enumerate(self.data.items())
+        for i, (kv, vd) in data:
+            if values & vd:
+                vd.update(values)
+                values = vd
+                fv = kv
+                break
+
+        for i, (kv, vd) in data:
+            if values & vd:
+                values.update(vd)
+                del self.data[kv]
+
+        if fv not in self.data:
+            self.data[fv] = values
+
+
+    def __contains__(self, key):
+        return any(key in v for v in self.data.values())
+
+
+    def __len__(self):
+        return sum(len(v) for v in self.data.values())
+
+
+    def __nonzero__(self):
+        return bool(self.data)
+
+
+    def __repr__(self):
+        return ', '.join('{}: {}'.format(k, v) for k, v in self.data.items())
+
 
 
 def level(ast, *nodes):
@@ -393,5 +457,15 @@ def level(ast, *nodes):
     p = lca(ast, *nodes)
     return lsb(p, *nodes)
 
+
+# map align types to ConstraintBuilder methods 
+ALIGN_CONSTRAINTS = {
+    'top': (ConstraintBuilder.top, ConstraintBuilder.hspan),
+    'middle': (ConstraintBuilder.middle, ConstraintBuilder.hspan),
+    'bottom': (ConstraintBuilder.bottom, ConstraintBuilder.hspan),
+    'left': (ConstraintBuilder.left, ConstraintBuilder.vspan),
+    'center': (ConstraintBuilder.center, ConstraintBuilder.vspan),
+    'right': (ConstraintBuilder.right, ConstraintBuilder.vspan),
+}
 
 # vim: sw=4:et:ai
