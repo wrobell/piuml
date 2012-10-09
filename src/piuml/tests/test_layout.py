@@ -25,7 +25,7 @@ from piuml.layout.cl import Layout, MinHDist, MinVDist, \
     MiddleEq, CenterEq, LeftEq, RightEq, TopEq, BottomEq, \
     djset
 from piuml.parser import parse, ParseError
-from piuml.data import unwind
+from piuml.data import unwind, Element
 
 import unittest
 
@@ -226,8 +226,9 @@ class c5 "C5"
         g0 = g0n.style
         g1 = g1n.style
 
-        self.assertEquals([g1n, c4n, c5n], g0n.children)
         self.assertEquals([cn, c3n], g1n.children)
+        self.assertEquals([g1n, c4n, c5n],
+            [k for k in g0n if isinstance(k, Element)])
 
         self._check_c(CenterEq, c2, c3)
         self._check_c(MinVDist, c, c3)
@@ -260,7 +261,7 @@ class c2 "C2"
     class c5 "C5"
     class c6 "C6"
 
-# check if c1 and c2 alignment default is ok!
+# check if c1 and c2 default alignment is ok!
 :layout:
     center g1: c3 c5
 """)
@@ -508,6 +509,27 @@ class DisjointSetTestCase(unittest.TestCase):
         s.add([2, 5])
         self.assertEquals({1, 2, 3, 4, 5, 6}, s.data[1])
         self.assertFalse(2 in s.data)
+
+
+    def test_contains(self):
+        """
+        Test disjoint set contains operator
+        """
+        s = djset()
+        s.add([1, 2, 3])
+        s.add([4, 5, 6])
+        self.assertTrue(2 in s)
+        self.assertTrue(5 in s)
+
+
+    def test_heads(self):
+        """
+        Test disjoint set heads
+        """
+        s = djset()
+        s.add([1, 2, 3])
+        s.add([4, 5, 6])
+        self.assertTrue([1, 4], list(s.heads()))
 
 
     def test_nonzero(self):

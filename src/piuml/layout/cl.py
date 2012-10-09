@@ -125,6 +125,7 @@ class Layout(object):
                     tuple(n.id for n in nodes),
                     p.id))
                 # fixme: reparent function?
+                idx = p.children.index(nodes[0])
                 for n in nodes:
                     p.children.remove(n)
                     n.parent = None
@@ -134,7 +135,10 @@ class Layout(object):
                 ng = NodeGroup(a.id, children=nodes)
                 # fixme: reparent function?
                 ng.parent = p
-                p.children.append(ng)
+                if idx < len(p):
+                    p.children.insert(idx, ng)
+                else:
+                    p.children.append(ng)
                 log.debug('group {} created in {}'.format(ng.id, p.id))
 
 
@@ -174,24 +178,23 @@ class DefaultAlignBuilder(MWalker):
 
         align_info = self.align[node]
 
-        default = []# Align('middle')
-        used_nodes = set()
-        for a, b in zip(align_info[:-1], align_info[1:]):
-            v1 = level(node, *a.nodes)
-            v2 = level(node, *b.nodes)
-            if not used_nodes & set(v):
-                default.nodes.append(v[0])
-            used_nodes.update(v1)
-            used_nodes.update(v2)
-
-        #default.nodes = [k for k in node
-        #    if k not in used_nodes and type(k) in (Element, PackagingElement)]
-        #    # fixme: if k not in used_nodes and k.can_align], [])
+        used_nodes = djset()
+        for a in align_info:
+            used_nodes.add(level(node, *a.nodes))
+        heads = set(used_nodes.heads())
 
         if __debug__:
             log.debug('{} used nodes: {}'.format(node.id, used_nodes))
-            log.debug('{} default align: {}'.format(node.id, default))
             log.debug('{} defined align: {}'.format(node.id, align_info))
+
+        default = Align('middle')
+        default.nodes = [k for k in node
+            if (k in heads or k not in used_nodes)
+                and type(k) in (Element, PackagingElement)]
+                # fixme: and k.can_align]])
+
+        if __debug__:
+            log.debug('{} default align: {}'.format(node.id, default))
 
         if len(default.nodes) > 1:
             # append default align at the end to have more intuitive
@@ -222,6 +225,7 @@ class ConstraintBuilder(MWalker):
         aligned using both default and user defined alignment information.
         """
         align_info = self.align.get(node, [])
+        log.debug('align nodes of {}: {}'.format(node, align_info))
 
         for a in align_info:
             if __debug__:
@@ -246,7 +250,7 @@ class ConstraintBuilder(MWalker):
         if node.parent:
             self.within(node, node.parent)
 
-        if isinstance(node, PackagingElement):
+        if isinstance(node, PackagingElement) and len(node) > 0:
             self._align_nodes(node)
 
     v_nodegroup = v_diagram = v_packagingelement = v_element
@@ -316,7 +320,7 @@ class ConstraintBuilder(MWalker):
     def top(self, *nodes):
         def f(k1, k2):
             if __debug__:
-                log.debug('{} at top {}'.format(k1.id, k2.id))
+                log.debug('{} top {}'.format(k1.id, k2.id))
             self.add_c(TopEq(k1.style, k2.style))
         self._apply(f, nodes)
 
@@ -336,16 +340,22 @@ class ConstraintBuilder(MWalker):
 
     def left(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} left {}'.format(k1.id, k2.id))
             self.add_c(LeftEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def right(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} right {}'.format(k1.id, k2.id))
             self.add_c(RightEq(k1.style, k2.style))
         self._apply(f, nodes)
 
     def center(self, *nodes):
         def f(k1, k2):
+            if __debug__:
+                log.debug('{} center {}'.format(k1.id, k2.id))
             self.add_c(CenterEq(k1.style, k2.style))
         self._apply(f, nodes)
 
@@ -430,6 +440,13 @@ class djset(object):
 
         if fv not in self.data:
             self.data[fv] = values
+
+
+    def heads(self):
+        """
+        Get all partition heads.
+        """
+        return self.data.keys()
 
 
     def __contains__(self, key):
