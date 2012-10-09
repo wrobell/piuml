@@ -175,7 +175,7 @@ class NodeGroup(PackagingElement):
         super(NodeGroup, self).__init__(cls='nodegroup', id=id,
                 children=children)
 
-        log.debug('group children {}'.format(self.children))
+        log.debug('group {} children {}'.format(self.id, self.children))
         for k in self.children:
             k.parent = self
 
